@@ -54,7 +54,7 @@ client.tcrTroops.useServiceAccountAuth(creds, function (err) {
 
     client.tcrTroops.getInfo(function(err, info) {
 //      console.log('Loaded doc: '+info.title+' by '+info.author.email);
-      sheet = info.worksheets[8];
+      sheet = info.worksheets[9];
 //      console.log('sheet 1: '+sheet.title+' '+sheet.rowCount+'x'+sheet.colCount);
     });
 });

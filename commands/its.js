@@ -14,7 +14,7 @@ exports.run = async (client, message, args, level) => {
   var msg = "";
 
   // Load TCR
-  client.tcrTroops.getRows(9, {query: `_cokwr = ${targetTier}`}, function (err, rows) {
+  client.tcrTroops.getRows(10, {query: `_cokwr = ${targetTier}`}, function (err, rows) {
 //    console.log(rows.length);
     rows.forEach(rr => {
       console.log(rr._cn6ca);
