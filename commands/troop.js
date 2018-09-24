@@ -27,7 +27,7 @@ if(level >= 9) {
 
   // Load TCR
   ndx = client.tcrTroops.worksheets.findIndex(n => n.title === "REF_Troops");
-  client.tcrTroops.getRows(ndx+1, {offset: 3, function (err, rows) {
+  client.tcrTroops.getRows(ndx+1, {offset: 3}, function (err, rows) {
 //  client.tcrTroops.getRows(9, {offset: 3}, function (err, rows) {
     rows.forEach(rr => {
       console.log();
