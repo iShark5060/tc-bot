@@ -7,7 +7,7 @@ exports.run = async (client, message, args, level) => {
   }
 */
   chan = message.guild.channels.find("name","tc-troops");
-  message.reply(`tctroop is no longer interactive. See ${chan}`);
+//  message.reply(`tctroop is no longer interactive. See ${chan}`);
 
 if(level >= 9) {
   let troop = args[0];
@@ -25,7 +25,10 @@ if(level >= 9) {
   });
 
 
-  client.tcrTroops.getRows(9, {offset: 3}, function (err, rows) {
+  // Load TCR
+  ndx = client.tcrTroops.worksheets.findIndex(n => n.title === "REF_Troops");
+  client.tcrTroops.getRows(ndx+1, {offset: 3, function (err, rows) {
+//  client.tcrTroops.getRows(9, {offset: 3}, function (err, rows) {
     rows.forEach(rr => {
       console.log();
 
