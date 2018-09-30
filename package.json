@@ -35,5 +35,6 @@
     "moment": "^2.20.1",
     "moment-duration-format": "^2.2.0",
     "request": "^2.85.0"
+        "express": "^4.16.3",
   }
 }
