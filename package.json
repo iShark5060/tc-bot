@@ -37,6 +37,6 @@
     "moment": "^2.20.1",
     "moment-duration-format": "^2.2.0",
     "ocr-space-api": "^1.0.1",
-    "request": "^2.88.0"
+    "request": "^2.85.0"
   }
 }
