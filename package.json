@@ -36,6 +36,7 @@
     "googleapis": "^27.0.0",
     "moment": "^2.20.1",
     "moment-duration-format": "^2.2.0",
-    "ocr-space-api": "^1.0.1"
+    "ocr-space-api": "^1.0.1",
+    "request": "^2.85.0"
   }
 }
