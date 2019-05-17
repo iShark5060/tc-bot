@@ -52,9 +52,9 @@ client.settings = new Enmap({provider: new EnmapLevel({name: "settings", dataDir
 // Create a document object using the ID of the spreadsheet - obtained from its URL.
 client.tcrTroops = new GoogleSpreadsheet('1ymnFE-wVxEqNV4CkoEHVowKcGHZYGouOUk_wCRBNzL4');
 //var doc = new GoogleSpreadsheet('1tO3BDTA0Ix1dIj7JayA0nrX3wmh4PN7l8139Il11aK8');
+
 // Authenticate with the Google Spreadsheets API.
 client.tcrTroops.useServiceAccountAuth(creds, function (err) {
-  console.log('Loading TCR...');
 
     client.tcrTroops.getInfo(function(err, info) {
       console.log('Loaded doc: '+info.title+' by '+info.author.email);
