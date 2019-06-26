@@ -110,9 +110,10 @@ const init = async () => {
   }
 
   // Here we login the client.
-  client.login(client.config.token);noiujh
+  client.login(client.config.token);
 
 // End top-level async/await function.
 };
-65444lo
+
 //init();
+231ggb2
