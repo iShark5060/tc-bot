@@ -88,7 +88,7 @@ exports.run = async (client, message, args, level) => {
       if(rr.stacks == "Y") isStackable = "Yes"
       else if(rr.stacks == "N") isStackable = "No"
       else isStackable = "???";
-
+console.log(`rr.imgurl=${rr.imgurl}`);
       msg = new Discord.RichEmbed()
         .setAuthor(`${rr.skill||""}`)
         .setTitle(type)
