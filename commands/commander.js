@@ -36,7 +36,7 @@ exports.run = async (client, message, args, level) => {
   var msg = "";
 
   // Load TCR
-  ndx = client.tcrTroops.worksheets.findIndex(n => n.title === "REF_Commanders");
+  ndx = client.tcrTroops.worksheets.findIndex(n => n.title === "Commander Info");
 //  client.tcrTroops.getRows(ndx+1, {query: `name = "${com}"`}, function (err, rows) {
   client.tcrTroops.getRows(ndx+1, {offset: 1}, function (err, rows) {
     console.log(rows.length);
