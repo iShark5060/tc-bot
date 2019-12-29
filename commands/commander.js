@@ -84,7 +84,7 @@ exports.run = async (client, message, args, level) => {
         .addField(
           `1 - ${rr.skill1} <${rr.triggertype1 || ""}> (Lv.1)`,
           //"20% chance to trigger before action: Target next turn is last to act, and defense is lowered by 0.5%."
-          `${rr.description221}`
+          `${rr.description1}`
         )
 /*        .addField(
           `2 - ${rr.skill2} <${rr.triggertype2 || ""}> (Lv.1)`,
