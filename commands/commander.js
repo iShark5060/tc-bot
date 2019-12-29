@@ -51,7 +51,7 @@ exports.run = async (client, message, args, level) => {
 
       type = rr.triggertype3;
       event10chance = "";
-
+      var color;
       // troop type color
       if (type == "Infantry")
         //        color = 0x3C700C; // dark green
@@ -69,15 +69,10 @@ exports.run = async (client, message, args, level) => {
       if (rr.r10event) event10chance = " (" + rr.r10event + ")";
 
       msg = new Discord.RichEmbed()
-        /*        .setAuthor('TCR',
-//            "https://docs.google.com/uc?export=download&id=1_sfdmtlUF9EhsrMZ-6258LVTDwBMRQV_",
-            "",
-            'https://docs.google.com/spreadsheets/d/1ymnFE-wVxEqNV4CkoEHVowKcGHZYGouOUk_wCRBNzL4/edit?usp=sharing')
-*/
-        //        .setFooter("TCR")
+
         .setAuthor(`${rr.name || ""} (${rr.class || ""})`)
         //        .setTitle(`${rr.name||""} (${rr.class||""})`)
-        .setThumbnail(rr.imgsrc || "")
+        //.setThumbnail(rr.imgsrc || "")
         .setColor(color)
         //        .addField(`${rr.skill1}`,`**Lv. 1**\n__**${rr.triggertype1}**__ ${rr.description1}`)
         //        .addField(`${rr.skill2}`,`**Lv. 1**\n__**${rr.triggertype2}**__ ${rr.description2}`)
@@ -94,7 +89,7 @@ exports.run = async (client, message, args, level) => {
           `3 - ${rr.skill3} <${rr.triggertype3 || ""}> (Lv.1)`,
           `${rr.description3 || ""}`
         )
-        .addField(`How to Obtain:`, `${rr.howtoobtain + event10chance || "?"}`);
+        //.addField(`How to Obtain:`, `${rr.howtoobtain + rr.event10chance || "?"}`);
       //      console.log(msg);
       message.channel.send(msg);
     }); // forEach
