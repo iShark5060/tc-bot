@@ -83,19 +83,17 @@ exports.run = async (client, message, args, level) => {
         //        .addField(`${rr.skill3}`,`**Lv. 1**\n__**${rr.triggertype3}**__ ${rr.description3}`)
         .addField(
           `1 - ${rr.skill1} <${rr.triggertype1 || ""}> (Lv.1)`,
-          //"20% chance to trigger before action: Target next turn is last to act, and defense is lowered by 0.5%."
-          `${rr.description1}`
+          `${rr.description1 || "_"}`
         )
-/*        .addField(
+        .addField(
           `2 - ${rr.skill2} <${rr.triggertype2 || ""}> (Lv.1)`,
-          `${rr.description2 || ""}`
+          `${rr.description2 || "_"}`
         )
         .addField(
           `3 - ${rr.skill3} <${rr.triggertype3 || ""}> (Lv.1)`,
-          `${rr.description3 || ""}`
+          `${rr.description3 || "_"}`
         )
-*/
-        //.addField(`How to Obtain:`, `${rr.howtoobtain + rr.event10chance || "?"}`);
+        .addField(`How to Obtain:`, `${rr.howtoobtain + event10chance || "?"}`);
       //      console.log(msg);
       message.channel.send(msg);
     }); // forEach
