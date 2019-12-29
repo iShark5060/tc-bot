@@ -79,7 +79,7 @@ exports.run = async (client, message, args, level) => {
         //        .addField(`${rr.skill3}`,`**Lv. 1**\n__**${rr.triggertype3}**__ ${rr.description3}`)
         .addField(
           `1 - ${rr.skill1} <${rr.triggertype1 || ""}> (Lv.1)`,
-          `${rr.description1 || ""}`
+          "1"//`${rr.description1}`
         )
 /*        .addField(
           `2 - ${rr.skill2} <${rr.triggertype2 || ""}> (Lv.1)`,
