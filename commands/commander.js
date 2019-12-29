@@ -46,6 +46,8 @@ exports.run = async (client, message, args, level) => {
   client.tcrTroops.getRows(ndx + 1, { offset: 1 }, function(err, rows) {
     console.log(rows.length);
 
+    console.log("Keys: " + Object.keys(rows[0]));
+
     rows.forEach(rr => {
       console.log(`==> Commander: ${rr.name}`);
 
@@ -68,6 +70,8 @@ exports.run = async (client, message, args, level) => {
       else color = 0;
       if (rr.r10event) event10chance = " (" + rr.r10event + ")";
 
+      //console.log(`${rr.description1}`);
+      
       msg = new Discord.RichEmbed()
 
         .setAuthor(`${rr.name || ""} (${rr.class || ""})`)
@@ -79,7 +83,8 @@ exports.run = async (client, message, args, level) => {
         //        .addField(`${rr.skill3}`,`**Lv. 1**\n__**${rr.triggertype3}**__ ${rr.description3}`)
         .addField(
           `1 - ${rr.skill1} <${rr.triggertype1 || ""}> (Lv.1)`,
-          "1"//`${rr.description1}`
+          //"20% chance to trigger before action: Target next turn is last to act, and defense is lowered by 0.5%."
+          `${rr.description221}`
         )
 /*        .addField(
           `2 - ${rr.skill2} <${rr.triggertype2 || ""}> (Lv.1)`,
