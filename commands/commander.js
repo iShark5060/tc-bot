@@ -50,7 +50,7 @@ exports.run = async (client, message, args, level) => {
       console.log(`==> Commander: ${rr.name}`);
 
       type = rr.triggertype3;
-      event10chance = "";
+      var event10chance = "";
       var color;
       // troop type color
       if (type == "Infantry")
@@ -81,7 +81,7 @@ exports.run = async (client, message, args, level) => {
           `1 - ${rr.skill1} <${rr.triggertype1 || ""}> (Lv.1)`,
           `${rr.description1 || ""}`
         )
-        .addField(
+/*        .addField(
           `2 - ${rr.skill2} <${rr.triggertype2 || ""}> (Lv.1)`,
           `${rr.description2 || ""}`
         )
@@ -89,6 +89,7 @@ exports.run = async (client, message, args, level) => {
           `3 - ${rr.skill3} <${rr.triggertype3 || ""}> (Lv.1)`,
           `${rr.description3 || ""}`
         )
+*/
         //.addField(`How to Obtain:`, `${rr.howtoobtain + rr.event10chance || "?"}`);
       //      console.log(msg);
       message.channel.send(msg);
