@@ -90,8 +90,8 @@ exports.run = async (client, message, args, level) => {
       else isStackable = "???";
 console.log(`rr.imgurl=${rr.imgurl}`);
       msg = new Discord.RichEmbed()
-        .setAuthor(`${rr.skill||""}`)
-        .setTitle(type)
+        .setTitle(`${rr.skill||""} (${type})`)
+//         .setTitle(type)
 //        .setTitle(`${rr.name||""} (${rr.class||""})`)
         .setThumbnail(rr.imgurl||"")
         .setColor(color)
