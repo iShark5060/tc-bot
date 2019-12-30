@@ -76,7 +76,7 @@ exports.run = async (client, message, args, level) => {
 
         .setAuthor(`${rr.name || ""} (${rr.class || ""})`)
         //        .setTitle(`${rr.name||""} (${rr.class||""})`)
-        /.setThumbnail(rr.imgsrc || "")
+        .setThumbnail(rr.imgsrc || "")
         .setColor(color)
         //        .addField(`${rr.skill1}`,`**Lv. 1**\n__**${rr.triggertype1}**__ ${rr.description1}`)
         //        .addField(`${rr.skill2}`,`**Lv. 1**\n__**${rr.triggertype2}**__ ${rr.description2}`)
