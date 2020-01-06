@@ -75,7 +75,7 @@ exports.run = async (client, message, args, level) => {
         //.setColor(color)
         .addField(
           `-`,
-          `${rr.filter} ${rr.stat || ""} ${rr.valuemin || "_"} - ${rr.valuemax}`
+          `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"} ${Math.abs(rr.valuemax) > Math.abs(rr.valuemin) ? "~"+rr.valuemax : ""}`
         )
         .addField(
           `-`,
