@@ -72,18 +72,18 @@ exports.run = async (client, message, args, level) => {
 
         .setAuthor(`${rr.type || ""}`)
         .setTitle(`${rr.name || ""}`)
-        .setThumbnail(rr.icon || "")
+        .setThumbnail(rr.imagesource || "")
         //.setColor(color)
         .addField(
-          `-`,
+          "-",
           `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${Math.abs(rr.valuemax) > Math.abs(rr.valuemin) ? "~"+rr.valuemax+"%" : ""}`
         )
         .addField(
-          `-`,
+          "-",
           `${rr.filter_2} ${rr.stat_2 || ""} ${rr.valuemin_2 || "_"} - ${rr.valuemax_2}`
         )
         .addField(
-          `-`,
+          "-",
           `${rr.filter_3} ${rr.stat_3 || ""} ${rr.valuemin_3 || "_"} - ${rr.valuemax_3}`
         )
       //      console.log(msg);
