@@ -69,23 +69,22 @@ exports.run = async (client, message, args, level) => {
       
       msg = new Discord.RichEmbed()
 
-        .setAuthor(`${rr.name || ""} (${rr.type || ""})`)
-        //        .setTitle(`${rr.name||""} (${rr.class||""})`)
+        .setAuthor(`${rr.name || ""}`)
+        .setTitle(`${rr.type||""}`)
         .setThumbnail(rr.icon || "")
         //.setColor(color)
         .addField(
-          `${rr.skill1} <${rr.triggertype1 || ""}> (Lv.1)`,
-          `${rr.description1 || "_"}`
+          `${rr.filter} ${rr.stat || ""}`,
+          `${rr.valuemin || "_"} - ${rr.valuemax}`
         )
         .addField(
-          `2 - ${rr.skill2} <${rr.triggertype2 || ""}> (Lv.1)`,
-          `${rr.description2 || "_"}`
+          `${rr.filter_2 || "_"} ${rr.stat_2 || ""}`,
+          `${rr.valuemin_2 || "_"} - ${rr.valuemax_2 || "_"}`
         )
         .addField(
-          `3 - ${rr.skill3} <${rr.triggertype3 || ""}> (Lv.1)`,
-          `${rr.description3 || "_"}`
+          `${rr.filter_3 || "_"} ${rr.stat_3 || ""}`,
+          `${rr.valuemin_3 || "_"} - ${rr.valuemax_3 || "_"}`
         )
-        .addField(`How to Obtain:`, `${rr.howtoobtain + event10chance || "?"}`);
       //      console.log(msg);
       message.channel.send(msg);
     }); // forEach
