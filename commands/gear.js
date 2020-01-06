@@ -69,21 +69,21 @@ exports.run = async (client, message, args, level) => {
       
       msg = new Discord.RichEmbed()
 
-        .setAuthor(`${rr.name || ""}`)
-        .setTitle(`${rr.type||""}`)
+        .setAuthor(`${rr.type || ""}`)
+        .setTitle(`${rr.name || ""}`)
         .setThumbnail(rr.icon || "")
         //.setColor(color)
         .addField(
-          `${rr.filter} ${rr.stat || ""}`,
-          `${rr.valuemin || "_"} - ${rr.valuemax}`
+          `-`,
+          `${rr.filter} ${rr.stat || ""} ${rr.valuemin || "_"} - ${rr.valuemax}`
         )
         .addField(
-          `${rr.filter_2 || "_"} ${rr.stat_2 || ""}`,
-          `${rr.valuemin_2 || "_"} - ${rr.valuemax_2 || "_"}`
+          `-`,
+          `${rr.filter_2} ${rr.stat_2 || ""} ${rr.valuemin_2 || "_"} - ${rr.valuemax_2}`
         )
         .addField(
-          `${rr.filter_3 || "_"} ${rr.stat_3 || ""}`,
-          `${rr.valuemin_3 || "_"} - ${rr.valuemax_3 || "_"}`
+          `-`,
+          `${rr.filter_3} ${rr.stat_3 || ""} ${rr.valuemin_3 || "_"} - ${rr.valuemax_3}`
         )
       //      console.log(msg);
       message.channel.send(msg);
