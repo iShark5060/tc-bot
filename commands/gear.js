@@ -67,6 +67,7 @@ exports.run = async (client, message, args, level) => {
 */
       //console.log(`${rr.description1}`);
       
+      if (rr.name == "Gift of the Valkyrie") {
       msg = new Discord.RichEmbed()
 
         .setAuthor(`${rr.type || ""}`)
@@ -75,7 +76,7 @@ exports.run = async (client, message, args, level) => {
         //.setColor(color)
         .addField(
           `-`,
-          `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"} ${Math.abs(rr.valuemax) > Math.abs(rr.valuemin) ? "~"+rr.valuemax : ""}`
+          `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${Math.abs(rr.valuemax) > Math.abs(rr.valuemin) ? "~"+rr.valuemax+"%" : ""}`
         )
         .addField(
           `-`,
@@ -86,7 +87,7 @@ exports.run = async (client, message, args, level) => {
           `${rr.filter_3} ${rr.stat_3 || ""} ${rr.valuemin_3 || "_"} - ${rr.valuemax_3}`
         )
       //      console.log(msg);
-      message.channel.send(msg);
+      message.channel.send(msg);}
     }); // forEach
 
     //    console.log("Com Keys: " + Object.keys(rows[0]));
