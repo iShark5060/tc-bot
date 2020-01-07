@@ -51,34 +51,38 @@ exports.run = async (client, message, args, level) => {
       // troop type color
       if (rr.rarity == "Legendary")
         //        color = 0x3C700C; // dark green
-        color = 0xd50fd8;
+        color = 0xD50FD8;
       // light green
-      else if (type == "Walker")
+      else if (type == "Epic")
         //        color = 0x216894; // dark blue
         color = 0x399fc7;
       // light blue
-      else if (type == "Airship")
+      else if (type == "Rare")
         //        color = 0x9B2928; // dark red
         color = 0xec5b58;
+      else if (type == "Common")
+        //        color = 0x9B2928; // dark red
+        color = 0x7EE637;
+      else if (type == "Bargain")
+        //        color = 0x9B2928; // dark red
+        color = 0xCDCBCE;
       // light red
       else color = 0;
-        color = 0xd50fd8;
-        color = 0x399fc7;
 
       //console.log(`${rr.description1}`);
       
       if (rr.name == "Gift of the Valkyrie") {
-      var gearStats = `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${Math.abs(rr.valuemax) > Math.abs(rr.valuemin) ? "~"+rr.valuemax+"%" : ""}`
+      var gearStats = `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${rr.valuemax != rr.valuemin ? "~"+rr.valuemax+"%" : ""}`
       if (rr.filter_2)
-        gearStats += `\n${rr.filter_2} ${rr.stat_2 || ""} ${rr.valuemin_2 >= 0  ? "+" : ""}${rr.valuemin_2 || "_"}% ${Math.abs(rr.valuemax_2) > Math.abs(rr.valuemin_2) ? "~"+rr.valuemax_2+"%" : ""}`
+        gearStats += `\n${rr.filter_2} ${rr.stat_2 || ""} ${rr.valuemin_2 >= 0  ? "+" : ""}${rr.valuemin_2 || "_"}% ${rr.valuemax_2 != rr.valuemin_2 ? "~"+rr.valuemax_2+"%" : ""}`
       if (rr.filter_3)
-        gearStats += `\n${rr.filter_3} ${rr.stat_3 || ""} ${rr.valuemin_3 >= 0  ? "+" : ""}${rr.valuemin_3 || "_"}% ${Math.abs(rr.valuemax_3) > Math.abs(rr.valuemin_3) ? "~"+rr.valuemax_3+"%" : ""}`
+        gearStats += `\n${rr.filter_3} ${rr.stat_3 || ""} ${rr.valuemin_3 >= 0  ? "+" : ""}${rr.valuemin_3 || "_"}% ${rr.valuemax_3 != rr.valuemin_3 ? "~"+rr.valuemax_3+"%" : ""}`
 
       msg = new Discord.RichEmbed()
 
 //        .setAuthor(`${rr.type || ""}`)
         .setTitle(`**${rr.name}**\n*${rr.rarity}*`)
-        //.setColor(color)
+        .setColor(color)
         .addField(
           `${rr.type}`, `${gearStats}`
         )
