@@ -68,22 +68,25 @@ exports.run = async (client, message, args, level) => {
       //console.log(`${rr.description1}`);
       
       if (rr.name == "Gift of the Valkyrie") {
-      var gearStats = `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${Math.abs(rr.valuemax) > Math.abs(rr.valuemin) ? "~"+rr.valuemax+"%" : ""}`
+        var gs1 = `${rr.filter} ${rr.stat || ""}`;
+        var gs2 = `${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${Math.abs(rr.valuemax) > Math.abs(rr.valuemin) ? "~"+rr.valuemax+"%" : ""}`;
+        
+      //var gearStats = `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${Math.abs(rr.valuemax) > Math.abs(rr.valuemin) ? "~"+rr.valuemax+"%" : ""}`
       if (rr.filter_2)
-        gearStats += `\n${rr.filter_2} ${rr.stat_2 || ""} ${rr.valuemin_2 >= 0  ? "+" : ""}${rr.valuemin_2 || "_"}% ${Math.abs(rr.valuemax_2) > Math.abs(rr.valuemin_2) ? "~"+rr.valuemax_2+"%" : ""}`
+        //gearStats += `\n${rr.filter_2} ${rr.stat_2 || ""} ${rr.valuemin_2 >= 0  ? "+" : ""}${rr.valuemin_2 || "_"}% ${Math.abs(rr.valuemax_2) > Math.abs(rr.valuemin_2) ? "~"+rr.valuemax_2+"%" : ""}`
       if (rr.filter_3)
         gearStats += `\n${rr.filter_3} ${rr.stat_3 || ""} ${rr.valuemin_3 >= 0  ? "+" : ""}${rr.valuemin_3 || "_"}% ${Math.abs(rr.valuemax_3) > Math.abs(rr.valuemin_3) ? "~"+rr.valuemax_3+"%" : ""}`
 
       msg = new Discord.RichEmbed()
 
-//        .setTitle(`${rr.name || ""}`)
 //        .setAuthor(`${rr.type || ""}`)
-        .setTitle(`${rr.type || ""}`)
-        .setAuthor(`${rr.name || ""}`)
+        .setTitle(`**${rr.name}**\n${rr.rarity}`)
         //.setColor(color)
         .addField(
-          `${rr.rarity}`, `${gearStats}`
+          `${rr.type}`, `${gearStats}`
         )
+        .addField("1","test",true)
+        .addField("2","test2",true)
         .setThumbnail(rr.imagesource || "")
       //      console.log(msg);
       message.channel.send(msg);}
