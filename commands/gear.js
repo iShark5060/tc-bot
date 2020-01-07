@@ -48,47 +48,44 @@ exports.run = async (client, message, args, level) => {
       console.log(`==> Gear: ${rr.name}`);
 
       var color;
-      // troop type color
+      // gear rarity color
       if (rr.rarity == "Legendary")
-        //        color = 0x3C700C; // dark green
         color = 0xD50FD8;
-      // light green
-      else if (type == "Epic")
-        //        color = 0x216894; // dark blue
-        color = 0x399fc7;
-      // light blue
-      else if (type == "Rare")
-        //        color = 0x9B2928; // dark red
-        color = 0xec5b58;
-      else if (type == "Common")
-        //        color = 0x9B2928; // dark red
+      else if (rr.rarity == "Epic")
+        color = 0xF7BF12;
+      else if (rr.rarity == "Rare")
+        color = 0x31E6DD;
+      else if (rr.rarity == "Common")
         color = 0x7EE637;
-      else if (type == "Bargain")
-        //        color = 0x9B2928; // dark red
+      else if (rr.rarity == "Bargain")
         color = 0xCDCBCE;
-      // light red
       else color = 0;
 
       //console.log(`${rr.description1}`);
       
-      if (rr.name == "Gift of the Valkyrie") {
-      var gearStats = `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${rr.valuemax != rr.valuemin ? "~"+rr.valuemax+"%" : ""}`
+      //if (rr.name == "Gift of the Valkyrie") {
+//      if (rr.name == "Thalmus Booster.3") {
+      
+
+      var gearStats = `${rr.filter} ${rr.stat || ""} ${rr.valuemin >= 0  ? "+" : ""}${rr.valuemin || "_"}% ${rr.valuemax != rr.valuemin ? " ~ "+(rr.valuemax >= 0 ? "+" : "")+rr.valuemax+"%" : ""}`
       if (rr.filter_2)
-        gearStats += `\n${rr.filter_2} ${rr.stat_2 || ""} ${rr.valuemin_2 >= 0  ? "+" : ""}${rr.valuemin_2 || "_"}% ${rr.valuemax_2 != rr.valuemin_2 ? "~"+rr.valuemax_2+"%" : ""}`
+        gearStats += `\n${rr.filter_2} ${rr.stat_2 || ""} ${rr.valuemin_2 >= 0  ? "+" : ""}${rr.valuemin_2 || "_"}% ${rr.valuemax_2 != rr.valuemin_2 ? " ~ "+(rr.valuemax_2 >= 0 ? "+" : "")+rr.valuemax_2+"%" : ""}`
       if (rr.filter_3)
-        gearStats += `\n${rr.filter_3} ${rr.stat_3 || ""} ${rr.valuemin_3 >= 0  ? "+" : ""}${rr.valuemin_3 || "_"}% ${rr.valuemax_3 != rr.valuemin_3 ? "~"+rr.valuemax_3+"%" : ""}`
+        gearStats += `\n${rr.filter_3} ${rr.stat_3 || ""} ${rr.valuemin_3 >= 0  ? "+" : ""}${rr.valuemin_3 || "_"}% ${rr.valuemax_3 != rr.valuemin_3 ? " ~ "+(rr.valuemax_3 >= 0 ? "+" : "")+rr.valuemax_3+"%" : ""}`
 
       msg = new Discord.RichEmbed()
 
 //        .setAuthor(`${rr.type || ""}`)
-        .setTitle(`**${rr.name}**\n*${rr.rarity}*`)
+//        .setTitle(`**${rr.name}**\n*${rr.rarity}*`)
+        .setTitle(`**${rr.name}**`)
         .setColor(color)
         .addField(
-          `${rr.type}`, `${gearStats}`
+          `${rr.rarity}\n${rr.type}`, `${gearStats}`
         )
         .setThumbnail(rr.imagesource || "")
       //      console.log(msg);
-      message.channel.send(msg);}
+      message.channel.send(msg);
+//    }
     }); // forEach
 
     //    console.log("Com Keys: " + Object.keys(rows[0]));
