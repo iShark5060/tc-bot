@@ -74,7 +74,9 @@ exports.run = async (client, message, args, level) => {
       
       msg = new Discord.RichEmbed()
 
-        .setAuthor(`${rr.name || ""} (${rr.class || ""})`)
+        //.setAuthor(`${rr.name || ""} (${rr.class || ""})`)
+        .setTitle(`${rr.name || ""} (${rr.class || ""})`)
+        .setDescription(rr.lore)
         //        .setTitle(`${rr.name||""} (${rr.class||""})`)
         .setThumbnail(rr.imgsrc || "")
         .setColor(color)
