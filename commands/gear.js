@@ -14,7 +14,7 @@ exports.run = async (client, message, args, level) => {
   }
 
   if (message.channel.name != "tc-gear") {
-    message.reply(`Invalid channel! Please run in ${targetChannel}!`);
+    message.reply(`Invalid channel! Please run in #tc-gear!`);
     return;
   }
 
@@ -44,7 +44,7 @@ exports.run = async (client, message, args, level) => {
 
     console.log("Keys: " + Object.keys(rows[0]));
 
-    rows.forEach(rr => {
+    rows.forEach(async rr => {
       console.log(`==> Gear: ${rr.name}`);
 
       var color;
