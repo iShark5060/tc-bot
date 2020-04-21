@@ -49,7 +49,7 @@ exports.run = async (client, message, args, level) => {
     console.log("Keys: " + Object.keys(rows[0]));
 
     rows.forEach(rr => {
-      console.log(`==> Commander: ${rr.name}`);
+      console.log(`==> Commander: ${rr.name}\n\tImgSrc: ${rr.imgsrc}`);
 
       type = rr.triggertype3;
       var event10chance = "";
