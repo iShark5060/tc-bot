@@ -94,7 +94,7 @@ exports.run = async (client, message, args, level) => {
         .setTitle(`${rr.skill||""} (${type})`)
 //         .setTitle(type)
 //        .setTitle(`${rr.name||""} (${rr.class||""})`)
-        .setThumbnail(rr.imgurl||"")
+        .setThumbnail(rr.imgurl||"https://docs.google.com/uc?export=download&confirm=no_antivirus&id=1YYkvsz_VrmfBPGkQ7md72YAV2vh7pbMb")
         .setColor(color)
         .setDescription(rr.description)
         .addField("Scale", `${rr.scale} (${parseFloat(rr.scale) * 60}% @ Lv.60)` )
