@@ -21,7 +21,7 @@ exports.run = async (client, message, args, level) => {
   };
 
   // Clear channel
-  let fetched;
+/*  let fetched;
   fetched = await targetChannel.fetchMessages(100);
 //    console.log(`Fetched ${fetched.size} messages.`);
   fetched.forEach(f => {
@@ -30,6 +30,7 @@ exports.run = async (client, message, args, level) => {
   });
   if(fetched.size > 1)
     return;
+*/
 //    console.log("done!");
 //return;
   var type = "";
@@ -94,7 +95,8 @@ exports.run = async (client, message, args, level) => {
         .setTitle(`${rr.skill||""} (${type})`)
 //         .setTitle(type)
 //        .setTitle(`${rr.name||""} (${rr.class||""})`)
-        .setThumbnail(rr.imgurl||"https://docs.google.com/uc?export=download&confirm=no_antivirus&id=1YYkvsz_VrmfBPGkQ7md72YAV2vh7pbMb")
+//        .setThumbnail(rr.imgurl||"https://docs.google.com/uc?export=download&confirm=no_antivirus&id=1YYkvsz_VrmfBPGkQ7md72YAV2vh7pbMb")
+        .setThumbnail(rr.imgurl||"")
         .setColor(color)
         .setDescription(rr.description)
         .addField("Scale", `${rr.scale} (${parseFloat(rr.scale) * 60}% @ Lv.60)` )

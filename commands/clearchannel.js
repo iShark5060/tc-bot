@@ -17,9 +17,13 @@ exports.run = async (client, message, args, level) => {
   // Clear channel
   let fetched;
   fetched = await targetChannel.fetchMessages({ limit: 100 });
+  message.channel.bulkDelete(fetched, true)
+    .catch(error => message.channel.send(`Error: ${error}`));
+/*  fetched = await targetChannel.fetchMessages({ limit: 100 });
   fetched.forEach(f => {
     f.delete();
   });
+*/
 
 };
 
