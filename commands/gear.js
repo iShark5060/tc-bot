@@ -45,7 +45,7 @@ exports.run = async (client, message, args, level) => {
     console.log("Keys: " + Object.keys(rows[0]));
 
     rows.forEach(async rr => {
-      console.log(`==> Gear: ${rr.name}`);
+      console.log(`==> Gear: ${rr.name}\n\tImgSrc: ${rr.imagesource}`);
 
       var color;
       // gear rarity color
@@ -78,11 +78,11 @@ exports.run = async (client, message, args, level) => {
 //        .setAuthor(`${rr.type || ""}`)
 //        .setTitle(`**${rr.name}**\n*${rr.rarity}*`)
         .setTitle(`**${rr.name}**`)
+        .setThumbnail(rr.imagesource || "")
         .setColor(color)
         .addField(
           `${rr.rarity}\n${rr.type}`, `${gearStats}`
         )
-        .setThumbnail(rr.imagesource || "")
       //      console.log(msg);
       message.channel.send(msg);
 //    }
