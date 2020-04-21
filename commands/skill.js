@@ -46,7 +46,8 @@ exports.run = async (client, message, args, level) => {
     }
 //    else console.log(`==> Commander: ${rows[0].name}`);
     rows.forEach(rr => {
-      console.log(`==> Commander: ${rr.skill}`);
+//      console.log(`==> Skill: ${rr.skill}`);
+      console.log(`==> Skill: ${rr.skill}\n\tImgSrc: ${rr.imgurl}`);
 
       type = rr.triggertype;
       event10chance = "";
@@ -88,7 +89,7 @@ exports.run = async (client, message, args, level) => {
       if(rr.stacks == "Y") isStackable = "Yes"
       else if(rr.stacks == "N") isStackable = "No"
       else isStackable = "???";
-console.log(`rr.imgurl=${rr.imgurl}`);
+//console.log(`rr.imgurl=${rr.imgurl}`);
       msg = new Discord.RichEmbed()
         .setTitle(`${rr.skill||""} (${type})`)
 //         .setTitle(type)
