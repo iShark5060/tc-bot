@@ -12,7 +12,7 @@ exports.run = async (client, message, args, level) => {
   if (targetChannel.name.substring(0, 3) != "tc-") {
     message.reply("Invalid channel! Please run in a Theorycrafters channel.");
     return;
-  }
+  
 
   // Clear channel
   let fetched;
