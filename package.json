@@ -1,0 +1,14 @@
+{
+	"name": "tc-bot",
+	"version": "4.0.0",
+	"description": "Ark of War Theorycrafter Bot",
+	"main": "tc-bot.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"start": "node .",
+		"lint": "eslint ."
+	},
+	"keywords": [],
+	"author": "Shark5060",
+	"license": "MIT"
+}
