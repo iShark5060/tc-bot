@@ -24,7 +24,7 @@ exports.run = async (client, message, args, level) => {
     f.delete();
   });
 */
-
+	};
 };
 
 exports.conf = {

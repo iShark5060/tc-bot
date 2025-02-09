@@ -3,7 +3,7 @@ const config = {
   "ownerID": process.env.OWNER_ID,
 
   // Bot Admins, level 9 by default. Array of user ID strings.
-  "admins": [],
+  "admins": ["168009741853786112"],
 
   // Bot Support, level 8 by default. Array of user ID strings
   "support": [],
@@ -24,7 +24,7 @@ const config = {
     "prefix": "!tc",
     "modLogChannel": "mod-log",
     "modRole": "Moderator",
-    "adminRole": "Administrator",
+    "adminRole": "Admin",
     "systemNotice": "true", // This gives a notice when a user tries to run a command that they do not have permission to use.
     "welcomeChannel": "welcome",
     "welcomeMessage": "Say hello to {{user}}, everyone! We all need a warm welcome sometimes :D",
@@ -76,7 +76,14 @@ const config = {
       name: "Server Owner", 
       // Simple check, if the guild owner id matches the message author's ID, then it will return true.
       // Otherwise it will return false.
-      check: (message) => message.channel.type === "text" ? (message.guild.owner.user.id === message.author.id ? true : false) : false
+      // check: (message) => message.channel.type === "text" ? (message.guild.owner.user.id === message.author.id ? true : false) : false
+	  check: (message) => {
+        try {
+          return false;
+        } catch (e) {
+          return false;
+        }
+      }
     },
 
     // Bot Support is a special inbetween level that has the equivalent of server owner access

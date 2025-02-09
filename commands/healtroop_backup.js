@@ -31,8 +31,6 @@ const numberWithCommas = (x) => {
   }
 //  message.reply(`filter: ${filter}`);
 
-// Reduce T12 spam:
-let unitBuffer = 0;
 
   // Load TCR
   ndx = client.tcrTroops.worksheets.findIndex(n => n.title === "Troops");
@@ -168,18 +166,10 @@ let unitBuffer = 0;
         }
       }
 
+
+
       msg += "\n```"; // end code segment markdown
-
-      // Reduce T12 spam
-      if(rr.tier == 12) {
-        if(unitBuffer != rr.units) {
-          unitBuffer = rr.units;
-          message.reply(msg);
-        }
-      }else{
-        message.reply(msg);
-      }
-
+      message.reply(msg);
     }); // forEach
 
   }); // getRows

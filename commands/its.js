@@ -37,7 +37,7 @@ const numberWithCommas = (x) => {
     }); // forEach
 //  console.log(msg);
 
-  message.reply(`${numberWithCommas(leadership)} leadership with level ${skillLevel} iTS skill vs ${tdr}% TDR can kill:${msg}`);
+  message.reply(`\`\`\`\n${numberWithCommas(leadership)} leadership with level ${skillLevel} iTS skill vs ${tdr}% TDR can kill:${msg}\`\`\``);
   }); // getRows
 };
 

@@ -57,6 +57,7 @@ client.tcrTroops = new GoogleSpreadsheet('1ymnFE-wVxEqNV4CkoEHVowKcGHZYGouOUk_wC
 client.tcrTroops.useServiceAccountAuth(creds, function (err) {
 
     client.tcrTroops.getInfo(function(err, info) {
+      if (err) throw err;
       console.log('Loaded doc: '+info.title+' by '+info.author.email);
       sheet = info.worksheets.find(n => n.title === "Commander Info");
       console.log('sheet 1: '+sheet.title+' '+sheet.rowCount+'x'+sheet.colCount);
@@ -74,6 +75,15 @@ app.get('/', function(req, res){
 });
 
 app.listen(3000);
+
+// Error Handling
+client.on('error', error => {
+	console.error('The websocket connection encountered an error:', error);
+});
+
+process.on('unhandledRejection', error => {
+	console.error('Unhandled promise rejection:', error);
+});
 
 
 // We're doing real fancy node 8 async/await stuff here, and to do that
