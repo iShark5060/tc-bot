@@ -42,7 +42,7 @@ module.exports = {
 				muColor = 8311585;
 
 				// calculate remaining time window, use deltaend and convert into hh:mm:ss
-				muTime = new Date(deltaend).toISOString().split(11, 19);
+				muTime = new Date(deltaend).toISOString().slice(11, 19);
 			}
 			else {
 				muActive = 'INACTIVE';
@@ -54,7 +54,7 @@ module.exports = {
 					// cannot happen,
 				}
 				else {
-					muTime = new Date(deltaend + 24 * 60 * 60).toISOString().split(11, 19);
+					muTime = new Date(deltaend + 24 * 60 * 60).toISOString().slice(11, 19);
 				}
 			}
 		}
@@ -63,7 +63,7 @@ module.exports = {
 			muText = 'open';
 			muColor = 13632027;
 			// calculate the time remaining, use deltastart and convert into hh:mm:ss
-			muTime = new Date(deltastart).toISOString().split(11, 19);
+			muTime = new Date(deltastart).toISOString().slice(11, 19);
 		}
 
 		const reply = new EmbedBuilder()
