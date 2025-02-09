@@ -36,7 +36,7 @@ config.json
 TOKEN=YOURDISCORDBOTTOKENGOESHERE
 ```
 
-Unless you have a copy of the Theorycrafters Google Docs sheet, you probably will not be able to use the Healing function.
+Unless you have a copy of the Theorycrafters Google Docs sheet, you probably will not be able to use the Healing/ITS function.
 If you do - the API access credentials go into the client_secret.json
 
 client_secret.json
@@ -76,7 +76,7 @@ npm -v # Should print "10.9.2".
 Installing and starting the Bot
 ```
 # dowload all the dependencies listed in the package.json
-npm init
+npm install
 
 # actually start the bot
 node .
