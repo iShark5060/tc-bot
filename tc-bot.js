@@ -1,25 +1,41 @@
 const result = require('dotenv').config();
-if (result.error) { throw result.error; } else { console.log('Startup: dotenv variables loaded') }
+if (result.error) {
+	throw result.error;
+}
+else {
+	console.log('Startup: dotenv variables loaded');
+}
 
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+const { JWT } = require('google-auth-library');
 const GoogleCredentials = require('./client_secret.json');
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits, MessageFlags } = require('discord.js');
 const { channelId1, channelId2 } = require('./config.json');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent] });
-client.GoogleSheet = new GoogleSpreadsheet('1ymnFE-wVxEqNV4CkoEHVowKcGHZYGouOUk_wCRBNzL4');
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds,	GatewayIntentBits.GuildMessages] });
 client.cooldowns = new Collection();
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+const SCOPES = [
+	'https://www.googleapis.com/auth/spreadsheets',
+	'https://www.googleapis.com/auth/drive.file',
+];
+
+const serviceAccountAuth = new JWT({
+	email: GoogleCredentials.client_email,
+	key: GoogleCredentials.private_key,
+	scopes: SCOPES,
+});
+
+client.GoogleSheet = new GoogleSpreadsheet('1ymnFE-wVxEqNV4CkoEHVowKcGHZYGouOUk_wCRBNzL4', serviceAccountAuth);
 
 // Login to google sheets
 (async function() {
-	await client.GoogleSheet.useServiceAccountAuth(GoogleCredentials);
 	await client.GoogleSheet.loadInfo();
 	console.log(`Startup: Loaded Google Sheet: ${client.GoogleSheet.title}`);
 }());
@@ -32,7 +48,8 @@ for (const folder of commandFolders) {
 		const command = require(filePath);
 		if ('data' in command && 'execute' in command) {
 			client.commands.set(command.data.name, command);
-		} else {
+		}
+		else {
 			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
 		}
 	}
@@ -43,14 +60,15 @@ for (const file of eventFiles) {
 	const event = require(filePath);
 	if (event.once) {
 		client.once(event.name, (...args) => event.execute(...args));
-	} else {
+	}
+	else {
 		client.on(event.name, (...args) => event.execute(...args));
 	}
 }
 
 client.login(process.env.TOKEN);
 
-let mopupTimer = setInterval(function() {
+const mopupTimer = setInterval(function() {
 	if (channelId1 && channelId2) {
 		// so we basically do the /mopup command every 1 min. could be cleaner, but I can't be bothered.
 		// Channel names can only be edited twice every 10 mins, so we're just doing it once.
@@ -123,4 +141,4 @@ let mopupTimer = setInterval(function() {
 		channel2.setName(`Time remaining: ${muTime}`)
 			.catch(console.error);
 	}
-}, 1000*60*5);
+}, 1000 * 60 * 5);
