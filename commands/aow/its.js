@@ -30,7 +30,9 @@ module.exports = {
 			return interaction.reply({ content: `You entered skill level ${skillLevel}. Was that intended? Because it's not possible, but it would be REALLY nice if it were...`, ephemeral: true });
 		}
 
-		const reply = new EmbedBuilder().setColor(16777215);
+		const reply = new EmbedBuilder()
+			.setColor(16777215)
+			.setTitle('Ignore Tier Suppression');
 
 		// Loading sheet "REF_BotTroops" that has all needed data in it
 		const sheet = interaction.client.GoogleSheet.sheetsById[891063687];
@@ -39,7 +41,7 @@ module.exports = {
 			if (rr.get('troopTier') == targetTier) {
 				numKills = Math.floor(0.005 * leadership * skillLevel * (100 - tdr) / 100 / (rr.get('troopUnits') || -1));
 				type = rr.get('troopType').replace('Infantry', 'INF').replace('Walker', 'WLK').replace('Airship', 'AIR');
-				replyText += `\n- ${numKills < 0 ? '??' : numberWithCommas(numKills)}x ${rr.get('roopName')} (T${targetTier} ${type})`;
+				replyText += `\n- ${numKills < 0 ? '??' : numberWithCommas(numKills)}x ${rr.get('troopName')} (T${targetTier} ${type})`;
 			}
 		});
 

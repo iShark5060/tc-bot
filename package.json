@@ -1,6 +1,6 @@
 {
 	"name": "tc-bot",
-	"version": "4.0.0",
+	"version": "4.0.3",
 	"description": "Ark of War Theorycrafter Bot",
 	"main": "tc-bot.js",
 	"scripts": {

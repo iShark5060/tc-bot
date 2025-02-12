@@ -30,8 +30,9 @@ module.exports = {
 
 		// Reduce T12 spam:
 		let unitBuffer = 0;
-		const reply = new EmbedBuilder().setColor(16777215);
-		reply.setTitle('Healing cost:');
+		const reply = new EmbedBuilder()
+			.setColor(16777215)
+			.setTitle('Healing cost:');
 
 		// Loading sheet "REF_BotTroops" that has all needed data in it
 		const sheet = interaction.client.GoogleSheet.sheetsById[891063687];
@@ -157,8 +158,8 @@ module.exports = {
 					if (unitBuffer != rr.get('troopUnits')) {
 						unitBuffer = rr.get('troopUnits');
 						reply.addFields([
-							{ name: `Healing ${numberWithCommas(troopAmount)}x ${rr.get('troopName')} (T${rr.get('troopTier')} ${rr.get('troopType')}):`, value: '|' },
-							{ name: `Total Units: ${numberWithCommas(totalUnits)} @ ${modifier * 100}% of training costs:`, value: `\`\`\`asciidoc\n${fullCostText}\`\`\`` },
+							{ name: 'Healing:', value: `\`\`\`asciidoc\n${numberWithCommas(troopAmount)}x ${rr.get('troopName')} (T${rr.get('troopTier')} ${rr.get('troopType')})\`\`\`` },
+							{ name: 'Total Units:', value: `\`\`\`asciidoc\n${numberWithCommas(totalUnits)} @ ${modifier * 100}% of training costs.\n${fullCostText}\`\`\`` },
 							{ name: 'Other Stats:', value: `\`\`\`asciidoc\n${fullCostTextOther}\`\`\`` },
 						]);
 						if (optModifier < modifier) {
@@ -169,7 +170,7 @@ module.exports = {
 								minCostTextWarn = 'Save rss but may cost more sm/uc/hc';
 							}
 							reply.addFields([
-								{ name: `TIP: Heal ${tipText}`, value: `\`\`\`asciidoc\n${minCostTextWarn}\n--${minCostText}\`\`\`` },
+								{ name: 'TIP:', value: `\`\`\`asciidoc\nHeal ${tipText}\n${minCostTextWarn}\n--${minCostText}\`\`\`` },
 							]);
 						}
 					}
@@ -188,7 +189,7 @@ module.exports = {
 							minCostTextWarn = 'Save rss but may cost more sm/uc/hc';
 						}
 						reply.addFields([
-							{ name: `TIP: Heal ${tipText}`, value: `\`\`\`asciidoc\n${minCostTextWarn}\n--${minCostText}\`\`\`` },
+							{ name: 'TIP:', value: `\`\`\`asciidoc\nHeal ${tipText}\n${minCostTextWarn}\n--${minCostText}\`\`\`` },
 						]);
 					}
 				}

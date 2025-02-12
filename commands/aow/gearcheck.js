@@ -30,9 +30,10 @@ module.exports = {
 
 		const reply = new EmbedBuilder()
 			.setColor(16777215)
+			.setTitle('Gearcheck')
 			.addFields(
-				{ name: `Current stat: \`+${gearLevel}: ${statValue}%\``, value: '|' },
-				{ name: `Base stat: \`+0: ${base}%\``, value: `\`\`\`asciidoc\n+10:: ${base10}%\n+13:: ${base13}%\n+20:: ${base20}%\n+30:: ${base30}%\n+40:: ${base40}%\n+50:: ${base50}%\`\`\`` },
+				{ name: 'Current stat:', value: `\`\`\`asciidoc\n+${gearLevel}: ${statValue}%\`\`\`` },
+				{ name: 'Calculated:', value: `\`\`\`asciidoc\n+0:: ${base}%\n+10:: ${base10}%\n+13:: ${base13}%\n+20:: ${base20}%\n+30:: ${base30}%\n+40:: ${base40}%\n+50:: ${base50}%\`\`\`` },
 			);
 		await interaction.editReply({ embeds: [reply] });
 	},

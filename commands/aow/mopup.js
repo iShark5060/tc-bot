@@ -7,7 +7,6 @@ module.exports = {
 	async execute(interaction) {
 		let muActive;
 		let muColor;
-		let muText;
 		let muTime;
 
 		let starttime;
@@ -38,7 +37,6 @@ module.exports = {
 		if (deltastart < 0) {
 			if (deltaend > 0) {
 				muActive = 'ACTIVE';
-				muText = 'close';
 				muColor = 8311585;
 
 				// calculate remaining time window, use deltaend and convert into hh:mm:ss
@@ -46,7 +44,6 @@ module.exports = {
 			}
 			else {
 				muActive = 'INACTIVE';
-				muText = 'open';
 				muColor = 13632027;
 
 				// calculate next window start, depends of current day
@@ -60,7 +57,6 @@ module.exports = {
 		}
 		else {
 			muActive = 'INACTIVE';
-			muText = 'open';
 			muColor = 13632027;
 			// calculate the time remaining, use deltastart and convert into hh:mm:ss
 			muTime = new Date(deltastart).toISOString().slice(11, 19);
@@ -68,9 +64,10 @@ module.exports = {
 
 		const reply = new EmbedBuilder()
 			.setColor(muColor)
+			.setTitle('Mopup')
 			.addFields(
-				{ name: `Mopup is: ${muActive}`, value: '|' },
-				{ name: `Time until ${muText}`, value: `\`\`\`asciidoc\n${muTime}\`\`\`` },
+				{ name: 'Status:', value: `\`\`\`asciidoc\n${muActive}\`\`\`` },
+				{ name: 'Time remaining:', value: `\`\`\`asciidoc\n${muTime}\`\`\`` },
 			);
 		await interaction.reply({ embeds: [reply] });
 	},
