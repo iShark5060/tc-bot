@@ -12,6 +12,14 @@ Outside of the game itself, the bot is pretty useless, and even inside the game 
 
 The Bot lives in the Diplomacy of War Discord Server - one of the largest communities around the game (https://discord.gg/YMAhCNjkgp).
 
+## History
+
+Since this bot was created before I knew how to properly use GitHub, I had created several repositories for each version and simply put them on private on a new release.
+I have now changed this, without keeping the changes made over the years, simply because dealing with merge conflicts would have been a nightmare. All changes were done by me anyways, so no contribution by others was lost.
+This is why the merges done for the different branches look all so strange, just ignore. If you're interested in one of the older versions, I have marked releases for each final iteration.
+
+From version 5 the bot was fully rewritten using Claude 4 Sonnet as helper, since my skills in JavaScript are not the best.
+
 ## Requirements
 
 - Node.js
