@@ -4,10 +4,11 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('gearcheck')
 		.setDescription('Calculate stat at base and +10/13/20/30/40/50')
-        .addNumberOption(option => option.setName('stat').setDescription('Current stat amount').setRequired(true))
-        .addIntegerOption(option => option.setName('level').setDescription('Current upgrade level').setRequired(true)),
+		.addNumberOption(option => option.setName('stat').setDescription('Current stat amount').setRequired(true))
+		.addIntegerOption(option => option.setName('level').setDescription('Current upgrade level').setRequired(true)),
 	async execute(interaction) {
-        let statValue = interaction.options.getNumber('stat');
+		await interaction.deferReply();
+		let statValue = interaction.options.getNumber('stat');
 		const gearLevel = interaction.options.getInteger('level');
 		statValue = parseFloat(statValue).toFixed(2);
 
@@ -27,13 +28,13 @@ module.exports = {
 		let base50 = base * 6;
 		base50 = base50.toFixed(2);
 
-        const reply = new EmbedBuilder()
+		const reply = new EmbedBuilder()
 			.setColor(16777215)
+			.setTitle('Gearcheck')
 			.addFields(
-                { name: `Current stat: \`+${gearLevel}: ${statValue}%\``, value: '|' },
-				{ name: `Base stat: \`+0: ${base}%\``, value: `\`\`\`asciidoc\n+10:: ${base10}%\n+13:: ${base13}%\n+20:: ${base20}%\n+30:: ${base30}%\n+40:: ${base40}%\n+50:: ${base50}%\`\`\`` },
+				{ name: 'Current stat:', value: `\`\`\`asciidoc\n+${gearLevel}: ${statValue}%\`\`\`` },
+				{ name: 'Calculated:', value: `\`\`\`asciidoc\n+0:: ${base}%\n+10:: ${base10}%\n+13:: ${base13}%\n+20:: ${base20}%\n+30:: ${base30}%\n+40:: ${base40}%\n+50:: ${base50}%\`\`\`` },
 			);
-
-            return interaction.reply({ embeds: [reply] });
+		await interaction.editReply({ embeds: [reply] });
 	},
 };

@@ -1,30 +1,24 @@
-const ocrSpaceApi = require('ocr-space-api');
+const { Events, MessageFlags } = require('discord.js');
 
 module.exports = {
-	name: 'messageCreate',
-	execute(message) {
-		if(message) {
-			if(message.channel.name == "albums" || message.channel.name == "please_kindly_know") {
-				if(message.attachments) {
-					message.attachments.forEach(a => {
-					console.log(`new attachment: ${a.url}`);
-						// Run and wait the result
-						var options =  {
-							apikey: process.env.OCRSPACEKEY,
-							language: 'eng',
-							imageFormat: 'image/png',
-							isOverlayRequired: true
-						};
-						imageFormat = 'image/' + a.url.split(".").pop();
-						ocrSpaceApi.parseImageFromUrl(a.url, options)
-						.then(function (parsedResult) {
-							message.reply("OCR Text:\n```\n" + parsedResult.parsedText + "\n```");
-						}).catch(function (err) {
-							console.log('ERROR:', err);
-						});
-					});
+	name: Events.MessageCreate,
+	async execute(interaction) {
+		if (interaction.channel.name == 'tc-autobot') {
+			if (interaction.content == '!tcmu' && !interaction.member.user.bot) {
+				try {
+					const command = interaction.client.commands.get('mopup');
+					await command.execute(interaction);
 				}
-		  	}
+				catch (error) {
+					console.error(error);
+					if (interaction.replied || interaction.deferred) {
+						await interaction.followUp({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
+					}
+					else {
+						await interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
+					}
+				}
+			}
 		}
 	},
 };
