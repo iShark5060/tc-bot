@@ -1,162 +1,211 @@
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
-const GoogleCredentials = require('./client_secret.json');
-const fs = require('node:fs');
-const path = require('node:path');
+const { GoogleCredentials } = require('./client_secret.json');
+const { fs } = require('node:fs');
+const { path } = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const { channelId1, channelId2, webhookUrl } = require('./config.json');
+const { config } = require('./config.json');
+const { dotenv } = require('dotenv');
 
-// Janky Discord Webhook notification, if Bot dies right after startup
-// This is a workaround because nothing is loaded yet, so we cannot use the Discord API to send a message
-fetch(webhookUrl, {
-	body: JSON.stringify({
-		content: 'TC-Bot just started.',
-	}),
-	headers: {
-		'Content-Type': 'application/json',
-	},
-	method: 'POST',
-})
-	.then(function(startup) {
-		console.log(startup);
-	})
-	.catch(function(startup) {
-		console.log(startup);
-	});
-
-const result = require('dotenv').config();
+const result = dotenv.config();
 if (result.error) {
 	throw result.error;
 }
 else {
-	console.log('Startup: dotenv variables loaded');
+	console.log('[Boot] dotenv variables loaded');
 }
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds,	GatewayIntentBits.GuildMessages] });
-client.cooldowns = new Collection();
-client.commands = new Collection();
-const foldersPath = path.join(__dirname, 'commands');
-const commandFolders = fs.readdirSync(foldersPath);
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-const SCOPES = [
-	'https://www.googleapis.com/auth/spreadsheets',
-	'https://www.googleapis.com/auth/drive.file',
-];
-
-const serviceAccountAuth = new JWT({
-	email: GoogleCredentials.client_email,
-	key: GoogleCredentials.private_key,
-	scopes: SCOPES,
+const client = new Client({
+	intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.MessageContent,
+		GatewayIntentBits.GuildMessages,
+	],
 });
 
-client.GoogleSheet = new GoogleSpreadsheet('1ymnFE-wVxEqNV4CkoEHVowKcGHZYGouOUk_wCRBNzL4', serviceAccountAuth);
+client.cooldowns = new Collection();
+client.commands = new Collection();
 
-// Login to google sheets
-(async function() {
+async function initializeBot() {
+	try {
+		await sendStartupNotification();
+		await initializeGoogleSheets();
+		loadCommands();
+		loadEvents();
+		startMopupTimer();
+		await client.login(process.env.TOKEN);
+	}
+	catch (error) {
+		console.error('[Boot] Failed to initialize bot:', error);
+		process.exit(1);
+	}
+}
+
+async function sendStartupNotification() {
+	try {
+		const response = await fetch(config.webhookUrl, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ content: 'TC-Bot just started.' }),
+		});
+		console.log('[Boot] Notification sent:', response.status);
+	}
+	catch (error) {
+		console.error('[Boot] Failed to send startup notification:', error);
+	}
+}
+
+async function initializeGoogleSheets() {
+	const SCOPES = [
+		'https://www.googleapis.com/auth/spreadsheets',
+		'https://www.googleapis.com/auth/drive.file',
+	];
+
+	const serviceAccountAuth = new JWT({
+		email: GoogleCredentials.client_email,
+		key: GoogleCredentials.private_key,
+		scopes: SCOPES,
+	});
+
+	client.GoogleSheet = new GoogleSpreadsheet('1ymnFE-wVxEqNV4CkoEHVowKcGHZYGouOUk_wCRBNzL4', serviceAccountAuth);
+
 	await client.GoogleSheet.loadInfo();
-	console.log(`Startup: Loaded Google Sheet: ${client.GoogleSheet.title}`);
-}());
-
-for (const folder of commandFolders) {
-	const commandsPath = path.join(foldersPath, folder);
-	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-	for (const file of commandFiles) {
-		const filePath = path.join(commandsPath, file);
-		const command = require(filePath);
-		if ('data' in command && 'execute' in command) {
-			client.commands.set(command.data.name, command);
-		}
-		else {
-			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-		}
-	}
+	console.log('[Boot] Loaded Google Sheet:', client.GoogleSheet.title);
 }
 
-for (const file of eventFiles) {
-	const filePath = path.join(eventsPath, file);
-	const event = require(filePath);
-	if (event.once) {
-		client.once(event.name, (...args) => event.execute(...args));
-	}
-	else {
-		client.on(event.name, (...args) => event.execute(...args));
-	}
-}
+function loadCommands() {
+	const foldersPath = path.join(__dirname, 'commands');
+	const commandFolders = fs.readdirSync(foldersPath);
 
-client.login(process.env.TOKEN);
+	for (const folder of commandFolders) {
+		const commandsPath = path.join(foldersPath, folder);
+		const commandFiles = fs
+			.readdirSync(commandsPath)
+			.filter((file) => file.endsWith('.js'));
 
-const mopupTimer = setInterval(function() {
-	if (channelId1 && channelId2) {
-		// so we basically do the /mopup command every 1 min. could be cleaner, but I can't be bothered.
-		// Channel names can only be edited twice every 10 mins, so we're just doing it once.
-		// output should be "<muIcon> Mopup is <muActive>, for <muTime>."
+		for (const file of commandFiles) {
+			const filePath = path.join(commandsPath, file);
+			const command = require(filePath);
 
-		let muIcon;
-		let muActive;
-		let muTime;
-
-		let starttime;
-		let endtime;
-		const ttoday = Date.now();
-		const timeoffset = new Date().getTimezoneOffset();
-		const thours = Math.ceil((ttoday + timeoffset * 60 * 1000) / (60 * 60 * 1000)) - 8;
-		const today = Math.floor(thours / 24);
-
-		if (today % 2 == 0) {
-			// multiplier: minutes * minutes * days ; offset is 26 hours after day start of the day from server reset
-			starttime = (today * 60 * 60 * 24 + 24 * 60 * 60) * 1000;
-			endtime = starttime + 8 * 60 * 60 * 1000;
-		}
-		else {
-			// multiplier: minutes * minutes * days ; offset is 8 hours after day start of the day from server reset
-			starttime = (today * 60 * 60 * 24 + 8 * 60 * 60) * 1000;
-			endtime = starttime + 16 * 60 * 60 * 1000;
-		}
-
-		// calculate time difference between now (utctime) and starttime
-		// convert utctime into unix
-		const currenttime = (new Date(new Date().toISOString()).valueOf() / 1000).toFixed(0) * 1000;
-
-		const deltastart = starttime - currenttime;
-		const deltaend = endtime - currenttime;
-
-		if (deltastart < 0) {
-			if (deltaend > 0) {
-				muActive = 'ACTIVE';
-				muIcon = '🟢';
-
-				// calculate remaining time window, use deltaend and convert into hh:mm:ss
-				muTime = new Date(deltaend).toISOString().slice(11, 19);
+			if ('data' in command && 'execute' in command) {
+				client.commands.set(command.data.name, command);
 			}
 			else {
-				muActive = 'INACTIVE';
-				muIcon = '🔴';
-
-				// calculate next window start, depends of current day
-				if (today % 2 == 0) {
-					// cannot happen,
-				}
-				else {
-					muTime = new Date(deltaend + 24 * 60 * 60).toISOString().slice(11, 19);
-
-				}
+				console.log('[Boot] WARNING! The following command is missing a required "data" or "execute" property:', filePath);
 			}
 		}
-		else {
-			muActive = 'INACTIVE';
-			muIcon = '🔴';
+	}
+}
 
-			// calculate the time remaining, use deltastart and convert into hh:mm:ss
-			muTime = new Date(deltastart).toISOString().slice(11, 19);
+function loadEvents() {
+	const eventsPath = path.join(__dirname, 'events');
+	const eventFiles = fs
+		.readdirSync(eventsPath)
+		.filter((file) => file.endsWith('.js'));
+
+	for (const file of eventFiles) {
+		const filePath = path.join(eventsPath, file);
+		const event = require(filePath);
+
+		if (event.once) {
+			client.once(event.name, (...args) => event.execute(...args));
+		}
+		else {
+			client.on(event.name, (...args) => event.execute(...args));
+		}
+	}
+}
+
+function startMopupTimer() {
+	if (!config.channelId1 || !config.channelId2) {
+		console.log('[Boot] WARNING! Mopup timer disabled because ChannelIDs are not configured');
+		return;
+	}
+
+	setInterval(updateMopupChannels, 5 * 60 * 1000);
+}
+
+function calculateMopupTiming() {
+	const now = Date.now();
+	const timeOffset = new Date().getTimezoneOffset();
+	const hoursFromEpoch = Math.ceil((now + timeOffset * 60 * 1000) / (60 * 60 * 1000)) - 8;
+	const daysSinceEpoch = Math.floor(hoursFromEpoch / 24);
+	const currentTime = Math.floor(new Date().valueOf() / 1000) * 1000;
+
+	const { startTime, endTime } = getMopupWindow(daysSinceEpoch);
+	const deltaStart = startTime - currentTime;
+	const deltaEnd = endTime - currentTime;
+
+	return determineMopupStatus(deltaStart, deltaEnd);
+}
+
+function getMopupWindow(day) {
+	const dayInMs = 24 * 60 * 60 * 1000;
+	const hourInMs = 60 * 60 * 1000;
+
+	if (day % 2 === 0) {
+	// Even days: 26 hours after day start, 8-hour window
+		const startTime = day * dayInMs + 26 * hourInMs;
+		const endTime = startTime + 8 * hourInMs;
+		return { startTime, endTime };
+	}
+	else {
+	// Odd days: 8 hours after day start, 16-hour window
+		const startTime = day * dayInMs + 8 * hourInMs;
+		const endTime = startTime + 16 * hourInMs;
+		return { startTime, endTime };
+	}
+}
+
+function determineMopupStatus(deltaStart, deltaEnd) {
+	if (deltaStart < 0) {
+		if (deltaEnd > 0) {
+			return {
+				status: 'ACTIVE',
+				icon: '🟢',
+				time: formatTime(deltaEnd),
+			};
+		}
+		else {
+			const nextWindowTime = deltaEnd + 24 * 60 * 60 * 1000;
+			return {
+				status: 'INACTIVE',
+				icon: '🔴',
+				time: formatTime(nextWindowTime),
+			};
+		}
+	}
+	else {
+		return {
+			status: 'INACTIVE',
+			icon: '🔴',
+			time: formatTime(deltaStart),
+		};
+	}
+}
+
+function formatTime(milliseconds) {
+	return new Date(Math.abs(milliseconds)).toISOString().slice(11, 19);
+}
+
+async function updateMopupChannels() {
+	try {
+		const mopupInfo = calculateMopupTiming();
+
+		const channel1 = client.channels.cache.get(config.channelId1);
+		const channel2 = client.channels.cache.get(config.channelId2);
+
+		if (channel1) {
+			await channel1.setName(`${mopupInfo.icon} Mopup is: ${mopupInfo.status}`);
 		}
 
-		// edit the channel:
-		const channel = client.channels.cache.get(channelId1);
-		const channel2 = client.channels.cache.get(channelId2);
-		channel.setName(`${muIcon} Mopup is: ${muActive}`)
-			.catch(console.error);
-		channel2.setName(`Time remaining: ${muTime}`)
-			.catch(console.error);
+		if (channel2) {
+			await channel2.setName(`Time remaining: ${mopupInfo.time}`);
+		}
 	}
-}, 1000 * 60 * 5);
+	catch (error) {
+		console.error('[WARN] Failed to update mopup channels:', error);
+	}
+}
+
+initializeBot();

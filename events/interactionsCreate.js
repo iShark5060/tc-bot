@@ -8,7 +8,7 @@ module.exports = {
 		const command = interaction.client.commands.get(interaction.commandName);
 
 		if (!command) {
-			console.error(`No command matching ${interaction.commandName} was found.`);
+			console.error('[WARN] No command matching the following input was found:', interaction.commandName);
 			return;
 		}
 
@@ -16,13 +16,28 @@ module.exports = {
 			await command.execute(interaction);
 		}
 		catch (error) {
-			console.error(error);
-			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
-			}
-			else {
-				await interaction.reply({ content: 'There was an error while executing this command!', flags: MessageFlags.Ephemeral });
-			}
+			await handleCommandError(interaction, error);
 		}
 	},
 };
+
+async function handleCommandError(interaction, error) {
+	console.error('[WARN] Command execution error:', error);
+
+	const errorMessage = {
+		content: 'There was an error while executing this command!',
+		flags: MessageFlags.Ephemeral,
+	};
+
+	try {
+		if (interaction.replied || interaction.deferred) {
+			await interaction.followUp(errorMessage);
+		}
+		else {
+			await interaction.reply(errorMessage);
+		}
+	}
+	catch (followUpError) {
+		console.error('[WARN] Failed to send error message:', followUpError);
+	}
+}
