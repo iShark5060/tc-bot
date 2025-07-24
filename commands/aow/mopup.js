@@ -3,72 +3,88 @@ const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('mopup')
-		.setDescription('Time unitl next mopup'),
+		.setDescription('Time until next mopup'),
+
 	async execute(interaction) {
-		let muActive;
-		let muColor;
-		let muTime;
+		const mopupInfo = calculateMopupTiming();
+		const embed = createMopupEmbed(mopupInfo);
 
-		let starttime;
-		let endtime;
-		const ttoday = Date.now();
-		const timeoffset = new Date().getTimezoneOffset();
-		const thours = Math.ceil((ttoday + timeoffset * 60 * 1000) / (60 * 60 * 1000)) - 8;
-		const today = Math.floor(thours / 24);
-
-		if (today % 2 == 0) {
-			// multiplier: minutes * minutes * days ; offset is 26 hours after day start of the day from server reset
-			starttime = (today * 60 * 60 * 24 + 24 * 60 * 60) * 1000;
-			endtime = starttime + 8 * 60 * 60 * 1000;
-		}
-		else {
-			// multiplier: minutes * minutes * days ; offset is 8 hours after day start of the day from server reset
-			starttime = (today * 60 * 60 * 24 + 8 * 60 * 60) * 1000;
-			endtime = starttime + 16 * 60 * 60 * 1000;
-		}
-
-		// calculate time difference between now (utctime) and starttime
-		// convert utctime into unix
-		const currenttime = (new Date(new Date().toISOString()).valueOf() / 1000).toFixed(0) * 1000;
-
-		const deltastart = starttime - currenttime;
-		const deltaend = endtime - currenttime;
-
-		if (deltastart < 0) {
-			if (deltaend > 0) {
-				muActive = 'ACTIVE';
-				muColor = 8311585;
-
-				// calculate remaining time window, use deltaend and convert into hh:mm:ss
-				muTime = new Date(deltaend).toISOString().slice(11, 19);
-			}
-			else {
-				muActive = 'INACTIVE';
-				muColor = 13632027;
-
-				// calculate next window start, depends of current day
-				if (today % 2 == 0) {
-					// cannot happen,
-				}
-				else {
-					muTime = new Date(deltaend + 24 * 60 * 60).toISOString().slice(11, 19);
-				}
-			}
-		}
-		else {
-			muActive = 'INACTIVE';
-			muColor = 13632027;
-			// calculate the time remaining, use deltastart and convert into hh:mm:ss
-			muTime = new Date(deltastart).toISOString().slice(11, 19);
-		}
-
-		const reply = new EmbedBuilder()
-			.setColor(muColor)
-			.setTitle('Mopup')
-			.addFields(
-				{ name: 'Status:', value: `\`\`\`asciidoc\n${muActive}\`\`\`` },
-				{ name: 'Time remaining:', value: `\`\`\`asciidoc\n${muTime}\`\`\`` },
-			);
-		await interaction.reply({ embeds: [reply] });
+		await interaction.reply({ embeds: [embed] });
 	},
 };
+
+function calculateMopupTiming() {
+	const now = Date.now();
+	const timeOffset = new Date().getTimezoneOffset();
+	const hoursFromEpoch = Math.ceil((now + timeOffset * 60 * 1000) / (60 * 60 * 1000)) - 8;
+	const daysSinceEpoch = Math.floor(hoursFromEpoch / 24);
+	const currentTime = Math.floor(new Date().valueOf() / 1000) * 1000;
+
+	const { startTime, endTime } = getMopupWindow(daysSinceEpoch);
+	const deltaStart = startTime - currentTime;
+	const deltaEnd = endTime - currentTime;
+
+	return determineMopupStatus(deltaStart, deltaEnd, daysSinceEpoch);
+}
+
+function getMopupWindow(day) {
+	const dayInMs = 24 * 60 * 60 * 1000;
+	const hourInMs = 60 * 60 * 1000;
+
+	if (day % 2 === 0) {
+	// Even days: 26 hours after day start, 8-hour window
+		const startTime = (day * dayInMs + 26 * hourInMs);
+		const endTime = startTime + 8 * hourInMs;
+		return { startTime, endTime };
+	}
+	else {
+	// Odd days: 8 hours after day start, 16-hour window
+		const startTime = (day * dayInMs + 8 * hourInMs);
+		const endTime = startTime + 16 * hourInMs;
+		return { startTime, endTime };
+	}
+}
+
+function determineMopupStatus(deltaStart, deltaEnd, day) {
+	if (deltaStart < 0) {
+		if (deltaEnd > 0) {
+			return {
+				status: 'ACTIVE',
+				color: 8311585,
+				time: formatTime(deltaEnd),
+			};
+		}
+		else {
+			const nextWindowTime = day % 2 === 0
+				? deltaEnd + 24 * 60 * 60 * 1000
+				: deltaEnd + 24 * 60 * 60 * 1000;
+
+			return {
+				status: 'INACTIVE',
+				color: 13632027,
+				time: formatTime(nextWindowTime),
+			};
+		}
+	}
+	else {
+		return {
+			status: 'INACTIVE',
+			color: 13632027,
+			time: formatTime(deltaStart),
+		};
+	}
+}
+
+function formatTime(milliseconds) {
+	return new Date(Math.abs(milliseconds)).toISOString().slice(11, 19);
+}
+
+function createMopupEmbed({ status, color, time }) {
+	return new EmbedBuilder()
+		.setColor(color)
+		.setTitle('Mopup')
+		.addFields(
+			{ name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
+			{ name: 'Time remaining:', value: `\`\`\`asciidoc\n${time}\`\`\`` },
+		);
+}

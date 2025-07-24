@@ -1,68 +1,88 @@
 const { REST, Routes } = require('discord.js');
 const { clientId, guildId } = require('./config.json');
+const { fs } = require('node:fs');
+const { path } = require('node:path');
+const { dotenv } = require('dotenv');
 
-const result = require('dotenv').config();
+const result = dotenv.config();
 if (result.error) {
 	throw result.error;
 }
 else {
-	console.log('Startup: dotenv variables loaded');
+	console.log('[Boot] dotenv variables loaded');
 }
 
-const fs = require('node:fs');
-const path = require('node:path');
-
-const commands = [];
-// Grab all the command folders from the commands directory you created earlier
-const foldersPath = path.join(__dirname, 'commands');
-const commandFolders = fs.readdirSync(foldersPath);
-
-for (const folder of commandFolders) {
-	// Grab all the command files from the commands directory you created earlier
-	const commandsPath = path.join(foldersPath, folder);
-	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-	// Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
-	for (const file of commandFiles) {
-		const filePath = path.join(commandsPath, file);
-		const command = require(filePath);
-		if ('data' in command && 'execute' in command) {
-			commands.push(command.data.toJSON());
-		}
-		else {
-			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-		}
-	}
-}
-
-// Construct and prepare an instance of the REST module
-const rest = new REST().setToken(process.env.TOKEN);
-
-// for guild-based commands
-rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] })
-	.then(() => console.log('Successfully deleted all guild commands.'))
-	.catch(console.error);
-
-// for global commands
-rest.put(Routes.applicationCommands(clientId), { body: [] })
-	.then(() => console.log('Successfully deleted all application commands.'))
-	.catch(console.error);
-
-// and deploy your commands!
-(async () => {
+async function deployCommands() {
 	try {
-		console.log(`Started refreshing ${commands.length} application (/) commands.`);
+		const commands = loadCommands();
+		const rest = new REST().setToken(process.env.TOKEN);
 
-		// The put method is used to fully refresh all commands in the guild with the current set
-		const data = await rest.put(
-			// Routes.applicationGuildCommands(clientId, guildId),
-			Routes.applicationCommands(clientId),
-			{ body: commands },
-		);
-
-		console.log(`Successfully reloaded ${data.length} application (/) commands.`);
+		await clearExistingCommands(rest);
+		await deployNewCommands(rest, commands);
 	}
 	catch (error) {
-		// And of course, make sure you catch and log any errors!
-		console.error(error);
+		console.error('[FAIL] Failed to deploy commands:', error);
+		process.exit(1);
 	}
-})();
+}
+
+function loadCommands() {
+	const commands = [];
+	const foldersPath = path.join(__dirname, 'commands');
+	const commandFolders = fs.readdirSync(foldersPath);
+
+	for (const folder of commandFolders) {
+		const commandsPath = path.join(foldersPath, folder);
+		const commandFiles = fs
+			.readdirSync(commandsPath)
+			.filter((file) => file.endsWith('.js'));
+
+		for (const file of commandFiles) {
+			const filePath = path.join(commandsPath, file);
+			const command = require(filePath);
+
+			if ('data' in command && 'execute' in command) {
+				commands.push(command.data.toJSON());
+			}
+			else {
+				console.log('[Boot] WARNING! The following command is missing a required "data" or "execute" property:', filePath);
+			}
+		}
+	}
+
+	return commands;
+}
+
+async function clearExistingCommands(rest) {
+	try {
+		await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+			body: [],
+		});
+		console.log('[INFO] Successfully deleted all guild commands.');
+
+		await rest.put(Routes.applicationCommands(clientId), { body: [] });
+		console.log('[INFO] Successfully deleted all application commands.');
+	}
+	catch (error) {
+		console.error('[FAIL] Failed to clear existing commands:', error);
+		throw error;
+	}
+}
+
+async function deployNewCommands(rest, commands) {
+	try {
+		console.log('[INFO] Started refreshing guild commands:', commands.length);
+
+		const data = await rest.put(Routes.applicationCommands(clientId), {
+			body: commands,
+		});
+
+		console.log('[SUCCESS] Finished refreshing guild commands:', data.length);
+	}
+	catch (error) {
+		console.error('[FAIL] Failed to deploy new commands:', error);
+		throw error;
+	}
+}
+
+deployCommands();

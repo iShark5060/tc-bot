@@ -1,24 +1,25 @@
 {
 	"name": "tc-bot",
-	"version": "4.0.3",
+	"version": "5.0.0",
 	"description": "Ark of War Theorycrafter Bot",
+	"keywords": [],
+	"homepage": "https://github.com/ishark5060/tc-bot#readme",
+	"bugs": {
+		"url": "https://github.com/ishark5060/tc-bot/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ishark5060/tc-bot.git"
+	},
+	"license": "MIT",
+	"author": "Shark5060",
+	"type": "commonjs",
 	"main": "tc-bot.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"start": "node .",
 		"lint": "eslint ."
 	},
-	"keywords": [],
-	"author": "Shark5060",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/ishark5060/tc-bot.git"
-	},
-	"bugs": {
-		"url": "https://github.com/ishark5060/tc-bot/issues"
-	},
-	"homepage": "https://github.com/ishark5060/tc-bot#readme",
 	"dependencies": {
 		"discord.js": "^14.17.3",
 		"dotenv": "^16.4.7",
