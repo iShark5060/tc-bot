@@ -1,6 +1,6 @@
 {
   "name": "tc-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Theorycrafter's Discord Bot for Diplomacy of War",
   "main": "tc-bot.js",
   "scripts": {
