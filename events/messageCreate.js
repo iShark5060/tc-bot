@@ -12,10 +12,7 @@ module.exports = {
 };
 
 function shouldProcessMessage(message) {
-	return (
-		message.channel.name === 'tc-autobot' &&
-	!message.member?.user?.bot
-	);
+	return (message.channel.name === 'tc-autobot' && !message.member?.user?.bot);
 }
 
 async function handleMopupCommand(message) {
