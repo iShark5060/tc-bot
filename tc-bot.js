@@ -1,11 +1,11 @@
 require('@dotenvx/dotenvx').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
-const { client_email, private_key } = require('./client_secret.json');
-const  fs = require('fs');
-const  path = require('path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const { webhookUrl, channelId1, channelId2  } = require('./config.json');
+const fs = require('node:fs');
+const path = require('node:path');
+const GoogleCredentials = require('./client_secret.json');
+const config = require('./config.json');
 
 const client = new Client({
 	intents: [
@@ -35,7 +35,7 @@ async function initializeBot() {
 
 async function sendStartupNotification() {
 	try {
-		const response = await fetch(webhookUrl, {
+		const response = await fetch(config.webhookUrl, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ content: 'TC-Bot just started.' }),
@@ -54,8 +54,8 @@ async function initializeGoogleSheets() {
 	];
 
 	const serviceAccountAuth = new JWT({
-		email: client_email,
-		key: private_key,
+		email: GoogleCredentials.client_email,
+		key: GoogleCredentials.private_key,
 		scopes: SCOPES,
 	});
 
@@ -109,7 +109,7 @@ function loadEvents() {
 }
 
 function startMopupTimer() {
-	if (!channelId1 || !channelId2) {
+	if (!config.channelId1 || !config.channelId2) {
 		console.log('[Boot] WARNING! Mopup timer disabled because ChannelIDs are not configured');
 		return;
 	}
@@ -184,8 +184,8 @@ async function updateMopupChannels() {
 	try {
 		const mopupInfo = calculateMopupTiming();
 
-		const channel1 = client.channels.cache.get(channelId1);
-		const channel2 = client.channels.cache.get(channelId2);
+		const channel1 = client.channels.cache.get(config.channelId1);
+		const channel2 = client.channels.cache.get(config.channelId2);
 
 		if (channel1) {
 			await channel1.setName(`${mopupInfo.icon} Mopup is: ${mopupInfo.status}`);

@@ -1,8 +1,8 @@
 require('@dotenvx/dotenvx').config();
+const { REST, Routes } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
-const { REST, Routes } = require('discord.js');
-const { clientId, guildId } = require('./config.json');
+const config = require('./config.json');
 
 async function deployCommands() {
 	try {
@@ -47,12 +47,12 @@ function loadCommands() {
 
 async function clearExistingCommands(rest) {
 	try {
-		await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+		await rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), {
 			body: [],
 		});
 		console.log('[INFO] Successfully deleted all guild commands.');
 
-		await rest.put(Routes.applicationCommands(clientId), { body: [] });
+		await rest.put(Routes.applicationCommands(config.clientId), { body: [] });
 		console.log('[INFO] Successfully deleted all application commands.');
 	}
 	catch (error) {
@@ -65,7 +65,7 @@ async function deployNewCommands(rest, commands) {
 	try {
 		console.log('[INFO] Started refreshing guild commands:', commands.length);
 
-		const data = await rest.put(Routes.applicationCommands(clientId), {
+		const data = await rest.put(Routes.applicationCommands(config.clientId), {
 			body: commands,
 		});
 
