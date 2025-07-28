@@ -21,8 +21,8 @@
 		"lint": "eslint ."
 	},
 	"dependencies": {
+		"@dotenvx/dotenvx": "^1.48.3",
 		"discord.js": "^14.17.3",
-		"dotenv": "^16.4.7",
 		"google-auth-library": "^9.15.1",
 		"google-spreadsheet": "^4.1.4"
 	},
