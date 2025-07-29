@@ -59,7 +59,7 @@ async function initializeGoogleSheets() {
 		scopes: SCOPES,
 	});
 
-	client.GoogleSheet = new GoogleSpreadsheet('1ymnFE-wVxEqNV4CkoEHVowKcGHZYGouOUk_wCRBNzL4', serviceAccountAuth);
+	client.GoogleSheet = new GoogleSpreadsheet(config.googleSheetUrl, serviceAccountAuth);
 
 	await client.GoogleSheet.loadInfo();
 	console.log('[Boot] Loaded Google Sheet:', client.GoogleSheet.title);
