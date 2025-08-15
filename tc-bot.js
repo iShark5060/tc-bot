@@ -5,7 +5,14 @@ const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const GoogleCredentials = require('./client_secret.json');
-const config = require('./config.json');
+const { calculateMopupTiming } = require('./helper/mopup.js');
+const { getSheetRowsCached } = require('./helper/sheetsCache.js');
+
+const fetch =
+	typeof global.fetch === 'function'
+		? global.fetch.bind(global)
+		: (...args) =>
+			import('node-fetch').then(({ default: f }) => f(...args));
 
 const client = new Client({
 	intents: [
@@ -18,32 +25,33 @@ const client = new Client({
 client.cooldowns = new Collection();
 client.commands = new Collection();
 
-async function initializeBot() {
+(async function initializeBot() {
 	try {
 		await sendStartupNotification();
 		await initializeGoogleSheets();
 		loadCommands();
 		loadEvents();
 		startMopupTimer();
+
+		await updateMopupChannels();
 		await client.login(process.env.TOKEN);
-	}
-	catch (error) {
-		console.error('[Boot] Failed to initialize bot:', error);
+	} catch (error) {
+		console.error('[BOOT] Failed to initialize bot:', error);
 		process.exit(1);
 	}
-}
+})();
 
 async function sendStartupNotification() {
 	try {
-		const response = await fetch(config.webhookUrl, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ content: 'TC-Bot just started.' }),
+		if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
+		const response = await fetch(`https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ content: 'TC-Bot just started.' }),
 		});
-		console.log('[Boot] Notification sent:', response.status);
-	}
-	catch (error) {
-		console.error('[Boot] Failed to send startup notification:', error);
+		console.log('[BOOT] Notification sent:', response.status);
+	} catch (error) {
+		console.error('[BOOT] Failed to send startup notification:', error);
 	}
 }
 
@@ -59,145 +67,84 @@ async function initializeGoogleSheets() {
 		scopes: SCOPES,
 	});
 
-	client.GoogleSheet = new GoogleSpreadsheet(config.googleSheetUrl, serviceAccountAuth);
+	client.GoogleSheet = new GoogleSpreadsheet(
+		process.env.GOOGLE_SHEET_URL,
+		serviceAccountAuth
+	);
 
 	await client.GoogleSheet.loadInfo();
-	console.log('[Boot] Loaded Google Sheet:', client.GoogleSheet.title);
+	await getSheetRowsCached(client.GoogleSheet, process.env.GOOGLE_SHEET_ID);
+	console.log('[BOOT] Prefetched Google Sheet rows to warm cache.');
+	console.log('[BOOT] Loaded Google Sheet:', client.GoogleSheet.title);
 }
 
 function loadCommands() {
-	const foldersPath = path.join(__dirname, 'commands');
-	const commandFolders = fs.readdirSync(foldersPath);
+	const commandsPath = path.join(__dirname, 'commands');
+	const entries = fs.readdirSync(commandsPath);
 
-	for (const folder of commandFolders) {
-		const commandsPath = path.join(foldersPath, folder);
-		const commandFiles = fs
-			.readdirSync(commandsPath)
-			.filter((file) => file.endsWith('.js'));
+	for (const entry of entries) {
+		const entryPath = path.join(commandsPath, entry);
+		const stat = fs.lstatSync(entryPath);
 
-		for (const file of commandFiles) {
-			const filePath = path.join(commandsPath, file);
-			const command = require(filePath);
-
-			if ('data' in command && 'execute' in command) {
-				client.commands.set(command.data.name, command);
-			}
-			else {
-				console.log('[Boot] WARNING! The following command is missing a required "data" or "execute" property:', filePath);
-			}
+		if (stat.isDirectory()) {
+		const files = fs
+			.readdirSync(entryPath)
+			.filter((f) => f.endsWith('.js'));
+		for (const file of files) {
+			const filePath = path.join(entryPath, file);
+			registerCommand(filePath, file);
 		}
+		} else if (entry.endsWith('.js')) {
+		registerCommand(entryPath, entry);
+		}
+	}
+}
+
+function registerCommand(filePath, fileName) {
+	try {
+		const command = require(filePath);
+		if (command?.data && command?.execute) {
+		client.commands.set(command.data.name, command);
+		} else {
+		console.warn(`[BOOT] Invalid command file: ${fileName}`);
+		}
+	} catch (err) {
+		console.error(`[BOOT] Failed to load command: ${fileName}`, err);
 	}
 }
 
 function loadEvents() {
 	const eventsPath = path.join(__dirname, 'events');
-	const eventFiles = fs
+	for (const file of fs
 		.readdirSync(eventsPath)
-		.filter((file) => file.endsWith('.js'));
-
-	for (const file of eventFiles) {
-		const filePath = path.join(eventsPath, file);
-		const event = require(filePath);
-
+		.filter((f) => f.endsWith('.js'))) {
+		const event = require(path.join(eventsPath, file));
 		if (event.once) {
-			client.once(event.name, (...args) => event.execute(...args));
-		}
-		else {
-			client.on(event.name, (...args) => event.execute(...args));
+		client.once(event.name, (...args) => event.execute(...args));
+		} else {
+		client.on(event.name, (...args) => event.execute(...args));
 		}
 	}
 }
 
 function startMopupTimer() {
-	if (!config.channelId1 || !config.channelId2) {
-		console.log('[Boot] WARNING! Mopup timer disabled because ChannelIDs are not configured');
+	if (!process.env.CHANNEL_ID1 || !process.env.CHANNEL_ID2) {
+		console.warn('[BOOT] Mopup timer disabled: Channel IDs missing');
 		return;
 	}
-
 	setInterval(updateMopupChannels, 5 * 60 * 1000);
-}
-
-function calculateMopupTiming() {
-	const now = Date.now();
-	const timeOffset = new Date().getTimezoneOffset();
-	const hoursFromEpoch = Math.ceil((now + timeOffset * 60 * 1000) / (60 * 60 * 1000)) - 8;
-	const daysSinceEpoch = Math.floor(hoursFromEpoch / 24);
-	const currentTime = Math.floor(new Date().valueOf() / 1000) * 1000;
-
-	const { startTime, endTime } = getMopupWindow(daysSinceEpoch);
-	const deltaStart = startTime - currentTime;
-	const deltaEnd = endTime - currentTime;
-
-	return determineMopupStatus(deltaStart, deltaEnd);
-}
-
-function getMopupWindow(day) {
-	const dayInMs = 24 * 60 * 60 * 1000;
-	const hourInMs = 60 * 60 * 1000;
-
-	if (day % 2 === 0) {
-	// Even days: 26 hours after day start, 8-hour window
-		const startTime = day * dayInMs + 26 * hourInMs;
-		const endTime = startTime + 8 * hourInMs;
-		return { startTime, endTime };
-	}
-	else {
-	// Odd days: 8 hours after day start, 16-hour window
-		const startTime = day * dayInMs + 8 * hourInMs;
-		const endTime = startTime + 16 * hourInMs;
-		return { startTime, endTime };
-	}
-}
-
-function determineMopupStatus(deltaStart, deltaEnd) {
-	if (deltaStart < 0) {
-		if (deltaEnd > 0) {
-			return {
-				status: 'ACTIVE',
-				icon: '🟢',
-				time: formatTime(deltaEnd),
-			};
-		}
-		else {
-			const nextWindowTime = deltaEnd + 24 * 60 * 60 * 1000;
-			return {
-				status: 'INACTIVE',
-				icon: '🔴',
-				time: formatTime(nextWindowTime),
-			};
-		}
-	}
-	else {
-		return {
-			status: 'INACTIVE',
-			icon: '🔴',
-			time: formatTime(deltaStart),
-		};
-	}
-}
-
-function formatTime(milliseconds) {
-	return new Date(Math.abs(milliseconds)).toISOString().slice(11, 19);
 }
 
 async function updateMopupChannels() {
 	try {
 		const mopupInfo = calculateMopupTiming();
+		const channel1 = client.channels.cache.get(process.env.CHANNEL_ID1);
+		const channel2 = client.channels.cache.get(process.env.CHANNEL_ID2);
 
-		const channel1 = client.channels.cache.get(config.channelId1);
-		const channel2 = client.channels.cache.get(config.channelId2);
-
-		if (channel1) {
-			await channel1.setName(`${mopupInfo.icon} Mopup is: ${mopupInfo.status}`);
-		}
-
-		if (channel2) {
-			await channel2.setName(`Time remaining: ${mopupInfo.time}`);
-		}
-	}
-	catch (error) {
+		if (channel1) await channel1.setName(`${mopupInfo.status} Mopup`);
+		if (channel2)
+		await channel2.setName(`Time remaining: ${mopupInfo.time}`);
+	} catch (error) {
 		console.error('[WARN] Failed to update mopup channels:', error);
 	}
 }
-
-initializeBot();
