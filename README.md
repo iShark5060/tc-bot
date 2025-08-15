@@ -29,20 +29,22 @@ From version 5 the bot was fully rewritten using Claude 4 Sonnet as helper, sinc
 
 You will need to create several files and fill them out in order to use the bot.
 
-config.json
-```
-{
-    "clientId": "123456", # Your userID.
-    "guildId": "123456", # Your ServerID.
-	"channelId1": "123456", # Channel for Autoupdated Mopup info (Status).
-	"channelId2": "123456" # Channel for Autoupdated Mopup info (Timer).
-	"webhookUrl": "https://discord.com/api/webhooks/123456/blablablublala" # Webhook URL for Discord Notifications when the bot starts.
-}
-```
-
 .env
 ```
-TOKEN=YOURDISCORDBOTTOKENGOESHERE
+TOKEN=balblub # Your Discord Bot Token
+
+CLIENT_ID=123456 # Your userID.
+GUILD_ID=123456 # Your ServerID.
+
+CHANNEL_ID1=123456 # Channel for Autoupdated Mopup info (Status).
+CHANNEL_ID2=123456 # Channel for Autoupdated Mopup info (Timer).
+
+GOOGLE_SHEET_URL=blablablub # GoogleSheet URL with the data
+GOOGLE_SHEET_ID=12345 # GoogleSheet ID with the data
+GOOGLE_SHEET_CACHE=300000 # Cache time in ms
+
+WEBHOOK_ID=123456 # Webhook URL for Discord Notifications when the bot starts (number part).
+WEBHOOK_TOKEN=blablablublala # Webhook URL for Discord Notifications when the bot starts (token part).
 ```
 
 Unless you have a copy of the Theorycrafters Google Docs sheet, you probably will not be able to use the Healing/ITS function.
