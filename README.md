@@ -31,20 +31,30 @@ You will need to create several files and fill them out in order to use the bot.
 
 .env
 ```
-TOKEN=balblub # Your Discord Bot Token
+# Your Discord Bot Token
+TOKEN=balblub
 
-CLIENT_ID=123456 # Your userID.
-GUILD_ID=123456 # Your ServerID.
+# Your userID.
+CLIENT_ID=123456
+# Your ServerID.
+GUILD_ID=123456
 
-CHANNEL_ID1=123456 # Channel for Autoupdated Mopup info (Status).
-CHANNEL_ID2=123456 # Channel for Autoupdated Mopup info (Timer).
+# Channel for Autoupdated Mopup info (Status).
+CHANNEL_ID1=123456
+# Channel for Autoupdated Mopup info (Timer).
+CHANNEL_ID2=123456
 
-GOOGLE_SHEET_URL=blablablub # GoogleSheet URL with the data
-GOOGLE_SHEET_ID=12345 # GoogleSheet ID with the data
-GOOGLE_SHEET_CACHE=300000 # Cache time in ms
+# GoogleSheet URL with the data
+GOOGLE_SHEET_URL=blablablub
+# GoogleSheet ID with the data
+GOOGLE_SHEET_ID=12345
+# Cache time in ms
+GOOGLE_SHEET_CACHE=300000
 
-WEBHOOK_ID=123456 # Webhook URL for Discord Notifications when the bot starts (number part).
-WEBHOOK_TOKEN=blablablublala # Webhook URL for Discord Notifications when the bot starts (token part).
+# Webhook URL for Discord Notifications when the bot starts (number part).
+WEBHOOK_ID=123456
+# Webhook URL for Discord Notifications when the bot starts (token part).
+WEBHOOK_TOKEN=blablablublala
 ```
 
 Unless you have a copy of the Theorycrafters Google Docs sheet, you probably will not be able to use the Healing/ITS function.
