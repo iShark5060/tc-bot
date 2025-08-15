@@ -1,9 +1,11 @@
+const { MessageFlags } = require('discord.js');
+
 async function handleCommandError(interaction, error) {
 	console.error('[ERROR] Command execution failed:', error);
 
 	const errorMessage = {
 		content: 'There was an error while executing this command!',
-		ephemeral: true,
+		flags: MessageFlags.Ephemeral,
 	};
 
 	try {
@@ -15,9 +17,9 @@ async function handleCommandError(interaction, error) {
 	} catch (followUpError) {
 		console.error('[ERROR] Failed to send error message:', followUpError);
 	}
-	}
+}
 
-	async function handleMessageError(message, error) {
+async function handleMessageError(message, error) {
 	console.error('[ERROR] Message command execution failed:', error);
 
 	try {

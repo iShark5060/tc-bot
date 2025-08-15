@@ -18,8 +18,6 @@ const OTHER_TYPES = [
 	'hePoints',
 ];
 
-const SHEET_ID = 891063687;
-
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('healtroop')
@@ -53,30 +51,27 @@ module.exports = {
 	],
 
 	async execute(interaction) {
-		await interaction.deferReply();
-
 		const troopAmount = interaction.options.getInteger('amount');
 		const troopTier = interaction.options.getInteger('tier');
 		const troopType = interaction.options.getString('type');
 
 		if (troopTier > 12) {
-		return interaction.editReply({
+		return interaction.reply({
 			content: 'We currently only have Tier 12 :)',
 			flags: MessageFlags.Ephemeral,
 		});
 		}
 
+		await interaction.deferReply();
+
 		const rows = await getSheetRowsCached(
 		interaction.client.GoogleSheet,
-		SHEET_ID
+		process.env.GOOGLE_SHEET_ID
 		);
 		const troopData = findTroopData(rows, troopTier, troopType);
 
 		if (!troopData) {
-		return interaction.editReply({
-			content: 'Troop data not found!',
-			flags: MessageFlags.Ephemeral,
-		});
+		return interaction.editReply({ content: 'Troop data not found!' });
 		}
 
 		const calculations = calculateHealingCosts(troopData, troopAmount);
@@ -111,7 +106,7 @@ function getOptimalModifier(troopUnits) {
 	if (troopUnits < 1501) return { modifier: 0.19, units: 1500 };
 	if (troopUnits < 3501) return { modifier: 0.22, units: 3500 };
 	return { modifier: 0.25, units: -1 };
-}
+	}
 
 function calculateResourceCost(costString, amount, modifier) {
 	if (!costString) return null;
@@ -140,12 +135,8 @@ function calculateHealingCosts(troopData, troopAmount) {
 		optQty,
 	};
 
-	RESOURCE_TYPES.forEach((type) => {
-		const cost = calculateResourceCost(
-		troopData.get(type),
-		troopAmount,
-		modifier
-		);
+	['foodCost', 'partsCost', 'eleCost', 'gasCost', 'cashCost'].forEach((type) => {
+		const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
 		const optCost = calculateResourceCost(
 		troopData.get(type),
 		troopAmount,
@@ -154,12 +145,8 @@ function calculateHealingCosts(troopData, troopAmount) {
 		if (cost !== null) costs.resources[type] = { current: cost, optimal: optCost };
 	});
 
-	SPECIAL_TYPES.forEach((type) => {
-		const cost = calculateResourceCost(
-		troopData.get(type),
-		troopAmount,
-		modifier
-		);
+	['smCost', 'ucCost', 'hcCost'].forEach((type) => {
+		const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
 		let optPerChunk = calculateResourceCost(
 		troopData.get(type),
 		1,
@@ -172,7 +159,7 @@ function calculateHealingCosts(troopData, troopAmount) {
 		}
 	});
 
-	OTHER_TYPES.forEach((type) => {
+	['mchealCost', 'arkHP', 'powerLost', 'kePoints', 'hePoints'].forEach((type) => {
 		const value = troopData.get(type);
 		if (value) {
 		costs.other[type] = Math.ceil(

@@ -1,8 +1,6 @@
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { numberWithCommas } = require('../../helper/formatters.js');
 const { getSheetRowsCached } = require('../../helper/sheetsCache.js');
-
-const SHEET_ID = 891063687;
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -33,25 +31,26 @@ module.exports = {
 	],
 
 	async execute(interaction) {
-		await interaction.deferReply();
-
 		const skillLevel = interaction.options.getInteger('level');
 		const leadership = interaction.options.getInteger('leadership');
 		const targetTier = interaction.options.getInteger('tier');
-		const tdr = interaction.options.getInteger('tdr') || 0;
+		const inputTdr = interaction.options.getInteger('tdr');
+		const tdr = Math.min(100, Math.max(0, inputTdr ?? 0));
 
 		if (skillLevel > 60) {
-		return interaction.editReply({
+		return interaction.reply({
 			content:
 			`You entered skill level ${skillLevel}. Was that intended? ` +
 			`Because it's not possible, but it would be REALLY nice if it were...`,
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 		}
 
+		await interaction.deferReply();
+
 		const rows = await getSheetRowsCached(
 		interaction.client.GoogleSheet,
-		SHEET_ID
+		process.env.GOOGLE_SHEET_ID
 		);
 
 		const kills = calculateKills(rows, targetTier, skillLevel, leadership, tdr);
@@ -88,11 +87,11 @@ function formatKillsList(kills) {
 		.map((kill) => {
 		const count = kill.count < 0 ? '??' : numberWithCommas(kill.count);
 		return `- ${count}x ${kill.name} (T${kill.tier} ${kill.type})`;
-	})
-	.join('\n');
-}
+		})
+		.join('\n');
+	}
 
-function createItsEmbed(leadership, skillLevel, tdr, kills) {
+	function createItsEmbed(leadership, skillLevel, tdr, kills) {
 	return new EmbedBuilder()
 		.setColor(0xffffff)
 		.setTitle('Ignore Tier Suppression')
