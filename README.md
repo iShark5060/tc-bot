@@ -18,7 +18,7 @@ Since this bot was created before I knew how to properly use GitHub, I had creat
 I have now changed this, without keeping the changes made over the years, simply because dealing with merge conflicts would have been a nightmare. All changes were done by me anyways, so no contribution by others was lost.
 This is why the merges done for the different branches look all so strange, just ignore. If you're interested in one of the older versions, I have marked releases for each final iteration.
 
-From version 5 the bot was fully rewritten using Claude 4 Sonnet as helper, since my skills in JavaScript are not the best.
+From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reasoning as helper, since my skills in JavaScript are not the best.
 
 ## Requirements
 
@@ -33,6 +33,13 @@ You will need to create several files and fill them out in order to use the bot.
 ```
 # Your Discord Bot Token
 TOKEN=balblub
+
+# MySQL for Command usage tracking
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=mysql_user
+MYSQL_PASSWORD=mysql_password
+MYSQL_DATABASE=mysql_database
 
 # Your userID.
 CLIENT_ID=123456
@@ -78,6 +85,8 @@ client_secret.json
 
 ## Running the App
 
+up to date instructions are available here: https://nodejs.org/en/download
+
 Installing nvm, node & npm run:
 ```
 # Download and install nvm:
@@ -101,4 +110,7 @@ npm install
 
 # actually start the bot
 node .
+
+# what I recommend is using PM2
+pm2 start . --cwd path/to/the/tc-bot/ --name "TC-Bot" --time
 ```
