@@ -76,11 +76,19 @@ module.exports = {
       calc: calculateHealingCosts(row, troopAmount),
     }));
 
-    const embed = createMultiHealingEmbed(
+		const filtered = perRowCalcs.filter((x) => x.calc && x.calc.hasData === true);
+		if (filtered.length === 0) {
+		  return interaction.editReply({
+		    content:
+		      'No usable troop data found for that selection (rows are empty or missing costs).',
+		  });
+		}
+	
+		const embed = createMultiHealingEmbed(
       troopTier,
       troopType,
       troopAmount,
-      perRowCalcs,
+      filtered,
       truncated ? troopRows.length - MAX_ROWS : 0
     );
 
@@ -146,6 +154,7 @@ function calculateHealingCosts(troopData, troopAmount) {
     modifier,
     optimal,
     optQty,
+		hasData: false,
   };
 
   RESOURCE_TYPES.forEach((type) => {
@@ -161,6 +170,7 @@ function calculateHealingCosts(troopData, troopAmount) {
     );
     if (cost !== null) {
       costs.resources[type] = { current: cost, optimal: optCost ?? cost };
+			costs.hasData = true;
     }
   });
 
@@ -191,11 +201,12 @@ function calculateHealingCosts(troopData, troopAmount) {
       const v = parseInt(String(value).replace(/,/g, ''), 10);
       if (Number.isFinite(v)) {
         costs.other[type] = Math.ceil(v * troopAmount);
+				costs.hasData = true;
       }
     }
   });
 
-  return costs;
+  return costs.hasData ? costs : null;
 }
 
 function formatCostText(costs, isOptimal = false) {
@@ -269,11 +280,6 @@ function createMultiHealingEmbed(
       `${numberWithCommas(unitsPerTroop)} units each`;
 
     if (!costs) {
-      embed.addFields({
-        name: header,
-        value:
-          '```asciidoc\nInvalid or missing troopUnits; unable to compute.\n```',
-      });
       continue;
     }
 

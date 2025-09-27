@@ -59,7 +59,9 @@ module.exports = {
           new EmbedBuilder()
             .setColor(0xcf142b)
             .setTitle('Ignore Tier Suppression')
-            .setDescription('No valid troop rows found for that tier.'),
+            .setDescription(
+	            'No usable troop data found (rows are empty, invalid, or would result in 0 kills).'
+            ),
         ],
       });
     }
@@ -83,20 +85,24 @@ function calculateKills(rows, targetTier, skillLevel, leadership, tdr) {
     .map((row) => {
       const unitsStr = row.get('troopUnits');
       const units = parseInt(String(unitsStr || '0'), 10);
-      if (!Number.isFinite(units) || units <= 0) {
-        return null;
-      }
+      if (!Number.isFinite(units) || units <= 0) return null;
+
+      const name = String(row.get('troopName') || '').trim();
+      if (!name) return null;
+
       const numKills = Math.floor(coef / units);
+      if (numKills <= 0) return null;
+
       const troopType = String(row.get('troopType') || '')
         .replace('Infantry', 'INF')
         .replace('Walker', 'WLK')
-        .replace('Airship', 'AIR');
+        .replace('Airship', 'AIR') || 'UNK';
 
       return {
-        count: Math.max(0, numKills),
-        name: row.get('troopName'),
+        count: numKills,
+        name,
         tier: targetTier,
-        type: troopType || 'UNK',
+        type: troopType,
       };
     })
     .filter(Boolean)
