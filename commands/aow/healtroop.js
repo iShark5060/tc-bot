@@ -65,8 +65,8 @@ module.exports = {
 		await interaction.deferReply();
 
 		const rows = await getSheetRowsCached(
-		interaction.client.GoogleSheet,
-		process.env.GOOGLE_SHEET_ID
+			interaction.client.GoogleSheet,
+			process.env.GOOGLE_SHEET_ID
 		);
 		const troopData = findTroopData(rows, troopTier, troopType);
 
