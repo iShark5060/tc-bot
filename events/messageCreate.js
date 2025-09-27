@@ -1,6 +1,7 @@
 const { Events } = require('discord.js');
 const { handleMessageError } = require('../helper/errorHandler.js');
 const { calculateMopupTiming } = require('../helper/mopup.js');
+const { logCommandUsage } = require('../helper/usageTracker.js');
 
 module.exports = {
 	name: Events.MessageCreate,
@@ -25,8 +26,24 @@ module.exports = {
 						},
 					],
 				});
+				await logCommandUsage({
+					commandName: 'msg:!tcmu',
+					userId: message.author?.id,
+					guildId: message.guildId || null,
+					success: true,
+				});
 			} catch (error) {
 				await handleMessageError(message, error);
+				try {
+					await logCommandUsage({
+						commandName: 'msg:!tcmu',
+						userId: message.author?.id,
+						guildId: message.guildId || null,
+						success: false,
+						errorMessage: error?.message || String(error),
+					});
+				} catch (_) {
+				}
 			}
 		}
 	},
