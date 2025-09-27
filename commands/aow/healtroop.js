@@ -3,257 +3,321 @@ const { numberWithCommas } = require('../../helper/formatters.js');
 const { getSheetRowsCached } = require('../../helper/sheetsCache.js');
 
 const RESOURCE_TYPES = [
-	'foodCost',
-	'partsCost',
-	'eleCost',
-	'gasCost',
-	'cashCost',
+  'foodCost',
+  'partsCost',
+  'eleCost',
+  'gasCost',
+  'cashCost',
 ];
 const SPECIAL_TYPES = ['smCost', 'ucCost', 'hcCost'];
-const OTHER_TYPES = [
-	'mchealCost',
-	'arkHP',
-	'powerLost',
-	'kePoints',
-	'hePoints',
-];
+const OTHER_TYPES = ['mchealCost', 'arkHP', 'powerLost', 'kePoints', 'hePoints'];
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('healtroop')
-		.setDescription('Calculate cost to heal troops')
-		.addIntegerOption((option) =>
-		option
-			.setName('amount')
-			.setDescription('How many troops are injured')
-			.setRequired(true)
-		)
-		.addIntegerOption((option) =>
-		option
-			.setName('tier')
-			.setDescription('Tier of the injured units')
-			.setRequired(true)
-		)
-		.addStringOption((option) =>
-		option
-			.setName('type')
-			.setDescription('Select the unit type')
-			.addChoices(
-			{ name: 'Infantry', value: 'Infantry' },
-			{ name: 'Walker', value: 'Walker' },
-			{ name: 'Airship', value: 'Airship' }
-			)
-			.setRequired(true)
-		),
-	examples: [
-		'/healtroop amount:100 tier:12 type:Infantry',
-		'/healtroop amount:50 tier:10 type:Walker',
-	],
+  data: new SlashCommandBuilder()
+    .setName('healtroop')
+    .setDescription('Calculate cost to heal troops')
+    .addIntegerOption((option) =>
+      option
+        .setName('amount')
+        .setDescription('How many troops are injured')
+        .setRequired(true)
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName('tier')
+        .setDescription('Tier of the injured units')
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName('type')
+        .setDescription('Select the unit type')
+        .addChoices(
+          { name: 'Infantry', value: 'Infantry' },
+          { name: 'Walker', value: 'Walker' },
+          { name: 'Airship', value: 'Airship' }
+        )
+        .setRequired(true)
+    ),
+  examples: ['/healtroop amount:100 tier:12 type:Infantry', '/healtroop amount:50 tier:10 type:Walker'],
 
-	async execute(interaction) {
-		const troopAmount = interaction.options.getInteger('amount');
-		const troopTier = interaction.options.getInteger('tier');
-		const troopType = interaction.options.getString('type');
+  async execute(interaction) {
+    const troopAmount = interaction.options.getInteger('amount');
+    const troopTier = interaction.options.getInteger('tier');
+    const troopType = interaction.options.getString('type');
 
-		if (troopTier > 12) {
-		return interaction.reply({
-			content: 'We currently only have Tier 12 :)',
-			flags: MessageFlags.Ephemeral,
-		});
-		}
+    if (troopTier > 12) {
+      return interaction.reply({
+        content: 'We currently only have Tier 12 :)',
+        flags: MessageFlags.Ephemeral,
+      });
+    }
 
-		await interaction.deferReply();
+    await interaction.deferReply();
 
-		const rows = await getSheetRowsCached(
-			interaction.client.GoogleSheet,
-			process.env.GOOGLE_SHEET_ID
-		);
-		const troopData = findTroopData(rows, troopTier, troopType);
+    const rows = await getSheetRowsCached(
+      interaction.client.GoogleSheet,
+      process.env.GOOGLE_SHEET_ID
+    );
 
-		if (!troopData) {
-		return interaction.editReply({ content: 'Troop data not found!' });
-		}
+    const troopRows = findTroopRows(rows, troopTier, troopType);
 
-		const calculations = calculateHealingCosts(troopData, troopAmount);
-		const embed = createHealingEmbed(troopData, troopAmount, calculations);
+    if (troopRows.length === 0) {
+      return interaction.editReply({ content: 'Troop data not found!' });
+    }
 
-		await interaction.editReply({ embeds: [embed] });
-	},
+    // Limit to avoid overlong embeds
+    const MAX_ROWS = 10;
+    const truncated = troopRows.length > MAX_ROWS;
+    const selectedRows = troopRows.slice(0, MAX_ROWS);
+
+    const perRowCalcs = selectedRows.map((row) => ({
+      row,
+      calc: calculateHealingCosts(row, troopAmount),
+    }));
+
+    const embed = createMultiHealingEmbed(
+      troopTier,
+      troopType,
+      troopAmount,
+      perRowCalcs,
+      truncated ? troopRows.length - MAX_ROWS : 0
+    );
+
+    await interaction.editReply({ embeds: [embed] });
+  },
 };
 
-function findTroopData(rows, tier, type) {
-	return rows.find(
-		(row) =>
-		row.get('troopTier') == tier &&
-		row.get('troopType') === type &&
-		row.get('isNPC') === 'N'
-	);
+function findTroopRows(rows, tier, type) {
+  return rows.filter(
+    (row) =>
+      String(row.get('troopTier')) === String(tier) &&
+      row.get('troopType') === type &&
+      row.get('isNPC') === 'N'
+  );
 }
 
 function getModifier(totalUnits) {
-	if (totalUnits >= 3501) return 0.25;
-	if (totalUnits >= 1501) return 0.22;
-	if (totalUnits >= 901) return 0.19;
-	if (totalUnits >= 501) return 0.17;
-	if (totalUnits >= 201) return 0.15;
-	return 0.1;
+  if (totalUnits >= 3501) return 0.25;
+  if (totalUnits >= 1501) return 0.22;
+  if (totalUnits >= 901) return 0.19;
+  if (totalUnits >= 501) return 0.17;
+  if (totalUnits >= 201) return 0.15;
+  return 0.1;
 }
 
 function getOptimalModifier(troopUnits) {
-	if (troopUnits < 201) return { modifier: 0.1, units: 200 };
-	if (troopUnits < 501) return { modifier: 0.15, units: 500 };
-	if (troopUnits < 901) return { modifier: 0.17, units: 900 };
-	if (troopUnits < 1501) return { modifier: 0.19, units: 1500 };
-	if (troopUnits < 3501) return { modifier: 0.22, units: 3500 };
-	return { modifier: 0.25, units: -1 };
-	}
+  if (troopUnits < 201) return { modifier: 0.1, units: 200 };
+  if (troopUnits < 501) return { modifier: 0.15, units: 500 };
+  if (troopUnits < 901) return { modifier: 0.17, units: 900 };
+  if (troopUnits < 1501) return { modifier: 0.19, units: 1500 };
+  if (troopUnits < 3501) return { modifier: 0.22, units: 3500 };
+  return { modifier: 0.25, units: -1 };
+}
 
 function calculateResourceCost(costString, amount, modifier) {
-	if (!costString) return null;
-	const baseCost = parseInt(costString.replace(/,/g, ''));
-	return Math.ceil(baseCost * amount * modifier);
+  if (!costString) return null;
+  const baseCost = parseInt(String(costString).replace(/,/g, ''), 10);
+  if (!Number.isFinite(baseCost)) return null;
+  return Math.ceil(baseCost * amount * modifier);
 }
 
 function calculateHealingCosts(troopData, troopAmount) {
-	const totalUnits = troopAmount * troopData.get('troopUnits');
-	const modifier = getModifier(totalUnits);
-	const optimal = getOptimalModifier(troopData.get('troopUnits'));
-	const optQty = Math.max(
-		1,
-		optimal.units === -1
-		? troopAmount
-		: Math.floor(optimal.units / troopData.get('troopUnits'))
-	);
+  const unitsPerTroop = parseInt(String(troopData.get('troopUnits') || '0'), 10);
+  if (!Number.isFinite(unitsPerTroop) || unitsPerTroop <= 0) {
+    return null;
+  }
 
-	const costs = {
-		resources: {},
-		special: {},
-		other: {},
-		totalUnits,
-		modifier,
-		optimal,
-		optQty,
-	};
+  const totalUnits = troopAmount * unitsPerTroop;
+  const modifier = getModifier(totalUnits);
+  const optimal = getOptimalModifier(unitsPerTroop);
+  const optQty = Math.max(
+    1,
+    optimal.units === -1
+      ? troopAmount
+      : Math.floor(optimal.units / unitsPerTroop)
+  );
 
-	['foodCost', 'partsCost', 'eleCost', 'gasCost', 'cashCost'].forEach((type) => {
-		const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
-		const optCost = calculateResourceCost(
-		troopData.get(type),
-		troopAmount,
-		optimal.modifier
-		);
-		if (cost !== null) costs.resources[type] = { current: cost, optimal: optCost };
-	});
+  const costs = {
+    resources: {},
+    special: {},
+    other: {},
+    totalUnits,
+    modifier,
+    optimal,
+    optQty,
+  };
 
-	['smCost', 'ucCost', 'hcCost'].forEach((type) => {
-		const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
-		let optPerChunk = calculateResourceCost(
-		troopData.get(type),
-		1,
-		optimal.modifier
-		);
-		if (cost !== null && optPerChunk !== null) {
-		if (optPerChunk < 1) optPerChunk = 1;
-		const chunks = optimal.units === -1 ? 1 : Math.ceil(troopAmount / optQty);
-		costs.special[type] = { current: cost, optimal: optPerChunk * chunks };
-		}
-	});
+  RESOURCE_TYPES.forEach((type) => {
+    const cost = calculateResourceCost(
+      troopData.get(type),
+      troopAmount,
+      modifier
+    );
+    const optCost = calculateResourceCost(
+      troopData.get(type),
+      troopAmount,
+      optimal.modifier
+    );
+    if (cost !== null) {
+      costs.resources[type] = { current: cost, optimal: optCost ?? cost };
+    }
+  });
 
-	['mchealCost', 'arkHP', 'powerLost', 'kePoints', 'hePoints'].forEach((type) => {
-		const value = troopData.get(type);
-		if (value) {
-		costs.other[type] = Math.ceil(
-			parseInt(value.replace(/,/g, '')) * troopAmount
-		);
-		}
-	});
+  SPECIAL_TYPES.forEach((type) => {
+    const cost = calculateResourceCost(
+      troopData.get(type),
+      troopAmount,
+      modifier
+    );
+    let optPerChunk = calculateResourceCost(
+      troopData.get(type),
+      1,
+      optimal.modifier
+    );
+    if (cost !== null && optPerChunk !== null) {
+      if (optPerChunk < 1) optPerChunk = 1;
+      const chunks = optimal.units === -1 ? 1 : Math.ceil(troopAmount / optQty);
+      costs.special[type] = {
+        current: cost,
+        optimal: optPerChunk * chunks,
+      };
+    }
+  });
 
-	return costs;
+  OTHER_TYPES.forEach((type) => {
+    const value = troopData.get(type);
+    if (value) {
+      const v = parseInt(String(value).replace(/,/g, ''), 10);
+      if (Number.isFinite(v)) {
+        costs.other[type] = Math.ceil(v * troopAmount);
+      }
+    }
+  });
+
+  return costs;
 }
 
 function formatCostText(costs, isOptimal = false) {
-	const labels = {
-		foodCost: 'Food::',
-		partsCost: 'Parts::',
-		eleCost: 'Ele::',
-		gasCost: 'Gas::',
-		cashCost: 'Cash::',
-		smCost: 'SM::',
-		ucCost: 'UC::',
-		hcCost: 'HC::',
-	};
+  const labels = {
+    foodCost: 'Food::',
+    partsCost: 'Parts::',
+    eleCost: 'Ele::',
+    gasCost: 'Gas::',
+    cashCost: 'Cash::',
+    smCost: 'SM::',
+    ucCost: 'UC::',
+    hcCost: 'HC::',
+  };
 
-	let text = '';
-	Object.entries({ ...costs.resources, ...costs.special }).forEach(
-		([type, cost]) => {
-		const value = isOptimal ? cost.optimal : cost.current;
-		text += `\n${labels[type].padEnd(7)} ${numberWithCommas(value)}`;
-		}
-	);
-	return text;
+  let text = '';
+  Object.entries({ ...costs.resources, ...costs.special }).forEach(
+    ([type, cost]) => {
+      const value = isOptimal ? cost.optimal : cost.current;
+      text += `\n${labels[type].padEnd(7)} ${numberWithCommas(value)}`;
+    }
+  );
+  return text;
 }
 
 function formatOtherStats(costs) {
-	const labels = {
-		mchealCost: 'MC Heal::',
-		arkHP: 'Massacre Dmg::',
-		powerLost: 'Power::',
-		kePoints: 'KE Points::',
-		hePoints: 'Heal Points::',
-	};
+  const labels = {
+    mchealCost: 'MC Heal::',
+    arkHP: 'Massacre Dmg::',
+    powerLost: 'Power::',
+    kePoints: 'KE Points::',
+    hePoints: 'Heal Points::',
+  };
 
-	let text = '';
-	Object.entries(costs.other).forEach(([type, value]) => {
-		text += `\n${labels[type].padEnd(14)} ${numberWithCommas(value)}`;
-	});
-	return text;
+  let text = '';
+  Object.entries(costs.other).forEach(([type, value]) => {
+    text += `\n${labels[type].padEnd(14)} ${numberWithCommas(value)}`;
+  });
+  return text;
 }
 
-function createHealingEmbed(troopData, troopAmount, costs) {
-	const reply = new EmbedBuilder().setColor(0xffffff).setTitle('Healing cost:');
+function createMultiHealingEmbed(
+  troopTier,
+  troopType,
+  troopAmount,
+  perRowCalcs,
+  truncatedCount
+) {
+  const embed = new EmbedBuilder()
+    .setColor(0xffffff)
+    .setTitle('Healing cost:');
 
-	const troopName = troopData.get('troopName');
-	const troopTier = troopData.get('troopTier');
-	const troopType = troopData.get('troopType');
+  // Top context field
+  embed.addFields({
+    name: 'Selection:',
+    value:
+      '```asciidoc\n' +
+      `${numberWithCommas(troopAmount)}x (T${troopTier} ${troopType})\n` +
+      '```',
+  });
 
-	const fields = [
-		{
-		name: 'Healing:',
-		value: `\`\`\`asciidoc\n${numberWithCommas(
-			troopAmount
-		)}x ${troopName} (T${troopTier} ${troopType})\`\`\``,
-		},
-		{
-		name: 'Total Units:',
-		value: `\`\`\`asciidoc\n${numberWithCommas(
-			costs.totalUnits
-		)} @ ${costs.modifier * 100}% of training costs.${formatCostText(
-			costs
-		)}\`\`\``,
-		},
-		{
-		name: 'Other Stats:',
-		value: `\`\`\`asciidoc${formatOtherStats(costs)}\`\`\``,
-		},
-	];
+  // One section per troop row
+  for (const item of perRowCalcs) {
+    const troopData = item.row;
+    const costs = item.calc;
 
-	if (costs.optimal.modifier < costs.modifier) {
-		let tipText = `${costs.optQty}x troop${
-		costs.optQty > 1 ? 's' : ''
-		} at a time to heal at ${costs.optimal.modifier * 100}% of training costs:`;
-		let warning = '';
-		if (Object.keys(costs.special).some((type) => SPECIAL_TYPES.includes(type))) {
-		warning = 'Save rss but may cost more sm/uc/hc\n';
-		}
-		fields.push({
-		name: 'TIP:',
-		value: `\`\`\`asciidoc\nHeal ${tipText}\n${warning}--${formatCostText(
-			costs,
-			true
-		)}\`\`\``,
-		});
-	}
+    const troopName = troopData.get('troopName');
+    const unitsPerTroop = troopData.get('troopUnits');
+    const header =
+      `${troopName} — ` +
+      `${numberWithCommas(troopAmount)}x @ ` +
+      `${numberWithCommas(unitsPerTroop)} units each`;
 
-	reply.addFields(fields);
-	return reply;
+    if (!costs) {
+      embed.addFields({
+        name: header,
+        value:
+          '```asciidoc\nInvalid or missing troopUnits; unable to compute.\n```',
+      });
+      continue;
+    }
+
+    const body =
+      '```asciidoc\n' +
+      `Total Units: ${numberWithCommas(costs.totalUnits)} ` +
+      `@ ${(costs.modifier * 100).toFixed(0)}% of training costs.` +
+      `${formatCostText(costs)}\n` +
+      '```\n' +
+      '```asciidoc\n' +
+      'Other Stats:' +
+      `${formatOtherStats(costs)}` +
+      '```';
+
+    let tip = '';
+    if (costs.optimal.modifier < costs.modifier) {
+      const tipText = `${
+        costs.optQty
+      }x troop${costs.optQty > 1 ? 's' : ''} at a time to heal at ${(
+        costs.optimal.modifier * 100
+      ).toFixed(0)}% of training costs:`;
+      const warning = Object.keys(costs.special).some((t) =>
+        SPECIAL_TYPES.includes(t)
+      )
+        ? 'Save rss but may cost more sm/uc/hc\n'
+        : '';
+      tip =
+        '```asciidoc\n' +
+        `TIP: Heal ${tipText}\n${warning}--${formatCostText(costs, true)}\n` +
+        '```';
+    }
+
+    embed.addFields({
+      name: header,
+      value: body + tip,
+    });
+  }
+
+  if (truncatedCount > 0) {
+    embed.addFields({
+      name: 'Note:',
+      value: `Showing first ${perRowCalcs.length} matches. ` + `+${truncatedCount} more rows omitted.`,
+    });
+  }
+
+  return embed;
 }
