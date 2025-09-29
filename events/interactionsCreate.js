@@ -5,7 +5,27 @@ const { logCommandUsage } = require('../helper/usageTracker.js');
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction) {
-    if (!interaction.isChatInputCommand()) return;
+  // Handle healtroop selection menu
+  if (interaction.isStringSelectMenu?.() &&
+      typeof interaction.customId === 'string' &&
+      interaction.customId.startsWith('healtroop:')) {
+    try {
+      const healtroop = require('../commands/aow/healtroop.js');
+      if (typeof healtroop.handleSelect === 'function') {
+        await healtroop.handleSelect(interaction);
+      } else {
+        await interaction.reply({
+          content: 'Selector not available.',
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    } catch (error) {
+      await handleCommandError(interaction, error);
+    }
+    return;
+  }
+
+  if (!interaction.isChatInputCommand()) return;
 
     const command = interaction.client.commands.get(interaction.commandName);
     if (!command) {
