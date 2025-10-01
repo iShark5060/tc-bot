@@ -68,8 +68,20 @@ function clearAllSheetCache() {
   cache.clear();
 }
 
+function getCacheStats() {
+  return {
+    size: cache.size,
+    keys: Array.from(cache.keys()),
+    expirations: Array.from(cache.values()).map((v) => ({
+      expiresAt: new Date(v.expiresAt).toISOString(),
+      hasRows: !!v.rows,
+    })),
+  };
+}
+
 module.exports = {
   getSheetRowsCached,
   invalidateSheetCache,
   clearAllSheetCache,
+  getCacheStats,
 };

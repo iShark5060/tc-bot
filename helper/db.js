@@ -36,4 +36,17 @@ function getPool() {
   return pool;
 }
 
-module.exports = { getPool };
+async function healthCheck() {
+  const pool = getPool();
+  if (!pool) return false;
+
+  try {
+    await pool.execute('SELECT 1');
+    return true;
+  } catch (error) {
+    console.error('[DB] Health check failed:', error);
+    return false;
+  }
+}
+
+module.exports = { getPool, healthCheck };

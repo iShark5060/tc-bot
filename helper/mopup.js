@@ -1,15 +1,16 @@
 function calculateMopupTiming() {
   const now = Date.now();
-  const timeOffset = new Date().getTimezoneOffset();
-  const hoursFromEpoch = Math.ceil((now + timeOffset * 60 * 1000) / (60 * 60 * 1000)) - 8;
+  const utcOffset = new Date().getTimezoneOffset() * 60 * 1000;
+  const hoursFromEpoch = Math.ceil((now + utcOffset) / (60 * 60 * 1000)) - 8;
   const daysSinceEpoch = Math.floor(hoursFromEpoch / 24);
-  const currentTime = Math.floor(Date.now() / 1000) * 1000;
 
   const { startTime, endTime } = getMopupWindow(daysSinceEpoch);
-  const deltaStart = startTime - currentTime;
-  const deltaEnd = endTime - currentTime;
+  const currentTime = Math.floor(now / 1000) * 1000;
 
-  return determineMopupStatus(deltaStart, deltaEnd, daysSinceEpoch);
+  return determineMopupStatus(
+    startTime - currentTime,
+    endTime - currentTime
+  );
 }
 
 function getMopupWindow(day) {

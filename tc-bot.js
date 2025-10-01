@@ -25,6 +25,31 @@ const client = new Client({
 client.cooldowns = new Collection();
 client.commands = new Collection();
 
+function validateEnvironment() {
+  const required = [
+    'TOKEN',
+    'CLIENT_ID',
+    'GUILD_ID',
+    'GOOGLE_SHEET_URL',
+    'GOOGLE_SHEET_ID',
+  ];
+
+  const missing = required.filter((key) => !process.env[key]);
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missing.join(', ')}`
+    );
+  }
+}
+
+validateEnvironment();
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+let isShuttingDown = false;
+
 (async function initializeBot() {
   try {
     await sendStartupNotification();
@@ -32,26 +57,65 @@ client.commands = new Collection();
     loadCommands();
     loadEvents();
     startMopupTimer();
-
     await updateMopupChannels();
     await client.login(process.env.TOKEN);
   } catch (error) {
     console.error('[BOOT] Failed to initialize bot:', error);
+    await sendErrorNotification(error);
     process.exit(1);
   }
 })();
 
+async function gracefulShutdown() {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log('[SHUTDOWN] Shutting down gracefully...');
+
+  try {
+    await sendShutdownNotification();
+    client.destroy();
+    console.log('[SHUTDOWN] Bot shut down successfully');
+    process.exit(0);
+  } catch (error) {
+    console.error('[SHUTDOWN] Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
 async function sendStartupNotification() {
   try {
     if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
-    const response = await fetch(`https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: 'TC-Bot just started.' }),
-    });
+    
+    const response = await fetch(
+      `https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: 'TC-Bot just started.' }),
+      }
+    );
     console.log('[BOOT] Notification sent:', response.status);
   } catch (error) {
     console.error('[BOOT] Failed to send startup notification:', error);
+  }
+}
+
+async function sendShutdownNotification() {
+  try {
+    if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
+    
+    const response = await fetch(
+      `https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: 'TC-Bot is shutting down.' }),
+      }
+    );
+    console.log('[SHUTDOWN] Notification sent:', response.status);
+  } catch (error) {
+    console.error('[SHUTDOWN] Failed to send shutdown notification:', error);
   }
 }
 

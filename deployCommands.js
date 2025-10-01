@@ -73,16 +73,17 @@ async function clearExistingCommands() {
 }
 
 async function deployNewCommands(commands) {
-  try {
-    console.log(`[DEPLOY] 🚀 Deploying ${commands.length} commands...`);
-    const data = await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), {
-    body: commands,
-    });
-    console.log(
-    `[DEPLOY] ✅ Successfully deployed ${data.length} commands.`
-    );
-  } catch (error) {
-    console.error('[DEPLOY] ❌ Failed to deploy new commands:', error);
-    throw error;
-  }
+  console.log(`[DEPLOY] 🚀 About to deploy ${commands.length} commands.`);
+  console.log(
+    `[DEPLOY] Commands: ${commands.map((c) => c.name).join(', ')}`
+  );
+
+  console.log('[DEPLOY] Starting in 3 seconds... (Ctrl+C to cancel)');
+  await new Promise((r) => setTimeout(r, 3000));
+
+  const data = await rest.put(
+    Routes.applicationCommands(process.env.CLIENT_ID),
+    { body: commands }
+  );
+  console.log(`[DEPLOY] ✅ Successfully deployed ${data.length} commands.`);
 }

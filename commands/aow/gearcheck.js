@@ -1,4 +1,4 @@
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { numberWithCommas } = require('../../helper/formatters.js');
 
 const LEVELS = [0, 10, 13, 20, 30, 40, 50];
@@ -9,10 +9,16 @@ module.exports = {
     .setName('gearcheck')
     .setDescription('Calculate stat at base and +10/13/20/30/40/50')
     .addNumberOption((option) =>
-      option.setName('stat').setDescription('Current stat amount').setRequired(true)
+      option
+        .setName('stat')
+        .setDescription('Current stat amount')
+        .setRequired(true)
     )
     .addIntegerOption((option) =>
-      option.setName('level').setDescription('Current upgrade level').setRequired(true)
+      option
+        .setName('level')
+        .setDescription('Current upgrade level')
+        .setRequired(true)
     ),
   examples: [
     '/gearcheck stat:120 level:20',
@@ -25,6 +31,29 @@ module.exports = {
     const statValue = interaction.options.getNumber('stat');
     const gearLevel = interaction.options.getInteger('level');
 
+    // Validate stat value
+    if (statValue <= 0) {
+      return interaction.editReply({
+        content: 'Stat value must be greater than 0',
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
+    // Validate gear level is reasonable
+    if (gearLevel < 0) {
+      return interaction.editReply({
+        content: 'Gear level cannot be negative',
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
+    if (gearLevel > 100) {
+      return interaction.editReply({
+        content: 'Gear level seems unreasonably high. Are you sure?',
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const calculations = calculateGearStats(statValue, gearLevel);
     const embed = createGearEmbed(statValue, gearLevel, calculations);
 
@@ -33,7 +62,9 @@ module.exports = {
 };
 
 function calculateGearStats(currentStat, currentLevel) {
-  const baseStat = currentStat / (1 + currentLevel / 10);
+  const currentMultiplier = 1 + currentLevel / 10;
+  const baseStat = currentStat / currentMultiplier;
+  
   return LEVELS.reduce((acc, level, index) => {
     acc[level] = (baseStat * MULTIPLIERS[index]).toFixed(2);
     return acc;
