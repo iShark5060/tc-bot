@@ -3,18 +3,61 @@ define('TC_BOT_ACCESS', true);
 
 require_once __DIR__ . '/config.inc.php';
 
+$DEBUG = defined('DEBUG_MODE') ? (bool) DEBUG_MODE : false;
+
 $period = isset($_GET['period']) ? strtolower($_GET['period']) : 'daily';
-if (!in_array($period, $ALLOWED_PERIODS, true)) {
+if (!in_array($period, $ALLOWED_PERIODS ?? ['daily','weekly','monthly','yearly'], true)) {
   $period = 'daily';
 }
 
-$dsn = sprintf(
-  'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-  DB_HOST,
-  DB_PORT,
-  DB_NAME,
-  DB_CHARSET
-);
+$now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+switch ($period) {
+  case 'daily':
+    $since = $now->modify('-1 day');
+    $groupExpr = "strftime('%H', created_at)";
+    $orderGroup = "CAST(strftime('%H', created_at) AS INTEGER) ASC";
+    $labelFormatter = function ($r) {
+      return str_pad($r['period_label'], 2, '0', STR_PAD_LEFT) . ':00';
+    };
+    break;
+  case 'weekly':
+    $since = $now->modify('-7 days');
+    $groupExpr = "date(created_at)";
+    $orderGroup = "date(created_at) ASC";
+    $labelFormatter = fn($r) => $r['period_label'];
+    break;
+  case 'monthly':
+    $since = $now->modify('-1 month');
+    $groupExpr = "date(created_at)";
+    $orderGroup = "date(created_at) ASC";
+    $labelFormatter = fn($r) => $r['period_label'];
+    break;
+  case 'yearly':
+    $since = $now->modify('-1 year');
+    $groupExpr = "date(created_at)";
+    $orderGroup = "date(created_at) ASC";
+    $labelFormatter = fn($r) => $r['period_label'];
+    break;
+  default:
+    $since = $now->modify('-1 day');
+    $groupExpr = "strftime('%H', created_at)";
+    $orderGroup = "CAST(strftime('%H', created_at) AS INTEGER) ASC";
+    $labelFormatter = function ($r) {
+      return str_pad($r['period_label'], 2, '0', STR_PAD_LEFT) . ':00';
+    };
+}
+$sinceStr = $since->format('Y-m-d H:i:s');
+
+if (!extension_loaded('pdo_sqlite')) {
+  http_response_code(500);
+  echo $DEBUG ? 'pdo_sqlite extension not enabled.' : 'DB connection failed.';
+  exit;
+}
+
+$dbPath = defined('SQLITE_DB_PATH') ? SQLITE_DB_PATH : (__DIR__ . '/../data/metrics.db');
+$realPath = @realpath($dbPath) ?: $dbPath;
+$uri = 'file:' . str_replace('%2F', '/', rawurlencode($realPath)) . '?mode=ro&immutable=1';
+$dsn = 'sqlite:' . $uri;
 
 $options = [
   PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -22,118 +65,104 @@ $options = [
   PDO::ATTR_EMULATE_PREPARES => false,
 ];
 
+if (defined('PDO::SQLITE_ATTR_OPEN_FLAGS') && defined('SQLITE3_OPEN_READONLY')) {
+  $options[PDO::SQLITE_ATTR_OPEN_FLAGS] = SQLITE3_OPEN_READONLY;
+}
+
 try {
-  $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+  if ($DEBUG) {
+    error_log('[TC-Bot][DEBUG] Using SQLite DSN: ' . $dsn);
+    error_log('[TC-Bot][DEBUG] DB path: ' . $dbPath);
+    error_log('[TC-Bot][DEBUG] Real path: ' . $realPath);
+    error_log('[TC-Bot][DEBUG] Exists: ' . (file_exists($realPath) ? 'yes' : 'no') .
+              ', Readable: ' . (is_readable($realPath) ? 'yes' : 'no'));
+  }
+
+  $pdo = new PDO($dsn, null, null, $options);
+  $pdo->exec('PRAGMA query_only=ON;');
+
 } catch (Throwable $e) {
   http_response_code(500);
-  echo 'DB connection failed.';
+  if ($DEBUG) {
+    echo '<h3>DB connection failed (debug)</h3><pre>' . htmlspecialchars($e->getMessage()) . "</pre>";
+    echo '<pre>' . htmlspecialchars(print_r([
+      'pdo_sqlite_loaded' => extension_loaded('pdo_sqlite') ? 'yes' : 'no',
+      'sqlite3_loaded'    => extension_loaded('sqlite3') ? 'yes' : 'no',
+      'db_path'           => $dbPath,
+      'realpath'          => $realPath,
+      'exists'            => file_exists($realPath) ? 'yes' : 'no',
+      'readable'          => is_readable($realPath) ? 'yes' : 'no',
+    ], true)) . '</pre>';
+  } else {
+    echo 'DB connection failed.';
+  }
   exit;
 }
 
-switch ($period) {
-  case 'daily':
-    $interval = '1 DAY';
-    $groupBy = 'HOUR(created_at)';
-    $dateFormat = '%H:00';
-    break;
-  case 'weekly':
-    $interval = '7 DAY';
-    $groupBy = 'DATE(created_at)';
-    $dateFormat = '%Y-%m-%d';
-    break;
-  case 'monthly':
-    $interval = '1 MONTH';
-    $groupBy = 'DATE(created_at)';
-    $dateFormat = '%Y-%m-%d';
-    break;
-  case 'yearly':
-    $interval = '1 YEAR';
-    $groupBy = 'DATE(created_at)';
-    $dateFormat = '%Y-%m-%d';
-    break;
-  default:
-    $interval = '1 DAY';
-    $groupBy = 'HOUR(created_at)';
-    $dateFormat = '%H:00';
-}
+$maxResults = (int) (defined('MAX_RESULTS') ? MAX_RESULTS : 10);
 
-$topCommandsQuery = "
+$topCommandsSql = "
   SELECT command_name, COUNT(*) AS cnt
   FROM command_usage
-  WHERE created_at >= (UTC_TIMESTAMP() - INTERVAL $interval)
+  WHERE created_at >= :since
   GROUP BY command_name
   ORDER BY cnt DESC, command_name ASC
-  LIMIT " . MAX_RESULTS;
-
-$totalQuery = "
-  SELECT
-    SUM(success = 1) AS success_count,
-    SUM(success = 0) AS failure_count,
-    COUNT(*) AS total_count
-  FROM command_usage
-  WHERE created_at >= (UTC_TIMESTAMP() - INTERVAL $interval)
+  LIMIT $maxResults
 ";
 
-if ($period === 'daily') {
-  $byPeriodQuery = "
-    SELECT
-      HOUR(created_at) AS period_label,
-      COUNT(*) AS cnt
-    FROM command_usage
-    WHERE created_at >= (UTC_TIMESTAMP() - INTERVAL $interval)
-    GROUP BY HOUR(created_at)
-    ORDER BY HOUR(created_at) ASC
-  ";
-} else {
-  $byPeriodQuery = "
-    SELECT
-      DATE(created_at) AS period_label,
-      COUNT(*) AS cnt
-    FROM command_usage
-    WHERE created_at >= (UTC_TIMESTAMP() - INTERVAL $interval)
-    GROUP BY DATE(created_at)
-    ORDER BY DATE(created_at) ASC
-  ";
-}
+$totalSql = "
+  SELECT
+    SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS success_count,
+    SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS failure_count,
+    COUNT(*) AS total_count
+  FROM command_usage
+  WHERE created_at >= :since
+";
+
+$byPeriodSql = "
+  SELECT
+    $groupExpr AS period_label,
+    COUNT(*) AS cnt
+  FROM command_usage
+  WHERE created_at >= :since
+  GROUP BY $groupExpr
+  ORDER BY $orderGroup
+";
 
 try {
-  $topCommands = $pdo->query($topCommandsQuery)->fetchAll();
-  $totals = $pdo->query($totalQuery)->fetch();
-  $byPeriod = $pdo->query($byPeriodQuery)->fetchAll();
+  $stmtTop = $pdo->prepare($topCommandsSql);
+  $stmtTop->execute([':since' => $sinceStr]);
+  $topCommands = $stmtTop->fetchAll();
+
+  $stmtTotal = $pdo->prepare($totalSql);
+  $stmtTotal->execute([':since' => $sinceStr]);
+  $totals = $stmtTotal->fetch();
+
+  $stmtPeriod = $pdo->prepare($byPeriodSql);
+  $stmtPeriod->execute([':since' => $sinceStr]);
+  $byPeriod = $stmtPeriod->fetchAll();
+
 } catch (Throwable $e) {
   error_log('[TC-Bot] Query failed: ' . $e->getMessage());
   error_log('[TC-Bot] Period: ' . $period);
-  error_log('[TC-Bot] Query: ' . $byPeriodQuery);
-
   http_response_code(500);
-
-  if (DEBUG_MODE) {
+  if ($DEBUG) {
     echo 'Query failed: ' . htmlspecialchars($e->getMessage());
-    echo '<pre>' . htmlspecialchars($byPeriodQuery) . '</pre>';
   } else {
     echo 'An error occurred while loading statistics. Please try again later.';
   }
   exit;
 }
 
-if ($period === 'daily') {
-  $labels = array_map(function($r) {
-    return str_pad($r['period_label'], 2, '0', STR_PAD_LEFT) . ':00';
-  }, $byPeriod);
-} else {
-  $labels = array_map(fn($r) => $r['period_label'], $byPeriod);
-}
-$data = array_map(fn($r) => intval($r['cnt']), $byPeriod);
-
-$labels = array_map(fn($r) => $r['period_label'], $byPeriod);
-$data = array_map(fn($r) => intval($r['cnt']), $byPeriod);
+$labels = array_map($labelFormatter, $byPeriod);
+$data = array_map(fn($r) => (int) $r['cnt'], $byPeriod);
 
 function esc($s) {
-  return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+  return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
 $successRate = 0;
-if (isset($totals['total_count']) && $totals['total_count'] > 0) {
+if (!empty($totals['total_count'])) {
   $successRate = round(
     ($totals['success_count'] / $totals['total_count']) * 100,
     1
@@ -175,115 +204,51 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
     justify-content: center;
     overflow-y: auto;
   }
-  .container {
-    width: 100%;
-    max-width: 1000px;
-  }
+  .container { width: 100%; max-width: 1000px; }
   header {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; gap: 16px; flex-wrap: wrap;
+    justify-content: space-between; align-items: center;
   }
-  h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    letter-spacing: .2px;
-  }
-  h2 {
-    margin-top: 24px;
-    font-size: 1.25rem;
-  }
+  h1 { margin: 0; font-size: 1.5rem; letter-spacing: .2px; }
+  h2 { margin-top: 24px; font-size: 1.25rem; }
   form { margin: 0; }
   select {
-    padding: 8px 12px;
-    font-size: 14px;
-    color: var(--text);
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    outline: none;
-    box-shadow: var(--shadow);
+    padding: 8px 12px; font-size: 14px; color: var(--text);
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); outline: none; box-shadow: var(--shadow);
     cursor: pointer;
   }
   select:focus { border-color: var(--accent); }
   select:hover { border-color: var(--muted); }
-  .cards {
-    display: flex;
-    gap: 16px;
-    margin-top: 16px;
-    flex-wrap: wrap;
-  }
+  .cards { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
   .card {
     background: linear-gradient(180deg, var(--panel), var(--panel-2));
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    flex: 1;
-    min-width: 180px;
-    box-shadow: var(--shadow);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; flex: 1; min-width: 180px; box-shadow: var(--shadow);
   }
-  .card-title {
-    color: var(--muted);
-    font-size: 0.875rem;
-    margin-bottom: 4px;
-  }
-  .card-value {
-    font-weight: 700;
-    font-size: 1.5rem;
-  }
-  .card-subtitle {
-    color: var(--muted);
-    font-size: 0.75rem;
-    margin-top: 4px;
-  }
+  .card-title { color: var(--muted); font-size: 0.875rem; margin-bottom: 4px; }
+  .card-value { font-weight: 700; font-size: 1.5rem; }
+  .card-subtitle { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
   .muted { color: var(--muted); }
   table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 16px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
+    width: 100%; border-collapse: collapse; margin-top: 16px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
   }
-  th, td {
-    padding: 10px 12px;
-    text-align: left;
-  }
+  th, td { padding: 10px 12px; text-align: left; }
   thead th {
-    background: #0b1220;
-    color: var(--muted);
-    font-weight: 600;
-    border-bottom: 1px solid var(--border);
+    background: #0b1220; color: var(--muted);
+    font-weight: 600; border-bottom: 1px solid var(--border);
   }
-  tbody tr {
-    border-bottom: 1px solid var(--border);
-  }
-  tbody tr:hover {
-    background: rgba(255,255,255,0.03);
-  }
-  tbody tr:last-child {
-    border-bottom: none;
-  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: rgba(255,255,255,0.03); }
+  tbody tr:last-child { border-bottom: none; }
   canvas {
-    width: 100%;
-    max-width: 100%;
-    height: <?= CHART_HEIGHT ?>px;
-    margin-top: 20px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 8px;
+    width: 100%; max-width: 100%; height: <?= (int)(defined('CHART_HEIGHT') ? CHART_HEIGHT : 260) ?>px; margin-top: 20px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px;
   }
-
-  @media (max-height: 740px) {
-    body { align-items: flex-start; }
-  }
-
+  @media (max-height: 740px) { body { align-items: flex-start; } }
   @media (max-width: 640px) {
     body { padding: 16px; }
     h1 { font-size: 1.25rem; }
@@ -299,7 +264,7 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
       <form method="get" action="">
         <label for="period" class="muted">Timeframe:</label>
         <select id="period" name="period" onchange="this.form.submit()">
-          <?php foreach ($PERIOD_NAMES as $key => $label): ?>
+          <?php foreach (($PERIOD_NAMES ?? ['daily' => 'Daily','weekly' => 'Weekly','monthly' => 'Monthly','yearly' => 'Yearly']) as $key => $label): ?>
             <option value="<?= esc($key) ?>" <?= $period === $key ? 'selected' : '' ?>>
               <?= esc($label) ?>
             </option>
@@ -311,19 +276,19 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
     <div class="cards">
       <div class="card">
         <div class="card-title">Total Commands</div>
-        <div class="card-value"><?= number_format($totals['total_count'] ?? 0) ?></div>
+        <div class="card-value"><?= number_format((int)($totals['total_count'] ?? 0)) ?></div>
       </div>
       <div class="card">
         <div class="card-title">Successful</div>
         <div class="card-value" style="color: var(--success);">
-          <?= number_format($totals['success_count'] ?? 0) ?>
+          <?= number_format((int)($totals['success_count'] ?? 0)) ?>
         </div>
-        <div class="card-subtitle"><?= $successRate ?>% success rate</div>
+        <div class="card-subtitle"><?= esc($successRate) ?>% success rate</div>
       </div>
       <div class="card">
         <div class="card-title">Failed</div>
         <div class="card-value" style="color: var(--danger);">
-          <?= number_format($totals['failure_count'] ?? 0) ?>
+          <?= number_format((int)($totals['failure_count'] ?? 0)) ?>
         </div>
       </div>
     </div>
@@ -347,7 +312,7 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
           <?php foreach ($topCommands as $r): ?>
             <tr>
               <td><?= esc($r['command_name']) ?></td>
-              <td style="text-align: right;"><?= number_format($r['cnt']) ?></td>
+              <td style="text-align: right;"><?= number_format((int)$r['cnt']) ?></td>
             </tr>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -355,7 +320,7 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
     </table>
   </div>
 
-<script>
+  <script>
     const canvas = document.getElementById('trend');
     const labels = <?= json_encode($labels) ?>;
     const series = <?= json_encode($data) ?>;
@@ -390,8 +355,6 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
       ctx.fillRect(0, 0, width, height);
 
       const maxValue = Math.max(...data, 1);
-      const minValue = Math.min(...data, 0);
-      const valueRange = maxValue - minValue || 1;
       const yScale = chartHeight / (maxValue * 1.1);
       const xStep = chartWidth / (labels.length - 1 || 1);
 
@@ -421,7 +384,7 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
 
       labels.forEach((label, i) => {
         if (i % labelStep === 0 || i === labels.length - 1) {
-          const x = padding.left + (i * xStep);
+          const x = padding.left + i * xStep;
           const y = padding.top + chartHeight + 10;
 
           ctx.beginPath();
@@ -441,7 +404,6 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
 
       ctx.fillStyle = textColor;
       ctx.font = '13px system-ui, sans-serif';
-
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       const xAxisTitle = period === 'daily' ? 'Hour (UTC)' : 'Date (UTC)';
@@ -455,13 +417,13 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
       ctx.restore();
 
       const points = data.map((value, i) => ({
-        x: padding.left + (i * xStep),
-        y: padding.top + chartHeight - (value * yScale)
+        x: padding.left + i * xStep,
+        y: padding.top + chartHeight - value * yScale,
       }));
 
       ctx.beginPath();
       ctx.moveTo(points[0].x, padding.top + chartHeight);
-      points.forEach(point => ctx.lineTo(point.x, point.y));
+      points.forEach((p) => ctx.lineTo(p.x, p.y));
       ctx.lineTo(points[points.length - 1].x, padding.top + chartHeight);
       ctx.closePath();
       ctx.fillStyle = fillColor;
@@ -469,14 +431,14 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
 
       ctx.beginPath();
       ctx.moveTo(points[0].x, points[0].y);
-      points.forEach(point => ctx.lineTo(point.x, point.y));
+      points.forEach((p) => ctx.lineTo(p.x, p.y));
       ctx.strokeStyle = lineColor;
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      points.forEach(point => {
+      points.forEach((p) => {
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
         ctx.fillStyle = lineColor;
         ctx.fill();
         ctx.strokeStyle = '#111827';
@@ -485,7 +447,6 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
       });
 
       let tooltip = null;
-
       canvas.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
@@ -493,15 +454,13 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
 
         let nearest = null;
         let minDist = Infinity;
-
-        points.forEach((point, i) => {
-          const dist = Math.sqrt(
-            Math.pow(mouseX - point.x, 2) +
-            Math.pow(mouseY - point.y, 2)
-          );
+        points.forEach((pt, i) => {
+          const dx = mouseX - pt.x;
+          const dy = mouseY - pt.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < minDist && dist < 20) {
             minDist = dist;
-            nearest = { point, i, value: data[i], label: labels[i] };
+            nearest = { pt, i, value: data[i], label: labels[i] };
           }
         });
 
@@ -513,7 +472,6 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
           hideTooltip();
         }
       });
-
       canvas.addEventListener('mouseleave', hideTooltip);
 
       function showTooltip(data, x, y) {
@@ -533,30 +491,22 @@ if (isset($totals['total_count']) && $totals['total_count'] > 0) {
           `;
           document.body.appendChild(tooltip);
         }
-
         const timeLabel = period === 'daily' ? data.label + ' UTC' : data.label;
         tooltip.innerHTML = `
           <div style="font-weight: 600; margin-bottom: 4px;">${timeLabel}</div>
           <div>Commands: ${data.value}</div>
         `;
-
         const rect = canvas.getBoundingClientRect();
-        const tooltipX = rect.left + x + 10;
-        const tooltipY = rect.top + y - 40;
-
-        tooltip.style.left = tooltipX + 'px';
-        tooltip.style.top = tooltipY + 'px';
+        tooltip.style.left = rect.left + x + 10 + 'px';
+        tooltip.style.top = rect.top + y - 40 + 'px';
         tooltip.style.display = 'block';
       }
 
       function hideTooltip() {
-        if (tooltip) {
-          tooltip.style.display = 'none';
-        }
+        if (tooltip) tooltip.style.display = 'none';
       }
     }
 
-    // Redraw on window resize
     let resizeTimeout;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimeout);
