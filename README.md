@@ -1,6 +1,6 @@
 # Discord Bot for Ark of War
 
-![Static Badge](https://img.shields.io/badge/Node.js-24.4.1-red?style=for-the-badge) ![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue) ![NPM Version](https://img.shields.io/npm/v/dotenvx?style=for-the-badge&label=.env&color=green) ![NPM Version](https://img.shields.io/npm/v/google-spreadsheet?style=for-the-badge&label=google-spreadsheet&color=orange)
+![Static Badge](https://img.shields.io/badge/Node.js-24.4.1-red?style=for-the-badge) ![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue) ![NPM Version](https://img.shields.io/npm/v/%40dotenvx%2Fdotenvx?style=for-the-badge&label=.env&color=green) ![NPM Version](https://img.shields.io/npm/v/google-spreadsheet?style=for-the-badge&label=google-spreadsheet&color=orange)
 
 Discord Bot based on the `Discord.js` framework using `Node.js` to enable `/commands` for the game [Ark of War](https://www.7piratesgames.com/ark.html)
 The bot itself is pretty basic and basically just follows along the [tutorial](https://discordjs.guide/) of the Discord.js framework.
