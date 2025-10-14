@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
+const CHECKPOINT_INTERVAL_MS = Number(process.env.CHECKPOINT_INTERVAL_MS || 300000);
 
 let db;
 let insertStmt;
@@ -34,6 +35,9 @@ function initDb() {
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S','now'))
     );
   `);
+
+  db.exec("CREATE INDEX IF NOT EXISTS idx_usage_created_at ON command_usage(created_at);");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_usage_cmd ON command_usage(command_name);");
 
   insertStmt = db.prepare(`
     INSERT INTO command_usage
@@ -83,7 +87,7 @@ function startWALCheckpoint(intervalMs = 300000) {
   if (checkpointTimer) return;
   checkpointTimer = setInterval(() => {
     checkpoint('TRUNCATE');
-  }, intervalMs);
+  }, intervalMs ?? CHECKPOINT_INTERVAL_MS);
   checkpointTimer.unref?.();
   console.log('[USAGE:SQLite] WAL checkpoint timer started:', intervalMs, 'ms');
 }
