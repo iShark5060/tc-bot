@@ -7,6 +7,7 @@ const path = require('node:path');
 const GoogleCredentials = require('./client_secret.json');
 const { calculateMopupTiming } = require('./helper/mopup.js');
 const { getSheetRowsCached } = require('./helper/sheetsCache.js');
+const usageTracker = require('./helper/usageTracker.js');
 
 const fetch =
   typeof global.fetch === 'function'
@@ -57,6 +58,7 @@ let isShuttingDown = false;
     loadCommands();
     loadEvents();
     startMopupTimer();
+		usageTracker.startWALCheckpoint(5 * 60 * 1000);
     await updateMopupChannels();
     await client.login(process.env.TOKEN);
   } catch (error) {
@@ -73,6 +75,12 @@ async function gracefulShutdown() {
   console.log('[SHUTDOWN] Shutting down gracefully...');
 
   try {
+		try {
+      usageTracker.stopWALCheckpoint();
+      usageTracker.checkpoint('TRUNCATE');
+    } catch (e) {
+      console.error('[SHUTDOWN] WAL checkpoint error:', e);
+    }
     await sendShutdownNotification();
     client.destroy();
     console.log('[SHUTDOWN] Bot shut down successfully');

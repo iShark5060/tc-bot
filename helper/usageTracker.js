@@ -6,6 +6,7 @@ const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
 
 let db;
 let insertStmt;
+let checkpointTimer = null;
 
 function ensureDir(filePath) {
   const dir = path.dirname(filePath);
@@ -20,6 +21,7 @@ function initDb() {
 
   db.pragma('journal_mode = WAL');
   db.pragma('synchronous = NORMAL');
+	db.pragma('wal_autocheckpoint = 10');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS command_usage (
@@ -67,4 +69,34 @@ async function logCommandUsage({
   }
 }
 
+function checkpoint(mode = 'TRUNCATE') {
+  try {
+    initDb();
+    db.pragma(`wal_checkpoint(${mode})`);
+  } catch (e) {
+    console.error('[USAGE:SQLite] WAL checkpoint failed:', e);
+  }
+}
+
+function startWALCheckpoint(intervalMs = 300000) {
+  initDb();
+  if (checkpointTimer) return;
+  checkpointTimer = setInterval(() => {
+    checkpoint('TRUNCATE');
+  }, intervalMs);
+  checkpointTimer.unref?.();
+  console.log('[USAGE:SQLite] WAL checkpoint timer started:', intervalMs, 'ms');
+}
+
+function stopWALCheckpoint() {
+  if (checkpointTimer) {
+    clearInterval(checkpointTimer);
+    checkpointTimer = null;
+    console.log('[USAGE:SQLite] WAL checkpoint timer stopped');
+  }
+}
+
 module.exports = { logCommandUsage };
+module.exports.checkpoint = checkpoint;
+module.exports.startWALCheckpoint = startWALCheckpoint;
+module.exports.stopWALCheckpoint = stopWALCheckpoint;
