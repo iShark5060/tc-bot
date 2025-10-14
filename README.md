@@ -34,8 +34,9 @@ You will need to create several files and fill them out in order to use the bot.
 # Your Discord Bot Token
 TOKEN=balblub
 
-# SQLite
+#SQLite
 SQLITE_DB_PATH='./data/metrics.db'
+CHECKPOINT_INTERVAL_MS=300000
 
 # Your userID.
 CLIENT_ID=123456
