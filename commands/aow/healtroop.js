@@ -275,7 +275,7 @@ function findTroopRows(rows, tier, type) {
 function buildValidByNameMap(rows, troopAmount) {
   const byName = new Map();
   for (const row of rows) {
-    const name = String(row.get('troopName') || '').trim();
+    const name = (row.get('troopName') || '').trim();
     if (!name) continue;
     const calc = calculateHealingCosts(row, troopAmount);
     if (!calc || !calc.hasData) continue;

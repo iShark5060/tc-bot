@@ -73,7 +73,8 @@ module.exports = {
 };
 
 function calculateKills(rows, targetTier, skillLevel, leadership, tdr) {
-  const coef = 0.005 * leadership * skillLevel * ((100 - tdr) / 100);
+  const DAMAGE_COEFFICIENT = 0.005;
+  const coef = DAMAGE_COEFFICIENT * leadership * skillLevel * ((100 - tdr) / 100);
 
   const matches = rows.filter(
     (row) =>

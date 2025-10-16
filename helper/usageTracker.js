@@ -100,6 +100,19 @@ function stopWALCheckpoint() {
   }
 }
 
+function closeDb() {
+  if (db) {
+    try {
+      db.close();
+      db = null;
+      console.log('[USAGE:SQLite] Database closed');
+    } catch (e) {
+      console.error('[USAGE:SQLite] Error closing database:', e);
+    }
+  }
+}
+
+module.exports.closeDb = closeDb;
 module.exports = { logCommandUsage };
 module.exports.checkpoint = checkpoint;
 module.exports.startWALCheckpoint = startWALCheckpoint;

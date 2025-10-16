@@ -49,7 +49,7 @@ module.exports = {
 
     if (gearLevel > 100) {
       return interaction.editReply({
-        content: 'Gear level seems unreasonably high. Are you sure?',
+        content: `Gear level ${gearLevel} is unreasonably high (max expected: 100).`,
         flags: MessageFlags.Ephemeral,
       });
     }

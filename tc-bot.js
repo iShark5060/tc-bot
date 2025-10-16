@@ -9,11 +9,7 @@ const { calculateMopupTiming } = require('./helper/mopup.js');
 const { getSheetRowsCached } = require('./helper/sheetsCache.js');
 const usageTracker = require('./helper/usageTracker.js');
 
-const fetch =
-  typeof global.fetch === 'function'
-    ? global.fetch.bind(global)
-    : (...args) =>
-      import('node-fetch').then(({ default: f }) => f(...args));
+const fetch = global.fetch;
 
 const client = new Client({
   intents: [
@@ -78,6 +74,7 @@ async function gracefulShutdown() {
 		try {
       usageTracker.stopWALCheckpoint();
       usageTracker.checkpoint('TRUNCATE');
+      usageTracker.closeDb();
     } catch (e) {
       console.error('[SHUTDOWN] WAL checkpoint error:', e);
     }
@@ -103,7 +100,9 @@ async function sendStartupNotification() {
         body: JSON.stringify({ content: 'TC-Bot just started.' }),
       }
     );
-    console.log('[BOOT] Notification sent:', response.status);
+    if (!response.ok) {
+      console.warn(`[BOOT] Webhook returned ${response.status}`);
+    }
   } catch (error) {
     console.error('[BOOT] Failed to send startup notification:', error);
   }

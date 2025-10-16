@@ -22,19 +22,21 @@ async function getSheetRowsCached(doc, sheetId, ttlMs) {
   }
 
   const loadingPromise = (async () => {
-    let sheet = doc.sheetsById?.[sheetId];
-
-    if (!sheet) {
-    await doc.loadInfo();
-    sheet = doc.sheetsById?.[sheetId];
+    try {
+      let sheet = doc.sheetsById?.[sheetId];
+      if (!sheet) {
+        await doc.loadInfo();
+        sheet = doc.sheetsById?.[sheetId];
+      }
+      if (!sheet) throw new Error(`Sheet not found: ${sheetId}`);
+      
+      const rows = await sheet.getRows();
+      cache.set(key, { rows, expiresAt: Date.now() + ttl });
+      return rows;
+    } catch (err) {
+      cache.delete(key);
+      throw err;
     }
-    if (!sheet) {
-    throw new Error(`Sheet not found: ${sheetId}`);
-    }
-
-    const rows = await sheet.getRows();
-    cache.set(key, { rows, expiresAt: Date.now() + ttl });
-    return rows;
   })();
 
   cache.set(key, { ...(entry || {}), loadingPromise });
