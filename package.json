@@ -11,7 +11,7 @@
 		"type": "git",
 		"url": "git+https://github.com/ishark5060/tc-bot.git"
 	},
-	"license": "MIT",
+	"license": "GPLv3",
 	"author": "Shark5060",
 	"type": "commonjs",
 	"main": "tc-bot.js",
