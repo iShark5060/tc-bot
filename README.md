@@ -12,6 +12,11 @@ Outside of the game itself, the bot is pretty useless, and even inside the game 
 
 The Bot lives in the Diplomacy of War Discord Server - one of the largest communities around the game (https://discord.gg/YMAhCNjkgp).
 
+
+The TC-Bot project is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)
+
+Discord.js Frame work by [Discord.js](https://github.com/discordjs/discord.js)
+
 ## History
 
 Since this bot was created before I knew how to properly use GitHub, I had created several repositories for each version and simply put them on private on a new release.
