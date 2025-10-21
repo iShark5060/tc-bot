@@ -9,6 +9,7 @@ import GoogleCredentials from './client_secret.json' with { type: 'json' };
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
+import io from '@pm2/io';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,11 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMessages,
   ],
+});
+
+io.init({
+  transactions: true,
+  http: true,
 });
 
 client.cooldowns = new Collection();
