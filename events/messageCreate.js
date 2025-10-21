@@ -1,9 +1,9 @@
-const { Events } = require('discord.js');
-const { handleMessageError } = require('../helper/errorHandler.js');
-const { calculateMopupTiming } = require('../helper/mopup.js');
-const { logCommandUsage } = require('../helper/usageTracker.js');
+import { Events } from 'discord.js';
+import { handleMessageError } from '../helper/errorHandler.js';
+import { calculateMopupTiming } from '../helper/mopup.js';
+import { logCommandUsage } from '../helper/usageTracker.js';
 
-module.exports = {
+export default {
   name: Events.MessageCreate,
   async execute(message) {
     if (!shouldProcessMessage(message)) return;
@@ -17,10 +17,10 @@ module.exports = {
               color,
               title: 'Mopup',
               fields: [
-                { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
+                { name: 'Status:', value: '```asciidoc\n' + status + '```' },
                 {
                   name: 'Time remaining:',
-                  value: `\`\`\`asciidoc\n${time}\`\`\``,
+                  value: '```asciidoc\n' + time + '```',
                 },
               ],
             },
@@ -42,7 +42,7 @@ module.exports = {
             success: false,
             errorMessage: error?.message || String(error),
           });
-        } catch (_) {
+        } catch {
         }
       }
     }

@@ -1,31 +1,33 @@
-const { Events } = require('discord.js');
-const { handleCommandError } = require('../helper/errorHandler.js');
-const { logCommandUsage } = require('../helper/usageTracker.js');
+import { Events, MessageFlags } from 'discord.js';
+import { handleCommandError } from '../helper/errorHandler.js';
+import { logCommandUsage } from '../helper/usageTracker.js';
 
-module.exports = {
+export default {
   name: Events.InteractionCreate,
   async execute(interaction) {
-  // Handle healtroop selection menu
-  if (interaction.isStringSelectMenu?.() &&
+    if (
+      interaction.isStringSelectMenu?.() &&
       typeof interaction.customId === 'string' &&
-      interaction.customId.startsWith('healtroop:')) {
-    try {
-      const healtroop = require('../commands/aow/healtroop.js');
-      if (typeof healtroop.handleSelect === 'function') {
-        await healtroop.handleSelect(interaction);
-      } else {
-        await interaction.reply({
-          content: 'Selector not available.',
-          flags: MessageFlags.Ephemeral,
-        });
+      interaction.customId.startsWith('healtroop:')
+    ) {
+      try {
+        const mod = await import('../commands/aow/healtroop.js');
+        const healtroop = mod.default ?? mod;
+        if (typeof healtroop.handleSelect === 'function') {
+          await healtroop.handleSelect(interaction);
+        } else {
+          await interaction.reply({
+            content: 'Selector not available.',
+            flags: MessageFlags.Ephemeral,
+          });
+        }
+      } catch (error) {
+        await handleCommandError(interaction, error);
       }
-    } catch (error) {
-      await handleCommandError(interaction, error);
+      return;
     }
-    return;
-  }
 
-  if (!interaction.isChatInputCommand()) return;
+    if (!interaction.isChatInputCommand()) return;
 
     const command = interaction.client.commands.get(interaction.commandName);
     if (!command) {
@@ -51,7 +53,7 @@ module.exports = {
           success: false,
           errorMessage: error?.message || String(error),
         });
-      } catch (e) {
+      } catch {
       }
     }
   },

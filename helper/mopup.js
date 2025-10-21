@@ -7,10 +7,7 @@ function calculateMopupTiming() {
   const { startTime, endTime } = getMopupWindow(daysSinceEpoch);
   const currentTime = Math.floor(now / 1000) * 1000;
 
-  return determineMopupStatus(
-    startTime - currentTime,
-    endTime - currentTime
-  );
+  return determineMopupStatus(startTime - currentTime, endTime - currentTime);
 }
 
 function getMopupWindow(day) {
@@ -29,7 +26,7 @@ function getMopupWindow(day) {
   };
 }
 
-function determineMopupStatus(deltaStart, deltaEnd, day) {
+function determineMopupStatus(deltaStart, deltaEnd) {
   if (deltaStart < 0) {
     if (deltaEnd > 0) {
       return { status: 'ACTIVE', color: 0x7fff00, time: formatTime(deltaEnd) };
@@ -51,4 +48,4 @@ function formatTime(ms) {
   return new Date(Math.abs(ms)).toISOString().slice(11, 19);
 }
 
-module.exports = { calculateMopupTiming };
+export { calculateMopupTiming };

@@ -1,9 +1,11 @@
-const Database = require('better-sqlite3');
-const fs = require('node:fs');
-const path = require('node:path');
+import Database from 'better-sqlite3';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
-const CHECKPOINT_INTERVAL_MS = Number(process.env.CHECKPOINT_INTERVAL_MS || 300000);
+const CHECKPOINT_INTERVAL_MS = Number(
+  process.env.CHECKPOINT_INTERVAL_MS || 300000,
+);
 
 let db;
 let insertStmt;
@@ -22,7 +24,7 @@ function initDb() {
 
   db.pragma('journal_mode = WAL');
   db.pragma('synchronous = NORMAL');
-	db.pragma('wal_autocheckpoint = 10');
+  db.pragma('wal_autocheckpoint = 10');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS command_usage (
@@ -36,8 +38,12 @@ function initDb() {
     );
   `);
 
-  db.exec("CREATE INDEX IF NOT EXISTS idx_usage_created_at ON command_usage(created_at);");
-  db.exec("CREATE INDEX IF NOT EXISTS idx_usage_cmd ON command_usage(command_name);");
+  db.exec(
+    'CREATE INDEX IF NOT EXISTS idx_usage_created_at ON command_usage(created_at);',
+  );
+  db.exec(
+    'CREATE INDEX IF NOT EXISTS idx_usage_cmd ON command_usage(command_name);',
+  );
 
   insertStmt = db.prepare(`
     INSERT INTO command_usage
@@ -64,9 +70,7 @@ async function logCommandUsage({
       user_id: userId ? String(userId) : null,
       guild_id: guildId ? String(guildId) : null,
       success: success ? 1 : 0,
-      error_message: errorMessage
-        ? String(errorMessage).slice(0, 1000)
-        : null,
+      error_message: errorMessage ? String(errorMessage).slice(0, 1000) : null,
     });
   } catch (err) {
     console.error('[USAGE:SQLite] Failed to log command usage:', err);
@@ -112,8 +116,4 @@ function closeDb() {
   }
 }
 
-module.exports.closeDb = closeDb;
-module.exports = { logCommandUsage };
-module.exports.checkpoint = checkpoint;
-module.exports.startWALCheckpoint = startWALCheckpoint;
-module.exports.stopWALCheckpoint = stopWALCheckpoint;
+export { logCommandUsage, checkpoint, startWALCheckpoint, stopWALCheckpoint, closeDb };

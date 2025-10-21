@@ -1,34 +1,34 @@
 {
-	"name": "tc-bot",
-	"version": "5.4.0",
-	"description": "Ark of War Theorycrafter Bot",
-	"keywords": [],
-	"homepage": "https://github.com/ishark5060/tc-bot#readme",
-	"bugs": {
-		"url": "https://github.com/ishark5060/tc-bot/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/ishark5060/tc-bot.git"
-	},
-	"license": "GPLv3",
-	"author": "Shark5060",
-	"type": "commonjs",
-	"main": "tc-bot.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"start": "node .",
-		"lint": "eslint ."
-	},
-	"dependencies": {
-		"@dotenvx/dotenvx": "^1.48.3",
-		"better-sqlite3": "^12.4.1",
-		"discord.js": "^14.17.3",
-		"google-auth-library": "^9.15.1",
-		"google-spreadsheet": "^4.1.4"
-	},
-	"devDependencies": {
-		"@eslint/js": "^9.20.0",
-		"eslint": "^9.20.0"
-	}
+  "name": "tc-bot",
+  "version": "6.0.0",
+  "description": "Ark of War Theorycrafter Bot",
+  "keywords": [],
+  "homepage": "https://github.com/ishark5060/tc-bot#readme",
+  "bugs": {
+    "url": "https://github.com/ishark5060/tc-bot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishark5060/tc-bot.git"
+  },
+  "license": "GPLv3",
+  "author": "Shark5060",
+  "type": "module",
+  "main": "tc-bot.js",
+  "scripts": {
+    "start": "node tc-bot.js",
+    "deploy": "node deploy-commands.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.48.3",
+    "better-sqlite3": "^12.4.1",
+    "discord.js": "^14.17.3",
+    "google-auth-library": "^9.15.1",
+    "google-spreadsheet": "^4.1.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "eslint": "^9.20.0"
+  }
 }

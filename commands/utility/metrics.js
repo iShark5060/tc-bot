@@ -1,11 +1,11 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const Database = require('better-sqlite3');
-const { numberWithCommas } = require('../../helper/formatters.js');
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import Database from 'better-sqlite3';
+import { numberWithCommas } from '../../helper/formatters.js';
 
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
 const TOP_LIMIT = 10;
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName('metrics')
     .setDescription('Show command usage metrics')
@@ -17,8 +17,8 @@ module.exports = {
           { name: 'Daily', value: 'daily' },
           { name: 'Weekly', value: 'weekly' },
           { name: 'Monthly', value: 'monthly' },
-          { name: 'Yearly', value: 'yearly' }
-        )
+          { name: 'Yearly', value: 'yearly' },
+        ),
     ),
   examples: ['/metrics', '/metrics period:weekly'],
 
@@ -42,7 +42,7 @@ module.exports = {
           COUNT(*) AS total_count
         FROM command_usage
         WHERE created_at >= ?
-        `
+        `,
       );
 
       const topStmt = db.prepare(
@@ -53,7 +53,7 @@ module.exports = {
         GROUP BY command_name
         ORDER BY cnt DESC, command_name ASC
         LIMIT ?
-        `
+        `,
       );
 
       const totals = totalsStmt.get(sinceUTC);
@@ -71,8 +71,8 @@ module.exports = {
               .map(
                 (r, i) =>
                   `${String(i + 1).padStart(2, '0')}. ${r.command_name} — ${numberWithCommas(
-                    r.cnt
-                  )}`
+                    r.cnt,
+                  )}`,
               )
               .join('\n')
           : 'No data yet.';
@@ -95,7 +95,7 @@ module.exports = {
             name: `Top ${TOP_LIMIT} Commands`,
             value: topLines,
             inline: false,
-          }
+          },
         )
         .setTimestamp();
 

@@ -1,6 +1,6 @@
-const {SlashCommandBuilder, EmbedBuilder, PermissionsBitField, MessageFlags } = require('discord.js');
+import { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, MessageFlags } from 'discord.js';
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName('help')
     .setDescription('List all available commands with usage examples'),
@@ -10,42 +10,42 @@ module.exports = {
     const commands = interaction.client.commands;
 
     if (!commands || commands.size === 0) {
-    return interaction.reply({
-      content: 'No commands are currently available.',
-      flags: MessageFlags.Ephemeral,
-    });
+      return interaction.reply({
+        content: 'No commands are currently available.',
+        flags: MessageFlags.Ephemeral,
+      });
     }
 
     const visible = [...commands.values()].filter((cmd) =>
-    canSeeCommand(cmd, interaction)
+      canSeeCommand(cmd, interaction),
     );
 
     if (visible.length === 0) {
-    return interaction.reply({
-      content: 'No commands available for your permissions in this server.',
-      flags: MessageFlags.Ephemeral,
-    });
+      return interaction.reply({
+        content: 'No commands available for your permissions in this server.',
+        flags: MessageFlags.Ephemeral,
+      });
     }
 
     const commandList = visible
-    .map((cmd) => {
-      let entry = `**/${cmd.data.name}** — ${cmd.data.description}`;
-      if (cmd.examples && cmd.examples.length > 0) {
-      entry += `\n   _Example:_ ${cmd.examples.join(' | ')}`;
-      }
-      return entry;
-    })
-    .join('\n\n');
+      .map((cmd) => {
+        let entry = `**/${cmd.data.name}** — ${cmd.data.description}`;
+        if (cmd.examples && cmd.examples.length > 0) {
+          entry += `\n   _Example:_ ${cmd.examples.join(' | ')}`;
+        }
+        return entry;
+      })
+      .join('\n\n');
 
     const embed = new EmbedBuilder()
-    .setColor(0x00ae86)
-    .setTitle('📜 Available Commands')
-    .setDescription(commandList.slice(0, 4000))
-    .setFooter({
-      text: `Requested by ${interaction.user.username}`,
-      iconURL: interaction.user.displayAvatarURL(),
-    })
-    .setTimestamp();
+      .setColor(0x00ae86)
+      .setTitle('📜 Available Commands')
+      .setDescription(commandList.slice(0, 4000))
+      .setFooter({
+        text: `Requested by ${interaction.user.username}`,
+        iconURL: interaction.user.displayAvatarURL(),
+      })
+      .setTimestamp();
 
     await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
   },

@@ -29,7 +29,7 @@ async function getSheetRowsCached(doc, sheetId, ttlMs) {
         sheet = doc.sheetsById?.[sheetId];
       }
       if (!sheet) throw new Error(`Sheet not found: ${sheetId}`);
-      
+
       const rows = await sheet.getRows();
       cache.set(key, { rows, expiresAt: Date.now() + ttl });
       return rows;
@@ -48,8 +48,8 @@ async function getSheetRowsCached(doc, sheetId, ttlMs) {
   } finally {
     const latest = cache.get(key);
     if (latest) {
-    delete latest.loadingPromise;
-    cache.set(key, latest);
+      delete latest.loadingPromise;
+      cache.set(key, latest);
     }
   }
 }
@@ -61,7 +61,7 @@ function invalidateSheetCache(sheetId, doc) {
   }
   for (const k of cache.keys()) {
     if (k.endsWith(`:${sheetId}`)) {
-    cache.delete(k);
+      cache.delete(k);
     }
   }
 }
@@ -81,7 +81,7 @@ function getCacheStats() {
   };
 }
 
-module.exports = {
+export {
   getSheetRowsCached,
   invalidateSheetCache,
   clearAllSheetCache,

@@ -1,13 +1,17 @@
-require('@dotenvx/dotenvx').config();
-const { GoogleSpreadsheet } = require('google-spreadsheet');
-const { JWT } = require('google-auth-library');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const fs = require('node:fs');
-const path = require('node:path');
-const GoogleCredentials = require('./client_secret.json');
-const { calculateMopupTiming } = require('./helper/mopup.js');
-const { getSheetRowsCached } = require('./helper/sheetsCache.js');
-const usageTracker = require('./helper/usageTracker.js');
+import '@dotenvx/dotenvx/config';
+import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { JWT } from 'google-auth-library';
+import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import GoogleCredentials from './client_secret.json' with { type: 'json' };
+import { calculateMopupTiming } from './helper/mopup.js';
+import { getSheetRowsCached } from './helper/sheetsCache.js';
+import * as usageTracker from './helper/usageTracker.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const fetch = global.fetch;
 
@@ -35,7 +39,7 @@ function validateEnvironment() {
 
   if (missing.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}`
+      `Missing required environment variables: ${missing.join(', ')}`,
     );
   }
 }
@@ -51,10 +55,10 @@ let isShuttingDown = false;
   try {
     await sendStartupNotification();
     await initializeGoogleSheets();
-    loadCommands();
-    loadEvents();
+    await loadCommands();
+    await loadEvents();
     startMopupTimer();
-		usageTracker.startWALCheckpoint(5 * 60 * 1000);
+    usageTracker.startWALCheckpoint(5 * 60 * 1000);
     await updateMopupChannels();
     await client.login(process.env.TOKEN);
   } catch (error) {
@@ -71,7 +75,7 @@ async function gracefulShutdown() {
   console.log('[SHUTDOWN] Shutting down gracefully...');
 
   try {
-		try {
+    try {
       usageTracker.stopWALCheckpoint();
       usageTracker.checkpoint('TRUNCATE');
       usageTracker.closeDb();
@@ -91,14 +95,14 @@ async function gracefulShutdown() {
 async function sendStartupNotification() {
   try {
     if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
-    
+
     const response = await fetch(
       `https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: 'TC-Bot just started.' }),
-      }
+      },
     );
     if (!response.ok) {
       console.warn(`[BOOT] Webhook returned ${response.status}`);
@@ -111,18 +115,36 @@ async function sendStartupNotification() {
 async function sendShutdownNotification() {
   try {
     if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
-    
+
     const response = await fetch(
       `https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: 'TC-Bot is shutting down.' }),
-      }
+      },
     );
     console.log('[SHUTDOWN] Notification sent:', response.status);
   } catch (error) {
     console.error('[SHUTDOWN] Failed to send shutdown notification:', error);
+  }
+}
+
+async function sendErrorNotification(error) {
+  try {
+    if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
+
+    await fetch(
+      `https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `TC-Bot failed to start.\n${String(error?.message || error)}`,
+        }),
+      },
+    );
+  } catch {
   }
 }
 
@@ -140,7 +162,7 @@ async function initializeGoogleSheets() {
 
   client.GoogleSheet = new GoogleSpreadsheet(
     process.env.GOOGLE_SHEET_URL,
-    serviceAccountAuth
+    serviceAccountAuth,
   );
 
   await client.GoogleSheet.loadInfo();
@@ -149,7 +171,7 @@ async function initializeGoogleSheets() {
   console.log('[BOOT] Loaded Google Sheet:', client.GoogleSheet.title);
 }
 
-function loadCommands() {
+async function loadCommands() {
   const commandsPath = path.join(__dirname, 'commands');
   const entries = fs.readdirSync(commandsPath);
 
@@ -158,42 +180,42 @@ function loadCommands() {
     const stat = fs.lstatSync(entryPath);
 
     if (stat.isDirectory()) {
-    const files = fs
-      .readdirSync(entryPath)
-      .filter((f) => f.endsWith('.js'));
-    for (const file of files) {
-      const filePath = path.join(entryPath, file);
-      registerCommand(filePath, file);
-    }
+      const files = fs.readdirSync(entryPath).filter((f) => f.endsWith('.js'));
+      for (const file of files) {
+        const filePath = path.join(entryPath, file);
+        await registerCommand(filePath, file);
+      }
     } else if (entry.endsWith('.js')) {
-    registerCommand(entryPath, entry);
+      await registerCommand(entryPath, entry);
     }
   }
 }
 
-function registerCommand(filePath, fileName) {
+async function registerCommand(filePath, fileName) {
   try {
-    const command = require(filePath);
+    const mod = await import(pathToFileURL(filePath).href);
+    const command = mod.default ?? mod;
     if (command?.data && command?.execute) {
-    client.commands.set(command.data.name, command);
+      client.commands.set(command.data.name, command);
     } else {
-    console.warn(`[BOOT] Invalid command file: ${fileName}`);
+      console.warn(`[BOOT] Invalid command file: ${fileName}`);
     }
   } catch (err) {
     console.error(`[BOOT] Failed to load command: ${fileName}`, err);
   }
 }
 
-function loadEvents() {
+async function loadEvents() {
   const eventsPath = path.join(__dirname, 'events');
   for (const file of fs
     .readdirSync(eventsPath)
     .filter((f) => f.endsWith('.js'))) {
-    const event = require(path.join(eventsPath, file));
+    const mod = await import(pathToFileURL(path.join(eventsPath, file)).href);
+    const event = mod.default ?? mod;
     if (event.once) {
-    client.once(event.name, (...args) => event.execute(...args));
+      client.once(event.name, (...args) => event.execute(...args));
     } else {
-    client.on(event.name, (...args) => event.execute(...args));
+      client.on(event.name, (...args) => event.execute(...args));
     }
   }
 }
@@ -213,8 +235,7 @@ async function updateMopupChannels() {
     const channel2 = client.channels.cache.get(process.env.CHANNEL_ID2);
 
     if (channel1) await channel1.setName(`${mopupInfo.status} Mopup`);
-    if (channel2)
-    await channel2.setName(`Time remaining: ${mopupInfo.time}`);
+    if (channel2) await channel2.setName(`Time remaining: ${mopupInfo.time}`);
   } catch (error) {
     console.error('[WARN] Failed to update mopup channels:', error);
   }

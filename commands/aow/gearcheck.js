@@ -1,29 +1,23 @@
-const { EmbedBuilder, SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { numberWithCommas } = require('../../helper/formatters.js');
+import { EmbedBuilder, SlashCommandBuilder, MessageFlags } from 'discord.js';
+import { numberWithCommas } from '../../helper/formatters.js';
 
 const LEVELS = [0, 10, 13, 20, 30, 40, 50];
 const MULTIPLIERS = [1, 2, 2.3, 3, 4, 5, 6];
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName('gearcheck')
     .setDescription('Calculate stat at base and +10/13/20/30/40/50')
     .addNumberOption((option) =>
-      option
-        .setName('stat')
-        .setDescription('Current stat amount')
-        .setRequired(true)
+      option.setName('stat').setDescription('Current stat amount').setRequired(true),
     )
     .addIntegerOption((option) =>
       option
         .setName('level')
         .setDescription('Current upgrade level')
-        .setRequired(true)
+        .setRequired(true),
     ),
-  examples: [
-    '/gearcheck stat:120 level:20',
-    '/gearcheck stat:85.5 level:10',
-  ],
+  examples: ['/gearcheck stat:120 level:20', '/gearcheck stat:85.5 level:10'],
 
   async execute(interaction) {
     await interaction.deferReply();
@@ -31,7 +25,6 @@ module.exports = {
     const statValue = interaction.options.getNumber('stat');
     const gearLevel = interaction.options.getInteger('level');
 
-    // Validate stat value
     if (statValue <= 0) {
       return interaction.editReply({
         content: 'Stat value must be greater than 0',
@@ -39,7 +32,6 @@ module.exports = {
       });
     }
 
-    // Validate gear level is reasonable
     if (gearLevel < 0) {
       return interaction.editReply({
         content: 'Gear level cannot be negative',
@@ -64,7 +56,7 @@ module.exports = {
 function calculateGearStats(currentStat, currentLevel) {
   const currentMultiplier = 1 + currentLevel / 10;
   const baseStat = currentStat / currentMultiplier;
-  
+
   return LEVELS.reduce((acc, level, index) => {
     acc[level] = (baseStat * MULTIPLIERS[index]).toFixed(2);
     return acc;
@@ -82,13 +74,14 @@ function createGearEmbed(currentStat, currentLevel, calculations) {
     .addFields(
       {
         name: 'Current stat:',
-        value: `\`\`\`asciidoc\n+${currentLevel}: ${numberWithCommas(
-          currentStat.toFixed(2)
-        )}%\`\`\``,
+        value:
+          '```asciidoc\n' +
+          `+${currentLevel}: ${numberWithCommas(currentStat.toFixed(2))}%` +
+          '```',
       },
       {
         name: 'Calculated:',
-        value: `\`\`\`asciidoc\n${calculatedText}\`\`\``,
-      }
+        value: '```asciidoc\n' + calculatedText + '```',
+      },
     );
 }

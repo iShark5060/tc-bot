@@ -1,4 +1,4 @@
-const { MessageFlags } = require('discord.js');
+import { MessageFlags } from 'discord.js';
 
 async function handleCommandError(interaction, error) {
   console.error('[ERROR] Command execution failed:', error);
@@ -10,9 +10,9 @@ async function handleCommandError(interaction, error) {
 
   try {
     if (interaction.replied || interaction.deferred) {
-    await interaction.followUp(errorMessage);
+      await interaction.followUp(errorMessage);
     } else {
-    await interaction.reply(errorMessage);
+      await interaction.reply(errorMessage);
     }
   } catch (followUpError) {
     console.error('[ERROR] Failed to send error message:', followUpError);
@@ -29,4 +29,4 @@ async function handleMessageError(message, error) {
   }
 }
 
-module.exports = { handleCommandError, handleMessageError };
+export { handleCommandError, handleMessageError };

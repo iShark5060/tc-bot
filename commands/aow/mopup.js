@@ -1,10 +1,8 @@
-const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
-const { calculateMopupTiming } = require('../../helper/mopup.js');
+import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { calculateMopupTiming } from '../../helper/mopup.js';
 
-module.exports = {
-  data: new SlashCommandBuilder()
-    .setName('mopup')
-    .setDescription('Time until next mopup'),
+export default {
+  data: new SlashCommandBuilder().setName('mopup').setDescription('Time until next mopup'),
   examples: ['/mopup'],
 
   async execute(interaction) {
@@ -13,8 +11,8 @@ module.exports = {
       .setColor(color)
       .setTitle('Mopup')
       .addFields(
-        { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
-        { name: 'Time remaining:', value: `\`\`\`asciidoc\n${time}\`\`\`` }
+        { name: 'Status:', value: '```asciidoc\n' + status + '```' },
+        { name: 'Time remaining:', value: '```asciidoc\n' + time + '```' },
       );
     await interaction.reply({ embeds: [embed] });
   },

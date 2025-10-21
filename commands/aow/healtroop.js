@@ -1,12 +1,6 @@
-const {
-  EmbedBuilder,
-  SlashCommandBuilder,
-  MessageFlags,
-  ActionRowBuilder,
-  StringSelectMenuBuilder,
-} = require('discord.js');
-const { numberWithCommas } = require('../../helper/formatters.js');
-const { getSheetRowsCached } = require('../../helper/sheetsCache.js');
+import { EmbedBuilder, SlashCommandBuilder, MessageFlags, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
+import { numberWithCommas } from '../../helper/formatters.js';
+import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 
 const TRUNCATION_LIMITS = {
   MAX_ROWS: 10,
@@ -45,7 +39,7 @@ const COST_LABELS = {
   hePoints: 'Heal Points::',
 };
 
-module.exports = {
+export default {
   data: new SlashCommandBuilder()
     .setName('healtroop')
     .setDescription('Calculate cost to heal troops')
@@ -53,13 +47,13 @@ module.exports = {
       option
         .setName('amount')
         .setDescription('How many troops are injured')
-        .setRequired(true)
+        .setRequired(true),
     )
     .addIntegerOption((option) =>
       option
         .setName('tier')
         .setDescription('Tier of the injured units')
-        .setRequired(true)
+        .setRequired(true),
     )
     .addStringOption((option) =>
       option
@@ -68,9 +62,9 @@ module.exports = {
         .addChoices(
           { name: 'Infantry', value: 'Infantry' },
           { name: 'Walker', value: 'Walker' },
-          { name: 'Airship', value: 'Airship' }
+          { name: 'Airship', value: 'Airship' },
         )
-        .setRequired(true)
+        .setRequired(true),
     ),
   examples: [
     '/healtroop amount:100 tier:12 type:Infantry',
@@ -93,7 +87,7 @@ module.exports = {
 
     const rows = await getSheetRowsCached(
       interaction.client.GoogleSheet,
-      process.env.GOOGLE_SHEET_ID
+      process.env.GOOGLE_SHEET_ID,
     );
 
     const troopRows = findTroopRows(rows, troopTier, troopType);
@@ -106,8 +100,7 @@ module.exports = {
     if (validByName.size === 0) {
       return interaction.editReply({
         content:
-          'No usable troop data found for that selection ' +
-          '(rows are empty or missing costs).',
+          'No usable troop data found for that selection (rows are empty or missing costs).',
       });
     }
 
@@ -117,7 +110,7 @@ module.exports = {
         .setTitle('Healing cost — choose troop')
         .setDescription(
           `Found ${validByName.size} troop variants for ` +
-            `T${troopTier} ${troopType}. Choose one to see detailed costs.`
+            `T${troopTier} ${troopType}. Choose one to see detailed costs.`,
         )
         .addFields({
           name: 'Selection',
@@ -136,8 +129,7 @@ module.exports = {
           value: name.slice(0, 100),
         }));
 
-      const truncated =
-        validByName.size > TRUNCATION_LIMITS.MAX_SELECT_OPTIONS;
+      const truncated = validByName.size > TRUNCATION_LIMITS.MAX_SELECT_OPTIONS;
 
       const row = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
@@ -145,12 +137,11 @@ module.exports = {
           .setPlaceholder('Pick a troop name…')
           .addOptions(options)
           .setMinValues(1)
-          .setMaxValues(1)
+          .setMaxValues(1),
       );
 
       const content = truncated
-        ? `Showing first ${TRUNCATION_LIMITS.MAX_SELECT_OPTIONS} of ` +
-          `${validByName.size} troops.`
+        ? `Showing first ${TRUNCATION_LIMITS.MAX_SELECT_OPTIONS} of ${validByName.size} troops.`
         : undefined;
 
       return interaction.editReply({
@@ -176,7 +167,7 @@ module.exports = {
       perRowCalcs,
       selectedRows.length < (validByName.get(singleName).length || 0)
         ? validByName.get(singleName).length - selectedRows.length
-        : 0
+        : 0,
     );
 
     return interaction.editReply({ embeds: [embed], components: [] });
@@ -204,11 +195,11 @@ module.exports = {
 
       const rows = await getSheetRowsCached(
         interaction.client.GoogleSheet,
-        process.env.GOOGLE_SHEET_ID
+        process.env.GOOGLE_SHEET_ID,
       );
 
       const troopRows = findTroopRows(rows, troopTier, troopType).filter(
-        (r) => String(r.get('troopName')) === String(selectedName)
+        (r) => String(r.get('troopName')) === String(selectedName),
       );
 
       if (troopRows.length === 0) {
@@ -229,8 +220,7 @@ module.exports = {
       if (perRowCalcs.length === 0) {
         return interaction.update({
           content:
-            'No usable troop data found for that selection ' +
-            '(rows are empty or missing costs).',
+            'No usable troop data found for that selection (rows are empty or missing costs).',
           components: [],
         });
       }
@@ -243,7 +233,7 @@ module.exports = {
         perRowCalcs,
         troopRows.length > TRUNCATION_LIMITS.MAX_ROWS
           ? troopRows.length - TRUNCATION_LIMITS.MAX_ROWS
-          : 0
+          : 0,
       );
 
       return interaction.update({
@@ -258,7 +248,8 @@ module.exports = {
           content: 'Failed to render selection.',
           components: [],
         });
-      } catch {}
+      } catch {
+      }
     }
   },
 };
@@ -268,7 +259,7 @@ function findTroopRows(rows, tier, type) {
     (row) =>
       String(row.get('troopTier')) === String(tier) &&
       row.get('troopType') === type &&
-      row.get('isNPC') === 'N'
+      row.get('isNPC') === 'N',
   );
 }
 
@@ -304,12 +295,10 @@ function getOptimalModifier(troopUnits) {
     }
   }
 
-  // Already at highest tier
   if (troopUnits >= MODIFIER_THRESHOLDS[0].units) {
     return { modifier: MODIFIER_THRESHOLDS[0].modifier, units: -1 };
   }
 
-  // Below lowest threshold
   const lowest = MODIFIER_THRESHOLDS[MODIFIER_THRESHOLDS.length - 1];
   return { modifier: lowest.modifier, units: lowest.units };
 }
@@ -322,10 +311,7 @@ function calculateResourceCost(costString, amount, modifier) {
 }
 
 function calculateHealingCosts(troopData, troopAmount) {
-  const unitsPerTroop = parseInt(
-    String(troopData.get('troopUnits') || '0'),
-    10
-  );
+  const unitsPerTroop = parseInt(String(troopData.get('troopUnits') || '0'), 10);
   if (!Number.isFinite(unitsPerTroop) || unitsPerTroop <= 0) {
     return null;
   }
@@ -335,9 +321,7 @@ function calculateHealingCosts(troopData, troopAmount) {
   const optimal = getOptimalModifier(unitsPerTroop);
   const optQty = Math.max(
     1,
-    optimal.units === -1
-      ? troopAmount
-      : Math.floor(optimal.units / unitsPerTroop)
+    optimal.units === -1 ? troopAmount : Math.floor(optimal.units / unitsPerTroop),
   );
 
   const costs = {
@@ -355,12 +339,12 @@ function calculateHealingCosts(troopData, troopAmount) {
     const cost = calculateResourceCost(
       troopData.get(type),
       troopAmount,
-      modifier
+      modifier,
     );
     const optCost = calculateResourceCost(
       troopData.get(type),
       troopAmount,
-      optimal.modifier
+      optimal.modifier,
     );
     if (cost !== null) {
       costs.resources[type] = { current: cost, optimal: optCost ?? cost };
@@ -372,12 +356,12 @@ function calculateHealingCosts(troopData, troopAmount) {
     const cost = calculateResourceCost(
       troopData.get(type),
       troopAmount,
-      modifier
+      modifier,
     );
     let optPerChunk = calculateResourceCost(
       troopData.get(type),
       1,
-      optimal.modifier
+      optimal.modifier,
     );
     if (cost !== null && optPerChunk !== null) {
       if (optPerChunk < 1) optPerChunk = 1;
@@ -431,7 +415,7 @@ function createMultiHealingEmbed(
   troopAmount,
   troopName,
   perRowCalcs,
-  truncatedCount
+  truncatedCount,
 ) {
   const embed = new EmbedBuilder().setColor(0xffffff).setTitle('Healing cost:');
 
@@ -474,7 +458,7 @@ function createMultiHealingEmbed(
         `at a time to heal at ` +
         `${(costs.optimal.modifier * 100).toFixed(0)}% of training costs:`;
       const warning = Object.keys(costs.special).some((t) =>
-        COST_TYPES.SPECIAL.includes(t)
+        COST_TYPES.SPECIAL.includes(t),
       )
         ? 'Save rss but may cost more sm/uc/hc\n'
         : '';
