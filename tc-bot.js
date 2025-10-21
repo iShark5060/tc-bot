@@ -150,8 +150,7 @@ async function sendErrorNotification(error) {
         }),
       },
     );
-  } catch {
-  }
+  } catch {}
 }
 
 async function initializeGoogleSheets() {

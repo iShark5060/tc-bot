@@ -53,8 +53,7 @@ export default {
           success: false,
           errorMessage: error?.message || String(error),
         });
-      } catch {
-      }
+      } catch {}
     }
   },
 };

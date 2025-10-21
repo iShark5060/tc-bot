@@ -9,7 +9,10 @@ export default {
     .setName('gearcheck')
     .setDescription('Calculate stat at base and +10/13/20/30/40/50')
     .addNumberOption((option) =>
-      option.setName('stat').setDescription('Current stat amount').setRequired(true),
+      option
+        .setName('stat')
+        .setDescription('Current stat amount')
+        .setRequired(true),
     )
     .addIntegerOption((option) =>
       option

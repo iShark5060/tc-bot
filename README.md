@@ -12,7 +12,6 @@ Outside of the game itself, the bot is pretty useless, and even inside the game 
 
 The Bot lives in the Diplomacy of War Discord Server - one of the largest communities around the game (https://discord.gg/YMAhCNjkgp).
 
-
 The TC-Bot project is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)
 
 Discord.js Frame work by [Discord.js](https://github.com/discordjs/discord.js)
@@ -35,6 +34,7 @@ From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reaso
 You will need to create several files and fill them out in order to use the bot.
 
 .env
+
 ```
 # Your Discord Bot Token
 TOKEN=balblub
@@ -70,6 +70,7 @@ Unless you have a copy of the Theorycrafters Google Docs sheet, you probably wil
 If you do - the API access credentials go into the client_secret.json
 
 client_secret.json
+
 ```
 {
   "type": "service_account",
@@ -90,6 +91,7 @@ client_secret.json
 up to date instructions are available here: https://nodejs.org/en/download
 
 Installing nvm, node & npm run:
+
 ```
 # Download and install nvm:
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
@@ -106,6 +108,7 @@ npm -v # Should print "10.9.2".
 ```
 
 Installing and starting the Bot
+
 ```
 # dowload all the dependencies listed in the package.json
 npm install

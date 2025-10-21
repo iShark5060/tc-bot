@@ -24,7 +24,9 @@ export default {
       option.setName('tier').setDescription('Target Tier').setRequired(true),
     )
     .addIntegerOption((option) =>
-      option.setName('tdr').setDescription('Target Total Damage Reduction amount'),
+      option
+        .setName('tdr')
+        .setDescription('Target Total Damage Reduction amount'),
     ),
   examples: [
     '/its level:30 leadership:500000 tier:12',

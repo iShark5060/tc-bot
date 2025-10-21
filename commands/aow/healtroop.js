@@ -1,4 +1,10 @@
-import { EmbedBuilder, SlashCommandBuilder, MessageFlags, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
+import {
+  EmbedBuilder,
+  SlashCommandBuilder,
+  MessageFlags,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+} from 'discord.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 
@@ -248,8 +254,7 @@ export default {
           content: 'Failed to render selection.',
           components: [],
         });
-      } catch {
-      }
+      } catch {}
     }
   },
 };
@@ -311,7 +316,10 @@ function calculateResourceCost(costString, amount, modifier) {
 }
 
 function calculateHealingCosts(troopData, troopAmount) {
-  const unitsPerTroop = parseInt(String(troopData.get('troopUnits') || '0'), 10);
+  const unitsPerTroop = parseInt(
+    String(troopData.get('troopUnits') || '0'),
+    10,
+  );
   if (!Number.isFinite(unitsPerTroop) || unitsPerTroop <= 0) {
     return null;
   }
@@ -321,7 +329,9 @@ function calculateHealingCosts(troopData, troopAmount) {
   const optimal = getOptimalModifier(unitsPerTroop);
   const optQty = Math.max(
     1,
-    optimal.units === -1 ? troopAmount : Math.floor(optimal.units / unitsPerTroop),
+    optimal.units === -1
+      ? troopAmount
+      : Math.floor(optimal.units / unitsPerTroop),
   );
 
   const costs = {

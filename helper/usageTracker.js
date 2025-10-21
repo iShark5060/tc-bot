@@ -116,4 +116,10 @@ function closeDb() {
   }
 }
 
-export { logCommandUsage, checkpoint, startWALCheckpoint, stopWALCheckpoint, closeDb };
+export {
+  logCommandUsage,
+  checkpoint,
+  startWALCheckpoint,
+  stopWALCheckpoint,
+  closeDb,
+};

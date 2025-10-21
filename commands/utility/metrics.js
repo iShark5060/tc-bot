@@ -63,7 +63,9 @@ export default {
       const successCount = Number(totals?.success_count || 0);
       const failureCount = Number(totals?.failure_count || 0);
       const successRate =
-        totalCount > 0 ? Math.round((successCount / totalCount) * 1000) / 10 : 0;
+        totalCount > 0
+          ? Math.round((successCount / totalCount) * 1000) / 10
+          : 0;
 
       const topLines =
         top.length > 0

@@ -1,4 +1,9 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionsBitField, MessageFlags } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  PermissionsBitField,
+  MessageFlags,
+} from 'discord.js';
 
 export default {
   data: new SlashCommandBuilder()

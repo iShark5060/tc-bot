@@ -1,9 +1,15 @@
-import { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  MessageFlags,
+} from 'discord.js';
 
 export default {
   data: new SlashCommandBuilder()
     .setName('reboot')
-    .setDescription('Shuts down the bot. PM2 will restart the container automatically.')
+    .setDescription(
+      'Shuts down the bot. PM2 will restart the container automatically.',
+    )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addBooleanOption((option) =>
       option
