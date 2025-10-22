@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 const TOKEN = process.env.TOKEN;
 if (!TOKEN) {
   console.error('[DEPLOY] ❌ Missing TOKEN in environment variables.');
-  process.exit(1);
+  process.exitCode = 1;
 }
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -22,7 +22,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     await deployNewCommands(commands);
   } catch (error) {
     console.error('[DEPLOY] ❌ Failed to deploy commands:', error);
-    process.exit(1);
+    process.exitCode = 1;
   }
 })();
 
@@ -87,7 +87,7 @@ async function deployNewCommands(commands) {
   console.log(`[DEPLOY] Commands: ${commands.map((c) => c.name).join(', ')}`);
 
   console.log('[DEPLOY] Starting in 3 seconds... (Ctrl+C to cancel)');
-  await new Promise((r) => setTimeout(r, 3000));
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
   const data = await rest.put(
     Routes.applicationCommands(process.env.CLIENT_ID),
