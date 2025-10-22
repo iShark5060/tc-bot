@@ -1,15 +1,16 @@
 import '@dotenvx/dotenvx/config';
-import { GoogleSpreadsheet } from 'google-spreadsheet';
-import { JWT } from 'google-auth-library';
+import io from '@pm2/io';
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import { JWT } from 'google-auth-library';
+import { GoogleSpreadsheet } from 'google-spreadsheet';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
 import GoogleCredentials from './client_secret.json' with { type: 'json' };
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
-import io from '@pm2/io';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,7 +71,7 @@ let isShuttingDown = false;
   } catch (error) {
     console.error('[BOOT] Failed to initialize bot:', error);
     await sendErrorNotification(error);
-    process.exit(1);
+    process.exitCode = 1;
   }
 })();
 
@@ -91,10 +92,10 @@ async function gracefulShutdown() {
     await sendShutdownNotification();
     client.destroy();
     console.log('[SHUTDOWN] Bot shut down successfully');
-    process.exit(0);
+    process.exitCode = 0;
   } catch (error) {
     console.error('[SHUTDOWN] Error during shutdown:', error);
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
@@ -150,7 +151,9 @@ async function sendErrorNotification(error) {
         }),
       },
     );
-  } catch {}
+  } catch {
+    // Ignore notification errors
+  }
 }
 
 async function initializeGoogleSheets() {

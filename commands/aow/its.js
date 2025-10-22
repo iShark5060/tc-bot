@@ -1,4 +1,5 @@
 import { EmbedBuilder, SlashCommandBuilder, MessageFlags } from 'discord.js';
+
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 
@@ -42,9 +43,7 @@ export default {
 
     if (skillLevel > 60) {
       return interaction.reply({
-        content:
-          `You entered skill level ${skillLevel}. Was that intended? ` +
-          `Because it's not possible, but it would be REALLY nice if it were...`,
+        content: `You entered skill level ${skillLevel}. Was that intended? Because it's not possible, but it would be REALLY nice if it were...`,
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -73,7 +72,7 @@ export default {
 
     const embed = createItsEmbed(leadership, skillLevel, tdr, kills);
 
-    await interaction.editReply({ embeds: [embed] });
+    return interaction.editReply({ embeds: [embed] });
   },
 };
 
@@ -134,6 +133,6 @@ function createItsEmbed(leadership, skillLevel, tdr, kills) {
       name:
         `${numberWithCommas(leadership)} leadership with level ${skillLevel} ` +
         `iTS skill vs ${tdr}% TDR can kill:`,
-      value: '```\n' + formatKillsList(kills) + '```',
+      value: `\`\`\`\n${formatKillsList(kills)}\`\`\``,
     });
 }

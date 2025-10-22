@@ -55,7 +55,7 @@ function initDb() {
   console.log('[USAGE:SQLite] Initialized at', DB_PATH);
 }
 
-async function logCommandUsage({
+function logCommandUsage({
   commandName,
   userId,
   guildId,

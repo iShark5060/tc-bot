@@ -1,4 +1,5 @@
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+
 import { calculateMopupTiming } from '../../helper/mopup.js';
 
 export default {
@@ -13,8 +14,8 @@ export default {
       .setColor(color)
       .setTitle('Mopup')
       .addFields(
-        { name: 'Status:', value: '```asciidoc\n' + status + '```' },
-        { name: 'Time remaining:', value: '```asciidoc\n' + time + '```' },
+        { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
+        { name: 'Time remaining:', value: `\`\`\`asciidoc\n${time}\`\`\`` },
       );
     await interaction.reply({ embeds: [embed] });
   },

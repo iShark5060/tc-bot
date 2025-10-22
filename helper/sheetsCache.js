@@ -11,7 +11,7 @@ async function getSheetRowsCached(doc, sheetId, ttlMs) {
   const key = keyFor(doc, sheetId);
   const now = Date.now();
 
-  let entry = cache.get(key);
+  const entry = cache.get(key);
 
   if (entry?.rows && entry.expiresAt > now) {
     return entry.rows;

@@ -1,5 +1,6 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import Database from 'better-sqlite3';
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+
 import { numberWithCommas } from '../../helper/formatters.js';
 
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
@@ -140,17 +141,9 @@ function getSince(period) {
 
 function formatUTC(d) {
   const pad = (n) => String(n).padStart(2, '0');
-  return (
-    d.getUTCFullYear() +
-    '-' +
-    pad(d.getUTCMonth() + 1) +
-    '-' +
-    pad(d.getUTCDate()) +
-    ' ' +
-    pad(d.getUTCHours()) +
-    ':' +
-    pad(d.getUTCMinutes()) +
-    ':' +
-    pad(d.getUTCSeconds())
-  );
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(
+    d.getUTCDate(),
+  )} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(
+    d.getUTCSeconds(),
+  )}`;
 }

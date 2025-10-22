@@ -1,4 +1,5 @@
 import { Events } from 'discord.js';
+
 import { handleMessageError } from '../helper/errorHandler.js';
 import { calculateMopupTiming } from '../helper/mopup.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
@@ -17,10 +18,10 @@ export default {
               color,
               title: 'Mopup',
               fields: [
-                { name: 'Status:', value: '```asciidoc\n' + status + '```' },
+                { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
                 {
                   name: 'Time remaining:',
-                  value: '```asciidoc\n' + time + '```',
+                  value: `\`\`\`asciidoc\n${time}\`\`\``,
                 },
               ],
             },
@@ -42,7 +43,9 @@ export default {
             success: false,
             errorMessage: error?.message || String(error),
           });
-        } catch {}
+        } catch {
+          // ignore logging errors
+        }
       }
     }
   },

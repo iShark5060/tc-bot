@@ -1,4 +1,5 @@
 import { Events, MessageFlags } from 'discord.js';
+
 import { handleCommandError } from '../helper/errorHandler.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 
@@ -53,7 +54,9 @@ export default {
           success: false,
           errorMessage: error?.message || String(error),
         });
-      } catch {}
+      } catch {
+        // ignore logging errors
+      }
     }
   },
 };

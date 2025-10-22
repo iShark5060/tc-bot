@@ -51,6 +51,7 @@ export default {
       `[REBOOT] Command issued by ${interaction.user.tag} in ${interaction.guild.name}`,
     );
 
-    setTimeout(() => process.exit(0), 500);
+    setTimeout(() => (process.exitCode = 0), 500);
+    return Promise.resolve();
   },
 };

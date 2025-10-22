@@ -1,4 +1,5 @@
 import { EmbedBuilder, SlashCommandBuilder, MessageFlags } from 'discord.js';
+
 import { numberWithCommas } from '../../helper/formatters.js';
 
 const LEVELS = [0, 10, 13, 20, 30, 40, 50];
@@ -52,7 +53,7 @@ export default {
     const calculations = calculateGearStats(statValue, gearLevel);
     const embed = createGearEmbed(statValue, gearLevel, calculations);
 
-    await interaction.editReply({ embeds: [embed] });
+    return interaction.editReply({ embeds: [embed] });
   },
 };
 
@@ -84,7 +85,7 @@ function createGearEmbed(currentStat, currentLevel, calculations) {
       },
       {
         name: 'Calculated:',
-        value: '```asciidoc\n' + calculatedText + '```',
+        value: `\`\`\`asciidoc\n${calculatedText}\`\`\``,
       },
     );
 }

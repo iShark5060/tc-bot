@@ -5,6 +5,7 @@ import {
   ActionRowBuilder,
   StringSelectMenuBuilder,
 } from 'discord.js';
+
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 
@@ -254,7 +255,10 @@ export default {
           content: 'Failed to render selection.',
           components: [],
         });
-      } catch {}
+      } catch {
+        // Ignore error here
+      }
+      return Promise.resolve();
     }
   },
 };
@@ -465,7 +469,7 @@ function createMultiHealingEmbed(
     if (costs.optimal.modifier < costs.modifier) {
       const tipText =
         `${costs.optQty}x troop${costs.optQty > 1 ? 's' : ''} ` +
-        `at a time to heal at ` +
+        'at a time to heal at ' +
         `${(costs.optimal.modifier * 100).toFixed(0)}% of training costs:`;
       const warning = Object.keys(costs.special).some((t) =>
         COST_TYPES.SPECIAL.includes(t),

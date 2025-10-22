@@ -6,7 +6,13 @@ require_once __DIR__ . '/config.inc.php';
 $DEBUG = defined('DEBUG_MODE') ? (bool) DEBUG_MODE : false;
 
 $period = isset($_GET['period']) ? strtolower($_GET['period']) : 'daily';
-if (!in_array($period, $ALLOWED_PERIODS ?? ['daily','weekly','monthly','yearly'], true)) {
+if (
+  !in_array(
+    $period,
+    $ALLOWED_PERIODS ?? ['daily', 'weekly', 'monthly', 'yearly'],
+    true,
+  )
+) {
   $period = 'daily';
 }
 
@@ -22,20 +28,20 @@ switch ($period) {
     break;
   case 'weekly':
     $since = $now->modify('-7 days');
-    $groupExpr = "date(created_at)";
-    $orderGroup = "date(created_at) ASC";
+    $groupExpr = 'date(created_at)';
+    $orderGroup = 'date(created_at) ASC';
     $labelFormatter = fn($r) => $r['period_label'];
     break;
   case 'monthly':
     $since = $now->modify('-1 month');
-    $groupExpr = "date(created_at)";
-    $orderGroup = "date(created_at) ASC";
+    $groupExpr = 'date(created_at)';
+    $orderGroup = 'date(created_at) ASC';
     $labelFormatter = fn($r) => $r['period_label'];
     break;
   case 'yearly':
     $since = $now->modify('-1 year');
-    $groupExpr = "date(created_at)";
-    $orderGroup = "date(created_at) ASC";
+    $groupExpr = 'date(created_at)';
+    $orderGroup = 'date(created_at) ASC';
     $labelFormatter = fn($r) => $r['period_label'];
     break;
   default:
@@ -51,12 +57,17 @@ $sinceStr = $since->format('Y-m-d H:i:s');
 if (!extension_loaded('pdo_sqlite')) {
   http_response_code(500);
   echo $DEBUG ? 'pdo_sqlite extension not enabled.' : 'DB connection failed.';
-  exit;
+  exit();
 }
 
-$dbPath = defined('SQLITE_DB_PATH') ? SQLITE_DB_PATH : (__DIR__ . '/../data/metrics.db');
+$dbPath = defined('SQLITE_DB_PATH')
+  ? SQLITE_DB_PATH
+  : __DIR__ . '/../data/metrics.db';
 $realPath = @realpath($dbPath) ?: $dbPath;
-$uri = 'file:' . str_replace('%2F', '/', rawurlencode($realPath)) . '?mode=ro&immutable=1';
+$uri =
+  'file:' .
+  str_replace('%2F', '/', rawurlencode($realPath)) .
+  '?mode=ro&immutable=1';
 $dsn = 'sqlite:' . $uri;
 
 $options = [
@@ -65,7 +76,10 @@ $options = [
   PDO::ATTR_EMULATE_PREPARES => false,
 ];
 
-if (defined('PDO::SQLITE_ATTR_OPEN_FLAGS') && defined('SQLITE3_OPEN_READONLY')) {
+if (
+  defined('PDO::SQLITE_ATTR_OPEN_FLAGS') &&
+  defined('SQLITE3_OPEN_READONLY')
+) {
   $options[PDO::SQLITE_ATTR_OPEN_FLAGS] = SQLITE3_OPEN_READONLY;
 }
 
@@ -74,29 +88,43 @@ try {
     error_log('[TC-Bot][DEBUG] Using SQLite DSN: ' . $dsn);
     error_log('[TC-Bot][DEBUG] DB path: ' . $dbPath);
     error_log('[TC-Bot][DEBUG] Real path: ' . $realPath);
-    error_log('[TC-Bot][DEBUG] Exists: ' . (file_exists($realPath) ? 'yes' : 'no') .
-              ', Readable: ' . (is_readable($realPath) ? 'yes' : 'no'));
+    error_log(
+      '[TC-Bot][DEBUG] Exists: ' .
+        (file_exists($realPath) ? 'yes' : 'no') .
+        ', Readable: ' .
+        (is_readable($realPath) ? 'yes' : 'no'),
+    );
   }
 
   $pdo = new PDO($dsn, null, null, $options);
   $pdo->exec('PRAGMA query_only=ON;');
-
 } catch (Throwable $e) {
   http_response_code(500);
   if ($DEBUG) {
-    echo '<h3>DB connection failed (debug)</h3><pre>' . htmlspecialchars($e->getMessage()) . "</pre>";
-    echo '<pre>' . htmlspecialchars(print_r([
-      'pdo_sqlite_loaded' => extension_loaded('pdo_sqlite') ? 'yes' : 'no',
-      'sqlite3_loaded'    => extension_loaded('sqlite3') ? 'yes' : 'no',
-      'db_path'           => $dbPath,
-      'realpath'          => $realPath,
-      'exists'            => file_exists($realPath) ? 'yes' : 'no',
-      'readable'          => is_readable($realPath) ? 'yes' : 'no',
-    ], true)) . '</pre>';
+    echo '<h3>DB connection failed (debug)</h3><pre>' .
+      htmlspecialchars($e->getMessage()) .
+      '</pre>';
+    echo '<pre>' .
+      htmlspecialchars(
+        print_r(
+          [
+            'pdo_sqlite_loaded' => extension_loaded('pdo_sqlite')
+              ? 'yes'
+              : 'no',
+            'sqlite3_loaded' => extension_loaded('sqlite3') ? 'yes' : 'no',
+            'db_path' => $dbPath,
+            'realpath' => $realPath,
+            'exists' => file_exists($realPath) ? 'yes' : 'no',
+            'readable' => is_readable($realPath) ? 'yes' : 'no',
+          ],
+          true,
+        ),
+      ) .
+      '</pre>';
   } else {
     echo 'DB connection failed.';
   }
-  exit;
+  exit();
 }
 
 $maxResults = (int) (defined('MAX_RESULTS') ? MAX_RESULTS : 10);
@@ -141,7 +169,6 @@ try {
   $stmtPeriod = $pdo->prepare($byPeriodSql);
   $stmtPeriod->execute([':since' => $sinceStr]);
   $byPeriod = $stmtPeriod->fetchAll();
-
 } catch (Throwable $e) {
   error_log('[TC-Bot] Query failed: ' . $e->getMessage());
   error_log('[TC-Bot] Period: ' . $period);
@@ -151,13 +178,14 @@ try {
   } else {
     echo 'An error occurred while loading statistics. Please try again later.';
   }
-  exit;
+  exit();
 }
 
 $labels = array_map($labelFormatter, $byPeriod);
 $data = array_map(fn($r) => (int) $r['cnt'], $byPeriod);
 
-function esc($s) {
+function esc($s)
+{
   return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
@@ -165,7 +193,7 @@ $successRate = 0;
 if (!empty($totals['total_count'])) {
   $successRate = round(
     ($totals['success_count'] / $totals['total_count']) * 100,
-    1
+    1,
   );
 }
 ?>
@@ -244,7 +272,9 @@ if (!empty($totals['total_count'])) {
   tbody tr:hover { background: rgba(255,255,255,0.03); }
   tbody tr:last-child { border-bottom: none; }
   canvas {
-    width: 100%; max-width: 100%; height: <?= (int)(defined('CHART_HEIGHT') ? CHART_HEIGHT : 260) ?>px; margin-top: 20px;
+    width: 100%; max-width: 100%; height: <?= (int) (defined('CHART_HEIGHT')
+      ? CHART_HEIGHT
+      : 260) ?>px; margin-top: 20px;
     background: var(--panel); border: 1px solid var(--border);
     border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px;
   }
@@ -264,8 +294,18 @@ if (!empty($totals['total_count'])) {
       <form method="get" action="">
         <label for="period" class="muted">Timeframe:</label>
         <select id="period" name="period" onchange="this.form.submit()">
-          <?php foreach (($PERIOD_NAMES ?? ['daily' => 'Daily','weekly' => 'Weekly','monthly' => 'Monthly','yearly' => 'Yearly']) as $key => $label): ?>
-            <option value="<?= esc($key) ?>" <?= $period === $key ? 'selected' : '' ?>>
+          <?php foreach (
+            $PERIOD_NAMES ?? [
+              'daily' => 'Daily',
+              'weekly' => 'Weekly',
+              'monthly' => 'Monthly',
+              'yearly' => 'Yearly',
+            ]
+            as $key => $label
+          ): ?>
+            <option value="<?= esc($key) ?>" <?= $period === $key
+  ? 'selected'
+  : '' ?>>
               <?= esc($label) ?>
             </option>
           <?php endforeach; ?>
@@ -276,19 +316,21 @@ if (!empty($totals['total_count'])) {
     <div class="cards">
       <div class="card">
         <div class="card-title">Total Commands</div>
-        <div class="card-value"><?= number_format((int)($totals['total_count'] ?? 0)) ?></div>
+        <div class="card-value"><?= number_format(
+          (int) ($totals['total_count'] ?? 0),
+        ) ?></div>
       </div>
       <div class="card">
         <div class="card-title">Successful</div>
         <div class="card-value" style="color: var(--success);">
-          <?= number_format((int)($totals['success_count'] ?? 0)) ?>
+          <?= number_format((int) ($totals['success_count'] ?? 0)) ?>
         </div>
         <div class="card-subtitle"><?= esc($successRate) ?>% success rate</div>
       </div>
       <div class="card">
         <div class="card-title">Failed</div>
         <div class="card-value" style="color: var(--danger);">
-          <?= number_format((int)($totals['failure_count'] ?? 0)) ?>
+          <?= number_format((int) ($totals['failure_count'] ?? 0)) ?>
         </div>
       </div>
     </div>
@@ -312,7 +354,9 @@ if (!empty($totals['total_count'])) {
           <?php foreach ($topCommands as $r): ?>
             <tr>
               <td><?= esc($r['command_name']) ?></td>
-              <td style="text-align: right;"><?= number_format((int)$r['cnt']) ?></td>
+              <td style="text-align: right;"><?= number_format(
+                (int) $r['cnt'],
+              ) ?></td>
             </tr>
           <?php endforeach; ?>
         <?php endif; ?>
