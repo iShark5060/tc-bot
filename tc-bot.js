@@ -8,14 +8,13 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import GoogleCredentials from './client_secret.json' with { type: 'json' };
+import { notifyDiscord } from './helper/discordNotifier.js';
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const fetch = global.fetch;
 
 const client = new Client({
   intents: [
@@ -60,7 +59,7 @@ let isShuttingDown = false;
 
 (async function initializeBot() {
   try {
-    await sendStartupNotification();
+    await notifyDiscord({ type: 'startup' });
     await initializeGoogleSheets();
     await loadCommands();
     await loadEvents();
@@ -70,7 +69,7 @@ let isShuttingDown = false;
     await client.login(process.env.TOKEN);
   } catch (error) {
     console.error('[BOOT] Failed to initialize bot:', error);
-    await sendErrorNotification(error);
+    await notifyDiscord({ type: 'error', error });
     process.exitCode = 1;
   }
 })();
@@ -89,70 +88,13 @@ async function gracefulShutdown() {
     } catch (e) {
       console.error('[SHUTDOWN] WAL checkpoint error:', e);
     }
-    await sendShutdownNotification();
+    await notifyDiscord({ type: 'shutdown' });
     client.destroy();
     console.log('[SHUTDOWN] Bot shut down successfully');
     process.exitCode = 0;
   } catch (error) {
     console.error('[SHUTDOWN] Error during shutdown:', error);
     process.exitCode = 1;
-  }
-}
-
-async function sendStartupNotification() {
-  try {
-    if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
-
-    const response = await fetch(
-      `https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: 'TC-Bot just started.' }),
-      },
-    );
-    if (!response.ok) {
-      console.warn(`[BOOT] Webhook returned ${response.status}`);
-    }
-  } catch (error) {
-    console.error('[BOOT] Failed to send startup notification:', error);
-  }
-}
-
-async function sendShutdownNotification() {
-  try {
-    if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
-
-    const response = await fetch(
-      `https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: 'TC-Bot is shutting down.' }),
-      },
-    );
-    console.log('[SHUTDOWN] Notification sent:', response.status);
-  } catch (error) {
-    console.error('[SHUTDOWN] Failed to send shutdown notification:', error);
-  }
-}
-
-async function sendErrorNotification(error) {
-  try {
-    if (!process.env.WEBHOOK_ID || !process.env.WEBHOOK_TOKEN) return;
-
-    await fetch(
-      `https://discord.com/api/webhooks/${process.env.WEBHOOK_ID}/${process.env.WEBHOOK_TOKEN}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: `TC-Bot failed to start.\n${String(error?.message || error)}`,
-        }),
-      },
-    );
-  } catch {
-    // Ignore notification errors
   }
 }
 
