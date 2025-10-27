@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import GoogleCredentials from './client_secret.json' with { type: 'json' };
-import { notifyDiscord } from './helper/discordNotifier.js';
+import { notifyDiscord } from './helper/discordNotification.js';
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
@@ -29,7 +29,6 @@ io.init({
   http: true,
 });
 
-client.cooldowns = new Collection();
 client.commands = new Collection();
 
 function validateEnvironment() {

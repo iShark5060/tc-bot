@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.48.3",
+    "@pm2/io": "^6.1.0",
     "better-sqlite3": "^12.4.1",
     "discord.js": "^14.17.3",
     "google-auth-library": "^9.15.1",
@@ -31,12 +32,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
+    "@prettier/plugin-php": "^0.24.0",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-n": "^17.23.1",
     "eslint-plugin-promise": "^7.2.1",
-    "prettier": "^3.6.2",
-    "@prettier/plugin-php": "^0.24.0"
+    "prettier": "^3.6.2"
   }
 }

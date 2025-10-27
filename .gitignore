@@ -10,3 +10,5 @@ config.inc.php
 data/*.db
 data/*.db-shm
 data/*.db-wal
+.eslintrc.cjs
+jsconfig.json
