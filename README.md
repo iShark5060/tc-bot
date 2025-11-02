@@ -113,19 +113,10 @@ Installing and starting the Bot
 # download all the dependencies listed in the package.json
 npm install
 
-# build the TypeScript code
-npm run build
-
 # actually start the bot
 npm start
 
-# for development with auto-reloading (recommended)
-npm run dev
-
-# what I recommend is using PM2 (simple method)
-pm2 start dist/tc-bot.js --name "TC-Bot" --time
-
-# or with a PM2 ecosystem file for better control
+# or start it with PM2 ecosystem file for better control
 pm2 start ecosystem.config.cjs
 
 # to deploy slash commands to Discord

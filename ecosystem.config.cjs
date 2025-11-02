@@ -1,7 +1,3 @@
-/**
- * PM2 Ecosystem Configuration
- * Usage: pm2 start ecosystem.config.cjs
- */
 module.exports = {
   apps: [
     {
@@ -24,9 +20,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
       },
-      // Automatically rebuild TypeScript before starting
-      // Uncomment the following if you want auto-rebuild with PM2:
-      // pre_start_hook: 'npm run build',
+      pre_start_hook: 'npm run build',
     },
   ],
 };
