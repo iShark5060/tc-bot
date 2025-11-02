@@ -1,8 +1,11 @@
+const path = require('path');
+
 module.exports = {
   apps: [
     {
       name: 'TC-Bot',
       script: './dist/tc-bot.js',
+      cwd: path.dirname(__filename),
       interpreter: 'node',
       instances: 1,
       exec_mode: 'fork',
