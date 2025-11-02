@@ -23,7 +23,6 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
       },
-      pre_start_hook: 'npm run build',
     },
   ],
 };

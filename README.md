@@ -113,11 +113,14 @@ Installing and starting the Bot
 # download all the dependencies listed in the package.json
 npm install
 
+# build the TypeScript code
+npm run build
+
 # actually start the bot
 npm start
 
 # or start it with PM2 ecosystem file for better control
-pm2 start ecosystem.config.cjs
+pm2 start /var/www/shark5060.dev/tc-bot/ecosystem.config.cjs
 
 # to deploy slash commands to Discord
 npm run deploy
