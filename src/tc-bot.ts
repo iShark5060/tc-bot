@@ -120,12 +120,12 @@ async function loadCommands(): Promise<void> {
     const stat = fs.lstatSync(entryPath);
 
     if (stat.isDirectory()) {
-      const files = fs.readdirSync(entryPath).filter((f) => f.endsWith('.ts'));
+      const files = fs.readdirSync(entryPath).filter((f) => f.endsWith('.js'));
       for (const file of files) {
         const filePath = path.join(entryPath, file);
         await registerCommand(filePath, file);
       }
-    } else if (entry.endsWith('.ts')) {
+    } else if (entry.endsWith('.js')) {
       await registerCommand(entryPath, entry);
     }
   }
@@ -147,7 +147,7 @@ async function registerCommand(filePath: string, fileName: string): Promise<void
 
 async function loadEvents(): Promise<void> {
   const eventsPath = path.join(__dirname, 'events');
-  for (const file of fs.readdirSync(eventsPath).filter((f) => f.endsWith('.ts'))) {
+  for (const file of fs.readdirSync(eventsPath).filter((f) => f.endsWith('.js'))) {
     const mod = await import(pathToFileURL(path.join(eventsPath, file)).href);
     const event = mod.default ?? mod;
     if (event.once) {
