@@ -1,6 +1,8 @@
 import { SlashCommandBuilder } from 'discord.js';
 
-export default {
+import type { Command } from '../../types/index.js';
+
+const ping: Command = {
   data: new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Replies with Pong as well as latency.'),
@@ -14,3 +16,5 @@ export default {
     );
   },
 };
+
+export default ping;

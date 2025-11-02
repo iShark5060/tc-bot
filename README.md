@@ -1,8 +1,8 @@
 # Discord Bot for Ark of War
 
-![Static Badge](https://img.shields.io/badge/Node.js-24.4.1-red?style=for-the-badge) ![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue) ![NPM Version](https://img.shields.io/npm/v/%40dotenvx%2Fdotenvx?style=for-the-badge&label=.envx&color=green) ![NPM Version](https://img.shields.io/npm/v/google-spreadsheet?style=for-the-badge&label=google-spreadsheet&color=orange)
+![Static Badge](https://img.shields.io/badge/Node.js-24.4.1-red?style=for-the-badge) ![Static Badge](https://img.shields.io/badge/TypeScript-5.7.2-blue?style=for-the-badge) ![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue) ![NPM Version](https://img.shields.io/npm/v/%40dotenvx%2Fdotenvx?style=for-the-badge&label=.envx&color=green) ![NPM Version](https://img.shields.io/npm/v/google-spreadsheet?style=for-the-badge&label=google-spreadsheet&color=orange)
 
-Discord Bot based on the `Discord.js` framework using `Node.js` to enable `/commands` for the game [Ark of War](https://www.7piratesgames.com/ark.html)
+Discord Bot based on the `Discord.js` framework using `Node.js` and `TypeScript` to enable `/commands` for the game [Ark of War](https://www.7piratesgames.com/ark.html)
 The bot itself is pretty basic and basically just follows along the [tutorial](https://discordjs.guide/) of the Discord.js framework.
 
 ## About
@@ -22,7 +22,7 @@ Since this bot was created before I knew how to properly use GitHub, I had creat
 I have now changed this, without keeping the changes made over the years, simply because dealing with merge conflicts would have been a nightmare. All changes were done by me anyways, so no contribution by others was lost.
 This is why the merges done for the different branches look all so strange, just ignore. If you're interested in one of the older versions, I have marked releases for each final iteration.
 
-From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reasoning as helper, since my skills in JavaScript are not the best.
+From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reasoning as helper, since my skills in JavaScript are not the best. Version 6 was converted to TypeScript to improve code quality and maintainability.
 
 ## Requirements
 
@@ -110,12 +110,24 @@ npm -v # Should print "10.9.2".
 Installing and starting the Bot
 
 ```
-# dowload all the dependencies listed in the package.json
+# download all the dependencies listed in the package.json
 npm install
 
-# actually start the bot
-node .
+# build the TypeScript code
+npm run build
 
-# what I recommend is using PM2
-pm2 start . --cwd path/to/the/tc-bot/ --name "TC-Bot" --time
+# actually start the bot
+npm start
+
+# for development with auto-reloading (recommended)
+npm run dev
+
+# what I recommend is using PM2 (simple method)
+pm2 start dist/tc-bot.js --name "TC-Bot" --time
+
+# or with a PM2 ecosystem file for better control
+pm2 start ecosystem.config.cjs
+
+# to deploy slash commands to Discord
+npm run deploy
 ```

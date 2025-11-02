@@ -1,36 +1,41 @@
-import { Events, MessageFlags } from 'discord.js';
+import {
+  Events,
+  type Interaction,
+  type StringSelectMenuInteraction,
+} from 'discord.js';
 
 import { handleCommandError } from '../helper/errorHandler.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
+import type { Event } from '../types/index.js';
 
-export default {
+const interactionsCreate: Event = {
   name: Events.InteractionCreate,
-  async execute(interaction) {
+  async execute(interaction: Interaction) {
     if (
-      interaction.isStringSelectMenu?.() &&
-      typeof interaction.customId === 'string' &&
-      interaction.customId.startsWith('healtroop:')
+      (interaction as StringSelectMenuInteraction).isStringSelectMenu?.() &&
+      typeof (interaction as any).customId === 'string' &&
+      (interaction as any).customId.startsWith('healtroop:')
     ) {
       try {
         const mod = await import('../commands/aow/healtroop.js');
         const healtroop = mod.default ?? mod;
-        if (typeof healtroop.handleSelect === 'function') {
-          await healtroop.handleSelect(interaction);
+        if ('handleSelect' in healtroop && typeof healtroop.handleSelect === 'function') {
+          await (healtroop as any).handleSelect(interaction as StringSelectMenuInteraction);
         } else {
-          await interaction.reply({
+          await (interaction as any).reply({
             content: 'Selector not available.',
-            flags: MessageFlags.Ephemeral,
+            ephemeral: true
           });
         }
       } catch (error) {
-        await handleCommandError(interaction, error);
+        await handleCommandError(interaction as any, error);
       }
       return;
     }
 
     if (!interaction.isChatInputCommand()) return;
 
-    const command = interaction.client.commands.get(interaction.commandName);
+    const command = (interaction.client as any).commands.get(interaction.commandName);
     if (!command) {
       console.warn(`[WARN] Command not found: ${interaction.commandName}`);
       return;
@@ -45,14 +50,14 @@ export default {
         success: true,
       });
     } catch (error) {
-      await handleCommandError(interaction, error);
+      await handleCommandError(interaction as any, error);
       try {
         await logCommandUsage({
           commandName: interaction.commandName,
           userId: interaction.user?.id,
           guildId: interaction.guildId || null,
           success: false,
-          errorMessage: error?.message || String(error),
+          errorMessage: (error as Error)?.message || String(error),
         });
       } catch {
         // ignore logging errors
@@ -60,3 +65,5 @@ export default {
     }
   },
 };
+
+export default interactionsCreate;

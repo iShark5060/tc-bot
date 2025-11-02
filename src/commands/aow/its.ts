@@ -1,9 +1,10 @@
-import { EmbedBuilder, SlashCommandBuilder, MessageFlags } from 'discord.js';
+import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
+import type { Command, KillResult, TroopRow } from '../../types/index.js';
 
-export default {
+const its: Command = {
   data: new SlashCommandBuilder()
     .setName('its')
     .setDescription(
@@ -41,18 +42,25 @@ export default {
     const inputTdr = interaction.options.getInteger('tdr');
     const tdr = Math.min(100, Math.max(0, inputTdr ?? 0));
 
-    if (skillLevel > 60) {
+    if (!skillLevel || skillLevel > 60) {
       return interaction.reply({
         content: `You entered skill level ${skillLevel}. Was that intended? Because it's not possible, but it would be REALLY nice if it were...`,
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
+      });
+    }
+
+    if (!leadership || !targetTier) {
+      return interaction.reply({
+        content: 'Missing required parameters',
+        ephemeral: true,
       });
     }
 
     await interaction.deferReply();
 
     const rows = await getSheetRowsCached(
-      interaction.client.GoogleSheet,
-      process.env.GOOGLE_SHEET_ID,
+      (interaction.client as any).GoogleSheet,
+      process.env.GOOGLE_SHEET_ID || '',
     );
 
     const kills = calculateKills(rows, targetTier, skillLevel, leadership, tdr);
@@ -76,7 +84,13 @@ export default {
   },
 };
 
-function calculateKills(rows, targetTier, skillLevel, leadership, tdr) {
+function calculateKills(
+  rows: TroopRow[],
+  targetTier: number,
+  skillLevel: number,
+  leadership: number,
+  tdr: number,
+): KillResult[] {
   const DAMAGE_COEFFICIENT = 0.005;
   const coef =
     DAMAGE_COEFFICIENT * leadership * skillLevel * ((100 - tdr) / 100);
@@ -88,7 +102,7 @@ function calculateKills(rows, targetTier, skillLevel, leadership, tdr) {
   );
 
   return matches
-    .map((row) => {
+    .map((row): KillResult | null => {
       const unitsStr = row.get('troopUnits');
       const units = parseInt(String(unitsStr || '0'), 10);
       if (!Number.isFinite(units) || units <= 0) return null;
@@ -112,11 +126,11 @@ function calculateKills(rows, targetTier, skillLevel, leadership, tdr) {
         type: troopType,
       };
     })
-    .filter(Boolean)
+    .filter((k): k is KillResult => k !== null)
     .sort((a, b) => b.count - a.count);
 }
 
-function formatKillsList(kills) {
+function formatKillsList(kills: KillResult[]): string {
   return kills
     .map((kill) => {
       const count = numberWithCommas(kill.count);
@@ -125,7 +139,12 @@ function formatKillsList(kills) {
     .join('\n');
 }
 
-function createItsEmbed(leadership, skillLevel, tdr, kills) {
+function createItsEmbed(
+  leadership: number,
+  skillLevel: number,
+  tdr: number,
+  kills: KillResult[],
+): EmbedBuilder {
   return new EmbedBuilder()
     .setColor(0xffffff)
     .setTitle('Ignore Tier Suppression')
@@ -136,3 +155,5 @@ function createItsEmbed(leadership, skillLevel, tdr, kills) {
       value: `\`\`\`\n${formatKillsList(kills)}\`\`\``,
     });
 }
+
+export default its;

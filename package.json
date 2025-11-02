@@ -14,10 +14,12 @@
   "license": "GPL-3.0-or-later",
   "author": "Shark5060",
   "type": "module",
-  "main": "tc-bot.js",
+  "main": "dist/tc-bot.js",
   "scripts": {
-    "start": "node tc-bot.js",
-    "deploy": "node deploy-commands.js",
+    "build": "tsc",
+    "start": "node dist/tc-bot.js",
+    "dev": "tsx watch src/tc-bot.ts",
+    "deploy": "tsx src/deployCommands.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "check-format": "prettier --check ."
@@ -33,11 +35,15 @@
   "devDependencies": {
     "@eslint/js": "^9.20.0",
     "@prettier/plugin-php": "^0.24.0",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-n": "^17.23.1",
     "eslint-plugin-promise": "^7.2.1",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }

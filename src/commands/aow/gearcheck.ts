@@ -1,11 +1,12 @@
-import { EmbedBuilder, SlashCommandBuilder, MessageFlags } from 'discord.js';
+import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 
 import { numberWithCommas } from '../../helper/formatters.js';
+import type { Command, GearCalculations } from '../../types/index.js';
 
 const LEVELS = [0, 10, 13, 20, 30, 40, 50];
 const MULTIPLIERS = [1, 2, 2.3, 3, 4, 5, 6];
 
-export default {
+const gearcheck: Command = {
   data: new SlashCommandBuilder()
     .setName('gearcheck')
     .setDescription('Calculate stat at base and +10/13/20/30/40/50')
@@ -29,24 +30,21 @@ export default {
     const statValue = interaction.options.getNumber('stat');
     const gearLevel = interaction.options.getInteger('level');
 
-    if (statValue <= 0) {
+    if (!statValue || statValue <= 0) {
       return interaction.editReply({
         content: 'Stat value must be greater than 0',
-        flags: MessageFlags.Ephemeral,
       });
     }
 
-    if (gearLevel < 0) {
+    if (!gearLevel || gearLevel < 0) {
       return interaction.editReply({
         content: 'Gear level cannot be negative',
-        flags: MessageFlags.Ephemeral,
       });
     }
 
     if (gearLevel > 100) {
       return interaction.editReply({
         content: `Gear level ${gearLevel} is unreasonably high (max expected: 100).`,
-        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -57,17 +55,27 @@ export default {
   },
 };
 
-function calculateGearStats(currentStat, currentLevel) {
+function calculateGearStats(
+  currentStat: number,
+  currentLevel: number,
+): GearCalculations {
   const currentMultiplier = 1 + currentLevel / 10;
   const baseStat = currentStat / currentMultiplier;
 
-  return LEVELS.reduce((acc, level, index) => {
-    acc[level] = (baseStat * MULTIPLIERS[index]).toFixed(2);
-    return acc;
-  }, {});
+  return LEVELS.reduce(
+    (acc, level, index) => {
+      acc[level] = (baseStat * MULTIPLIERS[index]).toFixed(2);
+      return acc;
+    },
+    {} as GearCalculations,
+  );
 }
 
-function createGearEmbed(currentStat, currentLevel, calculations) {
+function createGearEmbed(
+  currentStat: number,
+  currentLevel: number,
+  calculations: GearCalculations,
+): EmbedBuilder {
   const calculatedText = Object.entries(calculations)
     .map(([level, stat]) => `+${level}:: ${numberWithCommas(stat)}%`)
     .join('\n');
@@ -89,3 +97,5 @@ function createGearEmbed(currentStat, currentLevel, calculations) {
       },
     );
 }
+
+export default gearcheck;

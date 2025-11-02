@@ -1,4 +1,11 @@
-function calculateMopupTiming() {
+import type { MopupInfo } from '../types/index.js';
+
+interface MopupWindow {
+  startTime: number;
+  endTime: number;
+}
+
+function calculateMopupTiming(): MopupInfo {
   const now = Date.now();
   const utcOffset = new Date().getTimezoneOffset() * 60 * 1000;
   const hoursFromEpoch = Math.ceil((now + utcOffset) / (60 * 60 * 1000)) - 8;
@@ -10,7 +17,7 @@ function calculateMopupTiming() {
   return determineMopupStatus(startTime - currentTime, endTime - currentTime);
 }
 
-function getMopupWindow(day) {
+function getMopupWindow(day: number): MopupWindow {
   const dayInMs = 24 * 60 * 60 * 1000;
   const hourInMs = 60 * 60 * 1000;
 
@@ -26,7 +33,7 @@ function getMopupWindow(day) {
   };
 }
 
-function determineMopupStatus(deltaStart, deltaEnd) {
+function determineMopupStatus(deltaStart: number, deltaEnd: number): MopupInfo {
   if (deltaStart < 0) {
     if (deltaEnd > 0) {
       return { status: 'ACTIVE', color: 0x7fff00, time: formatTime(deltaEnd) };
@@ -44,7 +51,7 @@ function determineMopupStatus(deltaStart, deltaEnd) {
   };
 }
 
-function formatTime(ms) {
+function formatTime(ms: number): string {
   return new Date(Math.abs(ms)).toISOString().slice(11, 19);
 }
 

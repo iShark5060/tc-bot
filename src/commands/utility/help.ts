@@ -2,22 +2,24 @@ import {
   SlashCommandBuilder,
   EmbedBuilder,
   PermissionsBitField,
-  MessageFlags,
+  type CommandInteraction,
 } from 'discord.js';
 
-export default {
+import type { Command } from '../../types/index.js';
+
+const help: Command = {
   data: new SlashCommandBuilder()
     .setName('help')
     .setDescription('List all available commands with usage examples'),
   examples: ['/help'],
 
   async execute(interaction) {
-    const commands = interaction.client.commands;
+    const commands = (interaction.client as any).commands;
 
     if (!commands || commands.size === 0) {
       return interaction.reply({
         content: 'No commands are currently available.',
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
     }
 
@@ -28,7 +30,7 @@ export default {
     if (visible.length === 0) {
       return interaction.reply({
         content: 'No commands available for your permissions in this server.',
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
     }
 
@@ -54,15 +56,16 @@ export default {
 
     await interaction.reply({
       embeds: [embed],
-      flags: MessageFlags.Ephemeral,
+      flags: 64,
     });
     return Promise.resolve();
   },
 };
 
-function canSeeCommand(cmd, interaction) {
+function canSeeCommand(cmd: Command, interaction: CommandInteraction): boolean {
   const json = typeof cmd.data?.toJSON === 'function' ? cmd.data.toJSON() : {};
-  const required = json.default_member_permissions;
+  const required = (json as { default_member_permissions?: string })
+    .default_member_permissions;
 
   if (!required) return true;
   if (!interaction.guild) return false;
@@ -72,5 +75,8 @@ function canSeeCommand(cmd, interaction) {
     interaction.memberPermissions || interaction.member?.permissions;
   if (!memberPerms) return false;
 
+  if (typeof memberPerms === 'string') return false;
   return memberPerms.has(new PermissionsBitField(requiredBits));
 }
+
+export default help;

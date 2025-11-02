@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import type { Command } from './types/index.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -13,7 +15,7 @@ if (!TOKEN) {
   process.exitCode = 1;
 }
 
-const rest = new REST({ version: '10' }).setToken(TOKEN);
+const rest = new REST({ version: '10' }).setToken(TOKEN!);
 
 (async function deployCommands() {
   try {
@@ -26,13 +28,13 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
   }
 })();
 
-async function loadCommands() {
-  const commands = [];
+async function loadCommands(): Promise<unknown[]> {
+  const commands: unknown[] = [];
   const root = path.join(__dirname, 'commands');
 
-  const stack = [root];
+  const stack: string[] = [root];
   while (stack.length) {
-    const current = stack.pop();
+    const current = stack.pop()!;
     const stat = fs.lstatSync(current);
 
     if (stat.isDirectory()) {
@@ -42,12 +44,12 @@ async function loadCommands() {
       continue;
     }
 
-    if (current.endsWith('.js')) {
+    if (current.endsWith('.ts')) {
       try {
         const mod = await import(pathToFileURL(current).href);
         const command = mod.default ?? mod;
         if (command?.data && command?.execute) {
-          commands.push(command.data.toJSON());
+          commands.push((command as Command).data.toJSON());
         } else {
           console.warn(`[DEPLOY] ⚠️ Skipping invalid command: ${current}`);
         }
@@ -61,18 +63,18 @@ async function loadCommands() {
   return commands;
 }
 
-async function clearExistingCommands() {
+async function clearExistingCommands(): Promise<void> {
   try {
     await rest.put(
       Routes.applicationGuildCommands(
-        process.env.CLIENT_ID,
-        process.env.GUILD_ID,
+        process.env.CLIENT_ID!,
+        process.env.GUILD_ID!,
       ),
       { body: [] },
     );
     console.log('[DEPLOY] 🗑️ Deleted all guild commands.');
 
-    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), {
+    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID!), {
       body: [],
     });
     console.log('[DEPLOY] 🗑️ Deleted all global commands.');
@@ -82,16 +84,17 @@ async function clearExistingCommands() {
   }
 }
 
-async function deployNewCommands(commands) {
+async function deployNewCommands(commands: unknown[]): Promise<void> {
   console.log(`[DEPLOY] 🚀 About to deploy ${commands.length} commands.`);
-  console.log(`[DEPLOY] Commands: ${commands.map((c) => c.name).join(', ')}`);
+  console.log(
+    `[DEPLOY] Commands: ${commands.map((c) => (c as { name: string }).name).join(', ')}`,
+  );
 
   console.log('[DEPLOY] Starting in 3 seconds... (Ctrl+C to cancel)');
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
-  const data = await rest.put(
-    Routes.applicationCommands(process.env.CLIENT_ID),
-    { body: commands },
-  );
+  const data = (await rest.put(Routes.applicationCommands(process.env.CLIENT_ID!), {
+    body: commands,
+  })) as unknown[];
   console.log(`[DEPLOY] ✅ Successfully deployed ${data.length} commands.`);
 }
