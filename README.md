@@ -22,7 +22,7 @@ Since this bot was created before I knew how to properly use GitHub, I had creat
 I have now changed this, without keeping the changes made over the years, simply because dealing with merge conflicts would have been a nightmare. All changes were done by me anyways, so no contribution by others was lost.
 This is why the merges done for the different branches look all so strange, just ignore. If you're interested in one of the older versions, I have marked releases for each final iteration.
 
-From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reasoning as helper, since my skills in JavaScript are not the best. Version 6 was converted to TypeScript to improve code quality and maintainability.
+From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reasoning as helper, since my skills in JavaScript are not the best. Version 7 was converted to TypeScript via Cursor's Composer 1 to improve code quality and maintainability.
 
 ## Requirements
 
