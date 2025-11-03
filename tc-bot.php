@@ -196,6 +196,13 @@ if (!empty($totals['total_count'])) {
     1,
   );
 }
+
+// Load ASCII art for background
+$art = '';
+$bgFile = __DIR__ . '/background.txt';
+if (file_exists($bgFile)) {
+  $art = file_get_contents($bgFile);
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -206,16 +213,19 @@ if (!empty($totals['total_count'])) {
   <style>
   :root {
     --bg: #0b0f14;
-    --panel: #111827;
-    --panel-2: #0f172a;
+    --panel: rgba(17, 24, 39, 0.25);
+    --panel-2: rgba(15, 23, 42, 0.25);
+    --panel-table: rgba(17, 24, 39, 0.25);
+    --panel-thead: rgba(11, 18, 32, 0.25);
+    --select-bg: #111827;
     --text: #e5e7eb;
     --muted: #9ca3af;
-    --border: #1f2937;
+    --border: rgba(31, 41, 55, 0.25);
     --accent: #0ea5e9;
     --accent-weak: rgba(14, 165, 233, 0.15);
     --success: #22c55e;
     --danger: #ef4444;
-    --shadow: 0 8px 24px rgba(0,0,0,0.35);
+    --shadow: 0 2px 2px rgba(0,0,0,0.15);
     --radius: 10px;
   }
   * { box-sizing: border-box; }
@@ -231,8 +241,23 @@ if (!empty($totals['total_count'])) {
     align-items: center;
     justify-content: center;
     overflow-y: auto;
+    position: relative;
   }
-  .container { width: 100%; max-width: 1000px; }
+  .bg-art {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: pre;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.05);
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+  }
+  .container { width: 100%; max-width: 1000px; position: relative; z-index: 1; }
   header {
     display: flex; gap: 16px; flex-wrap: wrap;
     justify-content: space-between; align-items: center;
@@ -242,7 +267,7 @@ if (!empty($totals['total_count'])) {
   form { margin: 0; }
   select {
     padding: 8px 12px; font-size: 14px; color: var(--text);
-    background: var(--panel); border: 1px solid var(--border);
+    background: var(--select-bg); border: 1px solid var(--border);
     border-radius: var(--radius); outline: none; box-shadow: var(--shadow);
     cursor: pointer;
   }
@@ -265,7 +290,7 @@ if (!empty($totals['total_count'])) {
   }
   th, td { padding: 10px 12px; text-align: left; }
   thead th {
-    background: #0b1220; color: var(--muted);
+    background: var(--panel-thead); color: var(--muted);
     font-weight: 600; border-bottom: 1px solid var(--border);
   }
   tbody tr { border-bottom: 1px solid var(--border); }
@@ -288,6 +313,9 @@ if (!empty($totals['total_count'])) {
   </style>
 </head>
 <body>
+  <?php if ($art): ?>
+  <div class="bg-art"><?= esc($art) ?></div>
+  <?php endif; ?>
   <div class="container">
     <header>
       <h1>TC-Bot Command Usage</h1>
@@ -393,9 +421,9 @@ if (!empty($totals['total_count'])) {
       const fillColor = 'rgba(14, 165, 233, 0.15)';
       const gridColor = 'rgba(255, 255, 255, 0.06)';
       const textColor = '#9ca3af';
-      const axisColor = '#1f2937';
+      const axisColor = 'rgba(31, 41, 55, 0.5)';
 
-      ctx.fillStyle = '#111827';
+      ctx.fillStyle = 'rgba(17, 24, 39, 0.5)';
       ctx.fillRect(0, 0, width, height);
 
       const maxValue = Math.max(...data, 1);
@@ -485,7 +513,7 @@ if (!empty($totals['total_count'])) {
         ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
         ctx.fillStyle = lineColor;
         ctx.fill();
-        ctx.strokeStyle = '#111827';
+        ctx.strokeStyle = 'rgba(17, 24, 39, 0.5)';
         ctx.lineWidth = 2;
         ctx.stroke();
       });
@@ -523,11 +551,11 @@ if (!empty($totals['total_count'])) {
           tooltip = document.createElement('div');
           tooltip.style.cssText = `
             position: fixed;
-            background: #0b1220;
+            background: rgba(11, 18, 32, 0.5);
             color: #e5e7eb;
             padding: 8px 12px;
             border-radius: 6px;
-            border: 1px solid #1f2937;
+            border: 1px solid rgba(31, 41, 55, 0.5);
             font-size: 13px;
             pointer-events: none;
             z-index: 1000;
