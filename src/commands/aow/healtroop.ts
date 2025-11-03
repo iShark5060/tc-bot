@@ -1,18 +1,19 @@
 import {
   EmbedBuilder,
   SlashCommandBuilder,
-  MessageFlags,
   ActionRowBuilder,
   StringSelectMenuBuilder,
+  type StringSelectMenuInteraction,
 } from 'discord.js';
 
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
+import type { Command, HealingCosts, TroopRow } from '../../types/index.js';
 
 const TRUNCATION_LIMITS = {
   MAX_ROWS: 10,
   MAX_SELECT_OPTIONS: 25,
-};
+} as const;
 
 const COST_TYPES = {
   RESOURCES: ['foodCost', 'partsCost', 'eleCost', 'gasCost', 'cashCost'],
@@ -27,9 +28,9 @@ const MODIFIER_THRESHOLDS = [
   { units: 501, modifier: 0.17 },
   { units: 201, modifier: 0.15 },
   { units: 0, modifier: 0.1 },
-];
+] as const;
 
-const COST_LABELS = {
+const COST_LABELS: Record<string, string> = {
   foodCost: 'Food::',
   partsCost: 'Parts::',
   eleCost: 'Ele::',
@@ -46,7 +47,21 @@ const COST_LABELS = {
   hePoints: 'Heal Points::',
 };
 
-export default {
+interface HealtroopCommand extends Command {
+  handleSelect?(interaction: any): Promise<any>;
+}
+
+interface RowCalc {
+  row: TroopRow;
+  calc: HealingCosts | null;
+}
+
+interface ModifierResult {
+  modifier: number;
+  units: number;
+}
+
+const healtroop: HealtroopCommand = {
   data: new SlashCommandBuilder()
     .setName('healtroop')
     .setDescription('Calculate cost to heal troops')
@@ -83,18 +98,25 @@ export default {
     const troopTier = interaction.options.getInteger('tier');
     const troopType = interaction.options.getString('type');
 
-    if (troopTier > 12) {
+    if (!troopTier || troopTier > 12) {
       return interaction.reply({
         content: 'We currently only have Tier 12 :)',
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
     }
 
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    if (!troopAmount || !troopType) {
+      return interaction.reply({
+        content: 'Missing required parameters',
+        ephemeral: true,
+      });
+    }
+
+    await interaction.deferReply({ ephemeral: true });
 
     const rows = await getSheetRowsCached(
-      interaction.client.GoogleSheet,
-      process.env.GOOGLE_SHEET_ID,
+      (interaction.client as any).GoogleSheet,
+      process.env.GOOGLE_SHEET_ID || '',
     );
 
     const troopRows = findTroopRows(rows, troopTier, troopType);
@@ -154,17 +176,17 @@ export default {
       return interaction.editReply({
         content,
         embeds: [embed],
-        components: [row],
+        components: [row as any],
       });
     }
 
     const [singleName] = Array.from(validByName.keys());
     const selectedRows = validByName
-      .get(singleName)
+      .get(singleName)!
       .slice(0, TRUNCATION_LIMITS.MAX_ROWS);
     const perRowCalcs = selectedRows
       .map((row) => ({ row, calc: calculateHealingCosts(row, troopAmount) }))
-      .filter((x) => x.calc && x.calc.hasData);
+      .filter((x): x is RowCalc => x.calc !== null && x.calc.hasData);
 
     const embed = createMultiHealingEmbed(
       troopTier,
@@ -172,8 +194,8 @@ export default {
       troopAmount,
       singleName,
       perRowCalcs,
-      selectedRows.length < (validByName.get(singleName).length || 0)
-        ? validByName.get(singleName).length - selectedRows.length
+      selectedRows.length < validByName.get(singleName)!.length
+        ? validByName.get(singleName)!.length - selectedRows.length
         : 0,
     );
 
@@ -201,8 +223,8 @@ export default {
       }
 
       const rows = await getSheetRowsCached(
-        interaction.client.GoogleSheet,
-        process.env.GOOGLE_SHEET_ID,
+        (interaction.client as any).GoogleSheet,
+        process.env.GOOGLE_SHEET_ID || '',
       );
 
       const troopRows = findTroopRows(rows, troopTier, troopType).filter(
@@ -222,7 +244,7 @@ export default {
           row,
           calc: calculateHealingCosts(row, troopAmount),
         }))
-        .filter((x) => x.calc && x.calc.hasData);
+        .filter((x): x is RowCalc => x.calc !== null && x.calc.hasData);
 
       if (perRowCalcs.length === 0) {
         return interaction.update({
@@ -263,7 +285,11 @@ export default {
   },
 };
 
-function findTroopRows(rows, tier, type) {
+function findTroopRows(
+  rows: TroopRow[],
+  tier: number,
+  type: string,
+): TroopRow[] {
   return rows.filter(
     (row) =>
       String(row.get('troopTier')) === String(tier) &&
@@ -272,20 +298,23 @@ function findTroopRows(rows, tier, type) {
   );
 }
 
-function buildValidByNameMap(rows, troopAmount) {
-  const byName = new Map();
+function buildValidByNameMap(
+  rows: TroopRow[],
+  troopAmount: number,
+): Map<string, TroopRow[]> {
+  const byName = new Map<string, TroopRow[]>();
   for (const row of rows) {
-    const name = (row.get('troopName') || '').trim();
+    const name = String(row.get('troopName') || '').trim();
     if (!name) continue;
     const calc = calculateHealingCosts(row, troopAmount);
     if (!calc || !calc.hasData) continue;
     if (!byName.has(name)) byName.set(name, []);
-    byName.get(name).push(row);
+    byName.get(name)!.push(row);
   }
   return byName;
 }
 
-function getModifier(totalUnits) {
+function getModifier(totalUnits: number): number {
   for (const threshold of MODIFIER_THRESHOLDS) {
     if (totalUnits >= threshold.units) {
       return threshold.modifier;
@@ -294,7 +323,7 @@ function getModifier(totalUnits) {
   return 0.1;
 }
 
-function getOptimalModifier(troopUnits) {
+function getOptimalModifier(troopUnits: number): ModifierResult {
   for (let i = 0; i < MODIFIER_THRESHOLDS.length - 1; i++) {
     const current = MODIFIER_THRESHOLDS[i];
     const next = MODIFIER_THRESHOLDS[i + 1];
@@ -312,14 +341,21 @@ function getOptimalModifier(troopUnits) {
   return { modifier: lowest.modifier, units: lowest.units };
 }
 
-function calculateResourceCost(costString, amount, modifier) {
+function calculateResourceCost(
+  costString: unknown,
+  amount: number,
+  modifier: number,
+): number | null {
   if (!costString) return null;
   const baseCost = parseInt(String(costString).replace(/,/g, ''), 10);
   if (!Number.isFinite(baseCost)) return null;
   return Math.ceil(baseCost * amount * modifier);
 }
 
-function calculateHealingCosts(troopData, troopAmount) {
+function calculateHealingCosts(
+  troopData: TroopRow,
+  troopAmount: number,
+): HealingCosts | null {
   const unitsPerTroop = parseInt(
     String(troopData.get('troopUnits') || '0'),
     10,
@@ -338,7 +374,7 @@ function calculateHealingCosts(troopData, troopAmount) {
       : Math.floor(optimal.units / unitsPerTroop),
   );
 
-  const costs = {
+  const costs: HealingCosts = {
     resources: {},
     special: {},
     other: {},
@@ -350,11 +386,7 @@ function calculateHealingCosts(troopData, troopAmount) {
   };
 
   COST_TYPES.RESOURCES.forEach((type) => {
-    const cost = calculateResourceCost(
-      troopData.get(type),
-      troopAmount,
-      modifier,
-    );
+    const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
     const optCost = calculateResourceCost(
       troopData.get(type),
       troopAmount,
@@ -367,11 +399,7 @@ function calculateHealingCosts(troopData, troopAmount) {
   });
 
   COST_TYPES.SPECIAL.forEach((type) => {
-    const cost = calculateResourceCost(
-      troopData.get(type),
-      troopAmount,
-      modifier,
-    );
+    const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
     let optPerChunk = calculateResourceCost(
       troopData.get(type),
       1,
@@ -399,7 +427,7 @@ function calculateHealingCosts(troopData, troopAmount) {
   return costs.hasData ? costs : null;
 }
 
-function formatCostText(costs, isOptimal = false) {
+function formatCostText(costs: HealingCosts, isOptimal = false): string {
   let text = '';
   const allCosts = { ...costs.resources, ...costs.special };
 
@@ -412,7 +440,7 @@ function formatCostText(costs, isOptimal = false) {
   return text;
 }
 
-function formatOtherStats(costs) {
+function formatOtherStats(costs: HealingCosts): string {
   let text = '';
 
   Object.entries(costs.other).forEach(([type, value]) => {
@@ -424,13 +452,13 @@ function formatOtherStats(costs) {
 }
 
 function createMultiHealingEmbed(
-  troopTier,
-  troopType,
-  troopAmount,
-  troopName,
-  perRowCalcs,
-  truncatedCount,
-) {
+  troopTier: number,
+  troopType: string,
+  troopAmount: number,
+  troopName: string,
+  perRowCalcs: RowCalc[],
+  truncatedCount: number,
+): EmbedBuilder {
   const embed = new EmbedBuilder().setColor(0xffffff).setTitle('Healing cost:');
 
   embed.addFields({
@@ -452,7 +480,7 @@ function createMultiHealingEmbed(
     const header =
       `${troopData.get('troopName')} — ` +
       `${numberWithCommas(troopAmount)}x @ ` +
-      `${numberWithCommas(unitsPerTroop)} units each`;
+      `${numberWithCommas(Number(unitsPerTroop))} units each`;
 
     const body =
       '```asciidoc\n' +
@@ -499,3 +527,5 @@ function createMultiHealingEmbed(
 
   return embed;
 }
+
+export default healtroop;

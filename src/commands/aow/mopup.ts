@@ -1,8 +1,9 @@
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 
 import { calculateMopupTiming } from '../../helper/mopup.js';
+import type { Command } from '../../types/index.js';
 
-export default {
+const mopup: Command = {
   data: new SlashCommandBuilder()
     .setName('mopup')
     .setDescription('Time until next mopup'),
@@ -20,3 +21,5 @@ export default {
     await interaction.reply({ embeds: [embed] });
   },
 };
+
+export default mopup;

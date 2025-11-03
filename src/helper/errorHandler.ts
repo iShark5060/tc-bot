@@ -1,11 +1,14 @@
-import { MessageFlags } from 'discord.js';
+import type { CommandInteraction, Message } from 'discord.js';
 
-async function handleCommandError(interaction, error) {
+async function handleCommandError(
+  interaction: CommandInteraction,
+  error: unknown,
+): Promise<void> {
   console.error('[ERROR] Command execution failed:', error);
 
   const errorMessage = {
     content: 'There was an error while executing this command!',
-    flags: MessageFlags.Ephemeral,
+    ephemeral: true,
   };
 
   try {
@@ -19,7 +22,7 @@ async function handleCommandError(interaction, error) {
   }
 }
 
-async function handleMessageError(message, error) {
+async function handleMessageError(message: Message, error: unknown): Promise<void> {
   console.error('[ERROR] Message command execution failed:', error);
 
   try {

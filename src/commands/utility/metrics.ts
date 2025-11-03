@@ -2,11 +2,17 @@ import Database from 'better-sqlite3';
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
 import { numberWithCommas } from '../../helper/formatters.js';
+import type { Command } from '../../types/index.js';
 
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
 const TOP_LIMIT = 10;
 
-export default {
+interface PeriodInfo {
+  sinceUTC: string;
+  label: string;
+}
+
+const metrics: Command = {
   data: new SlashCommandBuilder()
     .setName('metrics')
     .setDescription('Show command usage metrics')
@@ -57,8 +63,16 @@ export default {
         `,
       );
 
-      const totals = totalsStmt.get(sinceUTC);
-      const top = topStmt.all(sinceUTC, TOP_LIMIT);
+      const totals = totalsStmt.get(sinceUTC) as {
+        total_count?: number;
+        success_count?: number;
+        failure_count?: number;
+      };
+
+      const top = topStmt.all(sinceUTC, TOP_LIMIT) as Array<{
+        command_name: string;
+        cnt: number;
+      }>;
 
       const totalCount = Number(totals?.total_count || 0);
       const successCount = Number(totals?.success_count || 0);
@@ -111,7 +125,7 @@ export default {
   },
 };
 
-function getSince(period) {
+function getSince(period: string): PeriodInfo {
   const now = new Date();
   const since = new Date(now.getTime());
 
@@ -139,11 +153,13 @@ function getSince(period) {
   return { sinceUTC, label };
 }
 
-function formatUTC(d) {
-  const pad = (n) => String(n).padStart(2, '0');
+function formatUTC(d: Date): string {
+  const pad = (n: number): string => String(n).padStart(2, '0');
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(
     d.getUTCDate(),
   )} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(
     d.getUTCSeconds(),
   )}`;
 }
+
+export default metrics;

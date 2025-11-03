@@ -2,21 +2,22 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import type { CommandUsage } from '../types/index.js';
+
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
 const CHECKPOINT_INTERVAL_MS = Number(
   process.env.CHECKPOINT_INTERVAL_MS || 300000,
 );
 
-let db;
-let insertStmt;
-let checkpointTimer = null;
+let db: Database.Database | null = null;
+let checkpointTimer: NodeJS.Timeout | null = null;
 
-function ensureDir(filePath) {
+function ensureDir(filePath: string): void {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-function initDb() {
+function initDb(): void {
   if (db) return;
 
   ensureDir(DB_PATH);
@@ -45,27 +46,28 @@ function initDb() {
     'CREATE INDEX IF NOT EXISTS idx_usage_cmd ON command_usage(command_name);',
   );
 
-  insertStmt = db.prepare(`
-    INSERT INTO command_usage
-      (command_name, user_id, guild_id, success, error_message)
-    VALUES
-      (@command_name, @user_id, @guild_id, @success, @error_message)
-  `);
-
   console.log('[USAGE:SQLite] Initialized at', DB_PATH);
 }
 
-function logCommandUsage({
+export function logCommandUsage({
   commandName,
   userId,
   guildId,
   success,
   errorMessage,
-}) {
+}: CommandUsage): void {
   try {
     initDb();
+    if (!db) return;
 
-    insertStmt.run({
+    const stmt = db.prepare(`
+      INSERT INTO command_usage
+        (command_name, user_id, guild_id, success, error_message)
+      VALUES
+        (@command_name, @user_id, @guild_id, @success, @error_message)
+    `);
+
+    stmt.run({
       command_name: String(commandName || 'unknown'),
       user_id: userId ? String(userId) : null,
       guild_id: guildId ? String(guildId) : null,
@@ -77,16 +79,17 @@ function logCommandUsage({
   }
 }
 
-function checkpoint(mode = 'TRUNCATE') {
+export function checkpoint(mode = 'TRUNCATE'): void {
   try {
     initDb();
+    if (!db) return;
     db.pragma(`wal_checkpoint(${mode})`);
   } catch (e) {
     console.error('[USAGE:SQLite] WAL checkpoint failed:', e);
   }
 }
 
-function startWALCheckpoint(intervalMs = 300000) {
+export function startWALCheckpoint(intervalMs: number | null = 300000): void {
   initDb();
   if (checkpointTimer) return;
   checkpointTimer = setInterval(() => {
@@ -96,7 +99,7 @@ function startWALCheckpoint(intervalMs = 300000) {
   console.log('[USAGE:SQLite] WAL checkpoint timer started:', intervalMs, 'ms');
 }
 
-function stopWALCheckpoint() {
+export function stopWALCheckpoint(): void {
   if (checkpointTimer) {
     clearInterval(checkpointTimer);
     checkpointTimer = null;
@@ -104,7 +107,7 @@ function stopWALCheckpoint() {
   }
 }
 
-function closeDb() {
+export function closeDb(): void {
   if (db) {
     try {
       db.close();
@@ -115,11 +118,3 @@ function closeDb() {
     }
   }
 }
-
-export {
-  logCommandUsage,
-  checkpoint,
-  startWALCheckpoint,
-  stopWALCheckpoint,
-  closeDb,
-};

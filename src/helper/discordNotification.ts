@@ -1,3 +1,5 @@
+import type { DiscordNotificationParams } from '../types/index.js';
+
 const fetch = global.fetch;
 
 const WEBHOOK_BASE = 'https://discord.com/api/webhooks';
@@ -7,7 +9,7 @@ export async function notifyDiscord({
   message = '',
   error,
   mention = false,
-}) {
+}: DiscordNotificationParams): Promise<void> {
   const id = process.env.WEBHOOK_ID;
   const token = process.env.WEBHOOK_TOKEN;
 
@@ -16,13 +18,13 @@ export async function notifyDiscord({
     return;
   }
 
-  const defaultTitles = {
+  const defaultTitles: Record<string, string> = {
     startup: '✅ TC-Bot Started',
     shutdown: '🛑 TC-Bot Shutting Down',
     error: '⚠️ TC-Bot Error',
   };
 
-  const colors = {
+  const colors: Record<string, number> = {
     startup: 0x2ecc71,
     shutdown: 0xf39c12,
     error: 0xcf142b,
@@ -37,10 +39,10 @@ export async function notifyDiscord({
     const errorText =
       typeof error === 'string'
         ? error
-        : error?.stack || error?.message || JSON.stringify(error);
+        : (error as Error)?.stack || (error as Error)?.message || JSON.stringify(error);
     description += `\n\`\`\`\n${String(errorText).slice(0, 1800)}\n\`\`\``;
   }
-  if (mention) description = `@here\n${ description}`;
+  if (mention) description = `@here\n${description}`;
 
   try {
     const response = await fetch(`${WEBHOOK_BASE}/${id}/${token}`, {

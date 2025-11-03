@@ -12,3 +12,7 @@ data/*.db-shm
 data/*.db-wal
 .eslintrc.cjs
 jsconfig.json
+dist/
+*.tsbuildinfo
+logs/
+.pm2

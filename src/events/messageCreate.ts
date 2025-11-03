@@ -1,32 +1,35 @@
-import { Events } from 'discord.js';
+import { Events, type Message } from 'discord.js';
 
 import { handleMessageError } from '../helper/errorHandler.js';
 import { calculateMopupTiming } from '../helper/mopup.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
+import type { Event } from '../types/index.js';
 
-export default {
+const messageCreate: Event = {
   name: Events.MessageCreate,
-  async execute(message) {
+  async execute(message: Message) {
     if (!shouldProcessMessage(message)) return;
 
     if (message.content === '!tcmu') {
       try {
         const { status, color, time } = calculateMopupTiming();
-        await message.channel.send({
-          embeds: [
-            {
-              color,
-              title: 'Mopup',
-              fields: [
-                { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
-                {
-                  name: 'Time remaining:',
-                  value: `\`\`\`asciidoc\n${time}\`\`\``,
-                },
-              ],
-            },
-          ],
-        });
+        if ('send' in message.channel) {
+          await (message.channel as any).send({
+            embeds: [
+              {
+                color,
+                title: 'Mopup',
+                fields: [
+                  { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
+                  {
+                    name: 'Time remaining:',
+                    value: `\`\`\`asciidoc\n${time}\`\`\``,
+                  },
+                ],
+              },
+            ],
+          });
+        }
         await logCommandUsage({
           commandName: 'msg:!tcmu',
           userId: message.author?.id,
@@ -41,7 +44,7 @@ export default {
             userId: message.author?.id,
             guildId: message.guildId || null,
             success: false,
-            errorMessage: error?.message || String(error),
+            errorMessage: (error as Error)?.message || String(error),
           });
         } catch {
           // ignore logging errors
@@ -51,6 +54,8 @@ export default {
   },
 };
 
-function shouldProcessMessage(message) {
-  return message.channel.name === 'tc-autobot' && !message.author.bot;
+function shouldProcessMessage(message: Message): boolean {
+  return (message.channel as any).name === 'tc-autobot' && !message.author.bot;
 }
+
+export default messageCreate;

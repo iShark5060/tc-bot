@@ -1,10 +1,11 @@
 import {
   SlashCommandBuilder,
   PermissionFlagsBits,
-  MessageFlags,
 } from 'discord.js';
 
-export default {
+import type { Command } from '../../types/index.js';
+
+const reboot: Command = {
   data: new SlashCommandBuilder()
     .setName('reboot')
     .setDescription(
@@ -22,14 +23,14 @@ export default {
     if (!interaction.guild) {
       return interaction.reply({
         content: 'This command can only be used in a server.',
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
     }
 
     if (interaction.guildId !== process.env.GUILD_ID) {
       return interaction.reply({
         content: 'Permission denied. Command used on wrong server.',
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
     }
 
@@ -38,13 +39,13 @@ export default {
       return interaction.reply({
         content:
           '⚠️ Reboot cancelled. You must confirm by setting `confirm:true`.',
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       });
     }
 
     await interaction.reply({
       content: 'Bot is shutting down...',
-      flags: MessageFlags.Ephemeral,
+      ephemeral: true,
     });
 
     console.log(
@@ -55,3 +56,5 @@ export default {
     return Promise.resolve();
   },
 };
+
+export default reboot;
