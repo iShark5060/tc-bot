@@ -1,6 +1,12 @@
 import type { TroopRow, CacheEntry } from '../types/index.js';
 import type { GoogleSpreadsheet } from 'google-spreadsheet';
 
+import {
+  cachedSheetRows,
+  googleSheetCacheHits,
+  googleSheetCacheMisses,
+} from './metrics.js';
+
 const DEFAULT_TTL_MS = Number(process.env.GOOGLE_SHEET_CACHE || 300000);
 const cache = new Map<string, CacheEntry>();
 
@@ -21,8 +27,12 @@ async function getSheetRowsCached(
   const entry = cache.get(key);
 
   if (entry?.rows && entry.expiresAt && entry.expiresAt > now) {
+    googleSheetCacheHits.inc();
+    cachedSheetRows.set(cache.size);
     return entry.rows;
   }
+
+  googleSheetCacheMisses.inc();
 
   if (entry?.loadingPromise) {
     return entry.loadingPromise;
@@ -39,6 +49,7 @@ async function getSheetRowsCached(
 
       const rows = await sheet.getRows();
       cache.set(key, { rows, expiresAt: Date.now() + ttl });
+      cachedSheetRows.set(cache.size);
       return rows as TroopRow[];
     } catch (err) {
       cache.delete(key);
@@ -51,6 +62,7 @@ async function getSheetRowsCached(
   try {
     const rows = await loadingPromise;
     cache.set(key, { rows, expiresAt: Date.now() + ttl });
+    cachedSheetRows.set(cache.size);
     return rows;
   } finally {
     const latest = cache.get(key);

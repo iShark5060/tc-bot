@@ -5,6 +5,11 @@ import {
 } from 'discord.js';
 
 import { handleCommandError } from '../helper/errorHandler.js';
+import {
+  commandErrors,
+  commandsCounter,
+  commandsPerSecond,
+} from '../helper/metrics.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';
 
@@ -43,6 +48,8 @@ const interactionsCreate: Event = {
 
     try {
       await command.execute(interaction);
+      commandsCounter.inc();
+      commandsPerSecond.mark();
       await logCommandUsage({
         commandName: interaction.commandName,
         userId: interaction.user?.id,
@@ -50,6 +57,7 @@ const interactionsCreate: Event = {
         success: true,
       });
     } catch (error) {
+      commandErrors.inc();
       await handleCommandError(interaction as any, error);
       try {
         await logCommandUsage({

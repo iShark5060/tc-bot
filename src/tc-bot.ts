@@ -5,6 +5,7 @@ import { GoogleSpreadsheet } from 'google-spreadsheet';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import io from '@pm2/io';
 
 import GoogleCredentials from '../client_secret.json' with { type: 'json' };
 import { notifyDiscord } from './helper/discordNotification.js';
@@ -12,6 +13,8 @@ import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
 import type { Command } from './types/index.js';
+
+io.init();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
