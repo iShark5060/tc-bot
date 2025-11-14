@@ -19,9 +19,9 @@ export async function notifyDiscord({
   }
 
   const defaultTitles: Record<string, string> = {
-    startup: '✅ TC-Bot Started',
-    shutdown: '🛑 TC-Bot Shutting Down',
-    error: '⚠️ TC-Bot Error',
+    startup: 'TC-Bot Started',
+    shutdown: 'TC-Bot Shutting Down',
+    error: 'TC-Bot Error',
   };
 
   const colors: Record<string, number> = {
@@ -31,7 +31,7 @@ export async function notifyDiscord({
     info: 0x3498db,
   };
 
-  const title = defaultTitles[type] || `ℹ️ ${type}`;
+  const title = defaultTitles[type] || type;
   const color = colors[type] || colors.info;
 
   let description = message || '';

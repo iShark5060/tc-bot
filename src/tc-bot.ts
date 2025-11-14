@@ -176,12 +176,13 @@ async function updateMopupChannels(): Promise<void> {
     const channel2 = client.channels.cache.get(process.env.CHANNEL_ID2!);
 
     if (channel1 && 'setName' in channel1) {
-      await (channel1 as any).setName(`${mopupInfo.status} Mopup`);
+      const statusEmoji = mopupInfo.status === 'ACTIVE' ? '🟢' : '🔴';
+      await (channel1 as any).setName(`${statusEmoji} ${mopupInfo.status} Mopup`);
     }
     if (channel2 && 'setName' in channel2) {
       await (channel2 as any).setName(`Time remaining: ${mopupInfo.time}`);
     }
   } catch (error) {
-    console.error('[WARN] Failed to update mopup channels:', error);
+    console.error('[EVENT:MOPUP] Failed to update mopup channels:', error);
   }
 }

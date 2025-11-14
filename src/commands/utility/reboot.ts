@@ -38,7 +38,7 @@ const reboot: Command = {
     if (!confirm) {
       return interaction.reply({
         content:
-          '⚠️ Reboot cancelled. You must confirm by setting `confirm:true`.',
+          'Reboot cancelled. You must confirm by setting `confirm:true`.',
         ephemeral: true,
       });
     }

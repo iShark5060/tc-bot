@@ -42,7 +42,7 @@ const interactionsCreate: Event = {
 
     const command = (interaction.client as any).commands.get(interaction.commandName);
     if (!command) {
-      console.warn(`[WARN] Command not found: ${interaction.commandName}`);
+      console.warn(`[EVENT:INTERACTION] Command not found: ${interaction.commandName}`);
       return;
     }
 

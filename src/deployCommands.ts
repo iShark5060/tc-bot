@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 
 const TOKEN = process.env.TOKEN;
 if (!TOKEN) {
-  console.error('[DEPLOY] ❌ Missing TOKEN in environment variables.');
+  console.error('[DEPLOY] Missing TOKEN in environment variables.');
   process.exitCode = 1;
 }
 
@@ -23,7 +23,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN!);
     await clearExistingCommands();
     await deployNewCommands(commands);
   } catch (error) {
-    console.error('[DEPLOY] ❌ Failed to deploy commands:', error);
+    console.error('[DEPLOY] Failed to deploy commands:', error);
     process.exitCode = 1;
   }
 })();
@@ -51,15 +51,15 @@ async function loadCommands(): Promise<unknown[]> {
         if (command?.data && command?.execute) {
           commands.push((command as Command).data.toJSON());
         } else {
-          console.warn(`[DEPLOY] ⚠️ Skipping invalid command: ${current}`);
+          console.warn(`[DEPLOY] Skipping invalid command: ${current}`);
         }
       } catch (err) {
-        console.error(`[DEPLOY] ❌ Failed to load command: ${current}`, err);
+        console.error(`[DEPLOY] Failed to load command: ${current}`, err);
       }
     }
   }
 
-  console.log(`[DEPLOY] 📦 Loaded ${commands.length} commands.`);
+  console.log(`[DEPLOY] Loaded ${commands.length} commands.`);
   return commands;
 }
 
@@ -72,20 +72,20 @@ async function clearExistingCommands(): Promise<void> {
       ),
       { body: [] },
     );
-    console.log('[DEPLOY] 🗑️ Deleted all guild commands.');
+    console.log('[DEPLOY] Deleted all guild commands.');
 
     await rest.put(Routes.applicationCommands(process.env.CLIENT_ID!), {
       body: [],
     });
-    console.log('[DEPLOY] 🗑️ Deleted all global commands.');
+    console.log('[DEPLOY] Deleted all global commands.');
   } catch (error) {
-    console.error('[DEPLOY] ❌ Failed to clear existing commands:', error);
+    console.error('[DEPLOY] Failed to clear existing commands:', error);
     throw error;
   }
 }
 
 async function deployNewCommands(commands: unknown[]): Promise<void> {
-  console.log(`[DEPLOY] 🚀 About to deploy ${commands.length} commands.`);
+  console.log(`[DEPLOY] About to deploy ${commands.length} commands.`);
   console.log(
     `[DEPLOY] Commands: ${commands.map((c) => (c as { name: string }).name).join(', ')}`,
   );
@@ -96,5 +96,5 @@ async function deployNewCommands(commands: unknown[]): Promise<void> {
   const data = (await rest.put(Routes.applicationCommands(process.env.CLIENT_ID!), {
     body: commands,
   })) as unknown[];
-  console.log(`[DEPLOY] ✅ Successfully deployed ${data.length} commands.`);
+  console.log(`[DEPLOY] Successfully deployed ${data.length} commands.`);
 }

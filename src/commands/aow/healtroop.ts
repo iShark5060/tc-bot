@@ -271,7 +271,7 @@ const healtroop: HealtroopCommand = {
         components: [],
       });
     } catch (err) {
-      console.error('[healtroop] handleSelect failed:', err);
+      console.error('[EVENT:HEALTROOP] handleSelect failed:', err);
       try {
         await interaction.update({
           content: 'Failed to render selection.',
