@@ -1,6 +1,6 @@
 # Discord Bot for Ark of War
 
-![Static Badge](https://img.shields.io/badge/Node.js-24.4.1-red?style=for-the-badge) ![Static Badge](https://img.shields.io/badge/TypeScript-5.7.2-blue?style=for-the-badge) ![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue) ![NPM Version](https://img.shields.io/npm/v/%40dotenvx%2Fdotenvx?style=for-the-badge&label=.envx&color=green) ![NPM Version](https://img.shields.io/npm/v/google-spreadsheet?style=for-the-badge&label=google-spreadsheet&color=orange)
+![Static Badge](https://img.shields.io/badge/Node.js-25-red?style=for-the-badge) ![Static Badge](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge) ![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue) ![NPM Version](https://img.shields.io/npm/v/%40dotenvx%2Fdotenvx?style=for-the-badge&label=.envx&color=green) ![NPM Version](https://img.shields.io/npm/v/google-spreadsheet?style=for-the-badge&label=google-spreadsheet&color=orange)
 
 Discord Bot based on the `Discord.js` framework using `Node.js` and `TypeScript` to enable `/commands` for the game [Ark of War](https://www.7piratesgames.com/ark.html)
 The bot itself is pretty basic and basically just follows along the [tutorial](https://discordjs.guide/) of the Discord.js framework.
@@ -97,14 +97,14 @@ Installing nvm, node & npm run:
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
 # Download and install Node.js:
-nvm install 22
+nvm install 25
 
 # Verify the Node.js version:
-node -v # Should print "v22.13.1".
-nvm current # Should print "v22.13.1".
+node -v # Should print "v25.x.x".
+nvm current # Should print "v25.x.x".
 
 # Verify npm version:
-npm -v # Should print "10.9.2".
+npm -v # Should print "11.x.x".
 ```
 
 Installing and starting the Bot
