@@ -1,10 +1,8 @@
-import Database from 'better-sqlite3';
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-
+import { SlashCommandBuilder, EmbedBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import { numberWithCommas } from '../../helper/formatters.js';
+import { getMetricsTotals, getTopCommands } from '../../helper/usageTracker.js';
 import type { Command } from '../../types/index.js';
 
-const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
 const TOP_LIMIT = 10;
 
 interface PeriodInfo {
@@ -29,54 +27,19 @@ const metrics: Command = {
     ),
   examples: ['/metrics', '/metrics period:weekly'],
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await interaction.deferReply();
 
     const period = interaction.options.getString('period') || 'daily';
     const { sinceUTC, label } = getSince(period);
 
     try {
-      const db = new Database(DB_PATH, {
-        readonly: true,
-        fileMustExist: true,
-      });
+      const totals = getMetricsTotals(sinceUTC);
+      const top = getTopCommands(sinceUTC, TOP_LIMIT);
 
-      const totalsStmt = db.prepare(
-        `
-        SELECT
-          SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS success_count,
-          SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS failure_count,
-          COUNT(*) AS total_count
-        FROM command_usage
-        WHERE created_at >= ?
-        `,
-      );
-
-      const topStmt = db.prepare(
-        `
-        SELECT command_name, COUNT(*) AS cnt
-        FROM command_usage
-        WHERE created_at >= ?
-        GROUP BY command_name
-        ORDER BY cnt DESC, command_name ASC
-        LIMIT ?
-        `,
-      );
-
-      const totals = totalsStmt.get(sinceUTC) as {
-        total_count?: number;
-        success_count?: number;
-        failure_count?: number;
-      };
-
-      const top = topStmt.all(sinceUTC, TOP_LIMIT) as Array<{
-        command_name: string;
-        cnt: number;
-      }>;
-
-      const totalCount = Number(totals?.total_count || 0);
-      const successCount = Number(totals?.success_count || 0);
-      const failureCount = Number(totals?.failure_count || 0);
+      const totalCount = totals.total_count;
+      const successCount = totals.success_count;
+      const failureCount = totals.failure_count;
       const successRate =
         totalCount > 0
           ? Math.round((successCount / totalCount) * 1000) / 10
@@ -117,7 +80,6 @@ const metrics: Command = {
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
-      db.close();
     } catch (err) {
       console.error('[METRICS] Failed to query metrics:', err);
       await interaction.editReply('Metrics are currently unavailable.');

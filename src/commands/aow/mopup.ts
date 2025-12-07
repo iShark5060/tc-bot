@@ -1,5 +1,4 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
-
+import { EmbedBuilder, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import { calculateMopupTiming } from '../../helper/mopup.js';
 import type { Command } from '../../types/index.js';
 
@@ -9,7 +8,7 @@ const mopup: Command = {
     .setDescription('Time until next mopup'),
   examples: ['/mopup'],
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const { status, color, time } = calculateMopupTiming();
     const embed = new EmbedBuilder()
       .setColor(color)

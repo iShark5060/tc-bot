@@ -39,22 +39,15 @@ async function getSheetRowsCached(
   }
 
   const loadingPromise = (async (): Promise<TroopRow[]> => {
-    try {
-      let sheet = (doc as any).sheetsById?.[sheetId];
-      if (!sheet) {
-        await doc.loadInfo();
-        sheet = (doc as any).sheetsById?.[sheetId];
-      }
-      if (!sheet) throw new Error(`Sheet not found: ${sheetId}`);
-
-      const rows = await sheet.getRows();
-      cache.set(key, { rows, expiresAt: Date.now() + ttl });
-      cachedSheetRows.set(cache.size);
-      return rows as TroopRow[];
-    } catch (err) {
-      cache.delete(key);
-      throw err;
+    let sheet = (doc as unknown as { sheetsById?: Record<string, { getRows: () => Promise<TroopRow[]> }> }).sheetsById?.[sheetId];
+    if (!sheet) {
+      await doc.loadInfo();
+      sheet = (doc as unknown as { sheetsById?: Record<string, { getRows: () => Promise<TroopRow[]> }> }).sheetsById?.[sheetId];
     }
+    if (!sheet) throw new Error(`Sheet not found: ${sheetId}`);
+
+    const rows = await sheet.getRows();
+    return rows as TroopRow[];
   })();
 
   cache.set(key, { ...(entry || {}), loadingPromise });
@@ -64,12 +57,9 @@ async function getSheetRowsCached(
     cache.set(key, { rows, expiresAt: Date.now() + ttl });
     cachedSheetRows.set(cache.size);
     return rows;
-  } finally {
-    const latest = cache.get(key);
-    if (latest) {
-      delete latest.loadingPromise;
-      cache.set(key, latest);
-    }
+  } catch (err) {
+    cache.delete(key);
+    throw err;
   }
 }
 

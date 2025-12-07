@@ -1,22 +1,13 @@
-import {
-  Events,
-  type Interaction,
-  type StringSelectMenuInteraction,
-} from 'discord.js';
-
+import { Events, type Interaction, type StringSelectMenuInteraction, type ChatInputCommandInteraction } from 'discord.js';
 import { handleCommandError } from '../helper/errorHandler.js';
 import { debugLogger } from '../helper/debugLogger.js';
-import {
-  commandErrors,
-  commandsCounter,
-  commandsPerSecond,
-} from '../helper/metrics.js';
+import { commandErrors, commandsCounter, commandsPerSecond } from '../helper/metrics.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
-import type { Event } from '../types/index.js';
+import type { Event, ExtendedClient } from '../types/index.js';
 
 const interactionsCreate: Event = {
   name: Events.InteractionCreate,
-  async execute(interaction: Interaction) {
+  async execute(interaction: Interaction): Promise<void> {
     debugLogger.event(Events.InteractionCreate, 'Interaction received', {
       type: interaction.type,
       id: interaction.id,
@@ -25,23 +16,22 @@ const interactionsCreate: Event = {
     });
 
     if (
-      (interaction as StringSelectMenuInteraction).isStringSelectMenu?.() &&
-      typeof (interaction as any).customId === 'string' &&
-      (interaction as any).customId.startsWith('healtroop:')
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith('healtroop:')
     ) {
       debugLogger.step('INTERACTION', 'Processing healtroop select menu', {
-        customId: (interaction as any).customId,
+        customId: interaction.customId,
       });
       try {
         const mod = await import('../commands/aow/healtroop.js');
         const healtroop = mod.default ?? mod;
         if ('handleSelect' in healtroop && typeof healtroop.handleSelect === 'function') {
           debugLogger.debug('INTERACTION', 'Calling healtroop.handleSelect');
-          await (healtroop as any).handleSelect(interaction as StringSelectMenuInteraction);
+          await healtroop.handleSelect(interaction as StringSelectMenuInteraction);
           debugLogger.step('INTERACTION', 'Healtroop select menu handled successfully');
         } else {
           debugLogger.warn('INTERACTION', 'Healtroop handleSelect not available');
-          await (interaction as any).reply({
+          await interaction.reply({
             content: 'Selector not available.',
             ephemeral: true
           });
@@ -49,9 +39,9 @@ const interactionsCreate: Event = {
       } catch (error) {
         debugLogger.error('INTERACTION', 'Error handling healtroop select menu', {
           error: error as Error,
-          customId: (interaction as any).customId,
+          customId: interaction.customId,
         });
-        await handleCommandError(interaction as any, error);
+        await handleCommandError(interaction as unknown as ChatInputCommandInteraction, error);
       }
       return;
     }
@@ -75,7 +65,7 @@ const interactionsCreate: Event = {
       })),
     });
 
-    const command = (interaction.client as any).commands.get(commandName);
+    const command = (interaction.client as ExtendedClient).commands.get(commandName);
     if (!command) {
       debugLogger.warn('INTERACTION', 'Command not found in registry', { commandName });
       console.warn(`[EVENT:INTERACTION] Command not found: ${commandName}`);
@@ -95,10 +85,10 @@ const interactionsCreate: Event = {
       commandsPerSecond.mark();
       
       debugLogger.debug('COMMAND', 'Logging command usage', { commandName });
-      await logCommandUsage({
+      logCommandUsage({
         commandName,
         userId: interaction.user?.id,
-        guildId: interaction.guildId || null,
+        guildId: interaction.guildId ?? undefined,
         success: true,
       });
       debugLogger.step('COMMAND', 'Command usage logged', { commandName });
@@ -111,13 +101,13 @@ const interactionsCreate: Event = {
       });
 
       commandErrors.inc();
-      await handleCommandError(interaction as any, error);
+      await handleCommandError(interaction, error);
       try {
         debugLogger.debug('COMMAND', 'Logging failed command usage', { commandName });
-        await logCommandUsage({
+        logCommandUsage({
           commandName,
           userId: interaction.user?.id,
-          guildId: interaction.guildId || null,
+          guildId: interaction.guildId ?? undefined,
           success: false,
           errorMessage: (error as Error)?.message || String(error),
         });

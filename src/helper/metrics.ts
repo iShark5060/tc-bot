@@ -1,6 +1,5 @@
 import io from '@pm2/io';
 
-// PM2 Metrics
 export const commandsCounter = io.counter({
   name: 'Total Commands',
   id: 'app/commands/total',
@@ -36,4 +35,3 @@ export const googleSheetCacheMisses = io.counter({
   name: 'Google Sheet Cache Misses',
   id: 'app/cache/misses',
 });
-

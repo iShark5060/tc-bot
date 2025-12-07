@@ -1,5 +1,4 @@
-import { Events, type Message } from 'discord.js';
-
+import { Events, type Message, type TextChannel } from 'discord.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { calculateMopupTiming } from '../helper/mopup.js';
@@ -8,20 +7,20 @@ import type { Event } from '../types/index.js';
 
 const messageCreate: Event = {
   name: Events.MessageCreate,
-  async execute(message: Message) {
+  async execute(message: Message): Promise<void> {
     debugLogger.event(Events.MessageCreate, 'Message received', {
       messageId: message.id,
       authorId: message.author?.id,
       author: message.author?.username,
       channelId: message.channelId,
-      channelName: (message.channel as any).name,
-      content: message.content.substring(0, 100), // Log first 100 chars
+      channelName: (message.channel as TextChannel).name ?? 'unknown',
+      content: message.content.substring(0, 100),
       isBot: message.author?.bot,
     });
 
     if (!shouldProcessMessage(message)) {
       debugLogger.debug('MESSAGE', 'Message filtered out (not processing)', {
-        channelName: (message.channel as any).name,
+        channelName: (message.channel as TextChannel).name ?? 'unknown',
         isBot: message.author?.bot,
       });
       return;
@@ -47,7 +46,7 @@ const messageCreate: Event = {
 
         if ('send' in message.channel) {
           debugLogger.step('COMMAND', 'Sending mopup embed response');
-          await (message.channel as any).send({
+          await message.channel.send({
             embeds: [
               {
                 color,
@@ -73,10 +72,10 @@ const messageCreate: Event = {
         });
 
         debugLogger.debug('COMMAND', 'Logging command usage', { commandName: 'msg:!tcmu' });
-        await logCommandUsage({
+        logCommandUsage({
           commandName: 'msg:!tcmu',
           userId: message.author?.id,
-          guildId: message.guildId || null,
+          guildId: message.guildId ?? undefined,
           success: true,
         });
       } catch (error) {
@@ -89,10 +88,10 @@ const messageCreate: Event = {
 
         await handleMessageError(message, error);
         try {
-          await logCommandUsage({
+          logCommandUsage({
             commandName: 'msg:!tcmu',
             userId: message.author?.id,
-            guildId: message.guildId || null,
+            guildId: message.guildId ?? undefined,
             success: false,
             errorMessage: (error as Error)?.message || String(error),
           });
@@ -113,7 +112,8 @@ const messageCreate: Event = {
 };
 
 function shouldProcessMessage(message: Message): boolean {
-  return (message.channel as any).name === 'tc-autobot' && !message.author.bot;
+  const channelName = (message.channel as TextChannel).name;
+  return channelName === 'tc-autobot' && !message.author.bot;
 }
 
 export default messageCreate;

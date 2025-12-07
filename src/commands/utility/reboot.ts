@@ -1,8 +1,4 @@
-import {
-  SlashCommandBuilder,
-  PermissionFlagsBits,
-} from 'discord.js';
-
+import { SlashCommandBuilder, PermissionFlagsBits, type ChatInputCommandInteraction } from 'discord.js';
 import type { Command } from '../../types/index.js';
 
 const reboot: Command = {
@@ -19,28 +15,31 @@ const reboot: Command = {
         .setRequired(true),
     ),
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     if (!interaction.guild) {
-      return interaction.reply({
+      await interaction.reply({
         content: 'This command can only be used in a server.',
         ephemeral: true,
       });
+      return;
     }
 
     if (interaction.guildId !== process.env.GUILD_ID) {
-      return interaction.reply({
+      await interaction.reply({
         content: 'Permission denied. Command used on wrong server.',
         ephemeral: true,
       });
+      return;
     }
 
     const confirm = interaction.options.getBoolean('confirm');
     if (!confirm) {
-      return interaction.reply({
+      await interaction.reply({
         content:
           'Reboot cancelled. You must confirm by setting `confirm:true`.',
         ephemeral: true,
       });
+      return;
     }
 
     await interaction.reply({
@@ -52,8 +51,7 @@ const reboot: Command = {
       `[REBOOT] Command issued by ${interaction.user.tag} in ${interaction.guild.name}`,
     );
 
-    setTimeout(() => (process.exitCode = 0), 500);
-    return Promise.resolve();
+    setTimeout(() => process.emit('SIGTERM'), 500);
   },
 };
 

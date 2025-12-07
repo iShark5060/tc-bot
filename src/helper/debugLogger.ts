@@ -1,12 +1,3 @@
-/**
- * Debug logger utility for verbose logging when DEBUG mode is enabled
- * Usage: Set DEBUG=true environment variable to enable debug logging
- */
-
-const isDebugMode = (): boolean => {
-  return process.env.DEBUG === 'true' || process.env.DEBUG === '1';
-};
-
 type LogLevel = 'INFO' | 'DEBUG' | 'WARN' | 'ERROR' | 'STEP';
 
 interface LogContext {
@@ -14,13 +5,19 @@ interface LogContext {
 }
 
 class DebugLogger {
-  private enabled: boolean;
+  private initialized = false;
 
-  constructor() {
-    this.enabled = isDebugMode();
-    if (this.enabled) {
-      console.log('[DEBUG] Debug logging enabled');
+  private get enabled(): boolean {
+    const isEnabled = process.env.DEBUG === 'true' || process.env.DEBUG === '1';
+    
+    if (!this.initialized) {
+      this.initialized = true;
+      if (isEnabled) {
+        console.log('[DEBUG] Debug logging enabled');
+      }
     }
+    
+    return isEnabled;
   }
 
   private serializeContext(context: LogContext): string {
@@ -86,7 +83,6 @@ class DebugLogger {
     this.log('ERROR', category, message, context);
   }
 
-  // Convenience methods for common categories
   command(commandName: string, action: string, context?: LogContext): void {
     this.debug('COMMAND', `[${commandName}] ${action}`, context);
   }
@@ -104,6 +100,4 @@ class DebugLogger {
   }
 }
 
-// Export singleton instance
 export const debugLogger = new DebugLogger();
-

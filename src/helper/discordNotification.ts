@@ -1,7 +1,5 @@
 import type { DiscordNotificationParams } from '../types/index.js';
 
-const fetch = global.fetch;
-
 const WEBHOOK_BASE = 'https://discord.com/api/webhooks';
 
 export async function notifyDiscord({

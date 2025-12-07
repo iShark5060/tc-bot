@@ -1,5 +1,5 @@
 import '@dotenvx/dotenvx/config';
-import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, type GuildBasedChannel } from 'discord.js';
 import { JWT } from 'google-auth-library';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import fs from 'node:fs';
@@ -13,24 +13,30 @@ import { notifyDiscord } from './helper/discordNotification.js';
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
-import type { Command } from './types/index.js';
+import type { Command, ExtendedClient } from './types/index.js';
+
+declare module 'discord.js' {
+  interface Client {
+    commands: Collection<string, Command>;
+    GoogleSheet: GoogleSpreadsheet;
+  }
+}
 
 io.init();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const client = new Client({
+const client: ExtendedClient = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMessages,
   ],
-});
+}) as ExtendedClient;
 
-// Add custom properties
-(client as any).commands = new Collection<string, Command>();
-(client as any).GoogleSheet = null;
+client.commands = new Collection<string, Command>();
+client.GoogleSheet = null as unknown as GoogleSpreadsheet;
 
 function validateEnvironment(): void {
   debugLogger.boot('Validating environment variables');
@@ -52,9 +58,18 @@ validateEnvironment();
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
-let isShuttingDown = false;
+process.on('unhandledRejection', (reason, promise) => {
+  debugLogger.error('PROCESS', 'Unhandled Promise Rejection', {
+    reason: reason instanceof Error ? reason : String(reason),
+    promise: String(promise),
+  });
+  console.error('[PROCESS] Unhandled rejection:', reason);
+});
 
-(async function initializeBot() {
+let isShuttingDown = false;
+let mopupTimer: NodeJS.Timeout | null = null;
+
+(async function initializeBot(): Promise<void> {
   debugLogger.boot('Starting bot initialization');
   try {
     debugLogger.step('BOOT', 'Step 1: Notifying Discord of startup');
@@ -100,6 +115,12 @@ async function gracefulShutdown(): Promise<void> {
   console.log('[SHUTDOWN] Shutting down gracefully...');
 
   try {
+    if (mopupTimer) {
+      debugLogger.step('SHUTDOWN', 'Clearing mopup timer');
+      clearInterval(mopupTimer);
+      mopupTimer = null;
+    }
+
     try {
       debugLogger.step('SHUTDOWN', 'Stopping WAL checkpoint');
       usageTracker.stopWALCheckpoint();
@@ -145,22 +166,22 @@ async function initializeGoogleSheets(): Promise<void> {
   debugLogger.debug('GOOGLE_SHEETS', 'Creating GoogleSpreadsheet instance', {
     url: process.env.GOOGLE_SHEET_URL,
   });
-  (client as any).GoogleSheet = new GoogleSpreadsheet(
+  client.GoogleSheet = new GoogleSpreadsheet(
     process.env.GOOGLE_SHEET_URL!,
     serviceAccountAuth,
   );
 
   debugLogger.step('GOOGLE_SHEETS', 'Loading sheet info');
-  await (client as any).GoogleSheet.loadInfo();
+  await client.GoogleSheet.loadInfo();
   debugLogger.step('GOOGLE_SHEETS', 'Prefetching sheet rows to warm cache', {
     sheetId: process.env.GOOGLE_SHEET_ID,
   });
-  await getSheetRowsCached((client as any).GoogleSheet, process.env.GOOGLE_SHEET_ID!);
+  await getSheetRowsCached(client.GoogleSheet, process.env.GOOGLE_SHEET_ID!);
   console.log('[BOOT] Prefetched Google Sheet rows to warm cache.');
-  console.log('[BOOT] Loaded Google Sheet:', (client as any).GoogleSheet.title);
+  console.log('[BOOT] Loaded Google Sheet:', client.GoogleSheet.title);
   debugLogger.info('GOOGLE_SHEETS', 'Google Sheets initialized successfully', {
-    title: (client as any).GoogleSheet.title,
-    sheetId: (client as any).GoogleSheet.spreadsheetId,
+    title: client.GoogleSheet.title,
+    sheetId: client.GoogleSheet.spreadsheetId,
   });
 }
 
@@ -191,7 +212,7 @@ async function loadCommands(): Promise<void> {
     }
   }
   debugLogger.info('COMMANDS', 'Commands loading completed', {
-    totalCommands: (client as any).commands.size,
+    totalCommands: client.commands.size,
   });
 }
 
@@ -201,7 +222,7 @@ async function registerCommand(filePath: string, fileName: string): Promise<void
     const mod = await import(pathToFileURL(filePath).href);
     const command = mod.default ?? mod;
     if (command?.data && command?.execute) {
-      (client as any).commands.set(command.data.name, command as Command);
+      client.commands.set(command.data.name, command as Command);
       debugLogger.step('COMMANDS', 'Command registered successfully', {
         name: command.data.name,
         description: command.data.description,
@@ -238,13 +259,13 @@ async function loadEvents(): Promise<void> {
       const mod = await import(pathToFileURL(filePath).href);
       const event = mod.default ?? mod;
       if (event.once) {
-        (client as any).once(event.name, (...args: unknown[]) => {
+        client.once(event.name, (...args: unknown[]) => {
           debugLogger.event(event.name, 'Event triggered (once)', { file });
           event.execute(...args);
         });
         debugLogger.step('EVENTS', 'Registered once event', { name: event.name, file });
       } else {
-        (client as any).on(event.name, (...args: unknown[]) => {
+        client.on(event.name, (...args: unknown[]) => {
           debugLogger.event(event.name, 'Event triggered', { file });
           event.execute(...args);
         });
@@ -271,7 +292,7 @@ function startMopupTimer(): void {
     channel1: process.env.CHANNEL_ID1,
     channel2: process.env.CHANNEL_ID2,
   });
-  setInterval(() => {
+  mopupTimer = setInterval(() => {
     debugLogger.step('MOPUP', 'Mopup timer triggered (5min interval)');
     updateMopupChannels();
   }, 5 * 60 * 1000);
@@ -287,8 +308,8 @@ async function updateMopupChannels(): Promise<void> {
       time: mopupInfo.time,
     });
     
-    const channel1 = client.channels.cache.get(process.env.CHANNEL_ID1!);
-    const channel2 = client.channels.cache.get(process.env.CHANNEL_ID2!);
+    const channel1 = client.channels.cache.get(process.env.CHANNEL_ID1!) as GuildBasedChannel | undefined;
+    const channel2 = client.channels.cache.get(process.env.CHANNEL_ID2!) as GuildBasedChannel | undefined;
     debugLogger.debug('MOPUP', 'Retrieved channels from cache', {
       channel1Found: !!channel1,
       channel2Found: !!channel2,
@@ -298,13 +319,13 @@ async function updateMopupChannels(): Promise<void> {
       const statusEmoji = mopupInfo.status === 'ACTIVE' ? '🟢' : '🔴';
       const newName = `${statusEmoji} ${mopupInfo.status} Mopup`;
       debugLogger.debug('MOPUP', 'Updating channel 1 name', { newName });
-      await (channel1 as any).setName(newName);
+      await (channel1 as GuildBasedChannel & { setName: (name: string) => Promise<void> }).setName(newName);
       debugLogger.step('MOPUP', 'Channel 1 name updated successfully');
     }
     if (channel2 && 'setName' in channel2) {
       const newName = `Time remaining: ${mopupInfo.time}`;
       debugLogger.debug('MOPUP', 'Updating channel 2 name', { newName });
-      await (channel2 as any).setName(newName);
+      await (channel2 as GuildBasedChannel & { setName: (name: string) => Promise<void> }).setName(newName);
       debugLogger.step('MOPUP', 'Channel 2 name updated successfully');
     }
     debugLogger.info('MOPUP', 'Mopup channels updated successfully');

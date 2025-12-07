@@ -1,14 +1,7 @@
-import {
-  EmbedBuilder,
-  SlashCommandBuilder,
-  ActionRowBuilder,
-  StringSelectMenuBuilder,
-  type StringSelectMenuInteraction,
-} from 'discord.js';
-
+import { EmbedBuilder, SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, type ChatInputCommandInteraction, type StringSelectMenuInteraction } from 'discord.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
-import type { Command, HealingCosts, TroopRow } from '../../types/index.js';
+import type { Command, HealingCosts, TroopRow, ExtendedClient } from '../../types/index.js';
 
 const TRUNCATION_LIMITS = {
   MAX_ROWS: 10,
@@ -47,10 +40,6 @@ const COST_LABELS: Record<string, string> = {
   hePoints: 'Heal Points::',
 };
 
-interface HealtroopCommand extends Command {
-  handleSelect?(interaction: any): Promise<any>;
-}
-
 interface RowCalc {
   row: TroopRow;
   calc: HealingCosts | null;
@@ -61,7 +50,7 @@ interface ModifierResult {
   units: number;
 }
 
-const healtroop: HealtroopCommand = {
+const healtroop: Command = {
   data: new SlashCommandBuilder()
     .setName('healtroop')
     .setDescription('Calculate cost to heal troops')
@@ -93,44 +82,48 @@ const healtroop: HealtroopCommand = {
     '/healtroop amount:50 tier:10 type:Walker',
   ],
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const troopAmount = interaction.options.getInteger('amount');
     const troopTier = interaction.options.getInteger('tier');
     const troopType = interaction.options.getString('type');
 
     if (!troopTier || troopTier > 12) {
-      return interaction.reply({
+      await interaction.reply({
         content: 'We currently only have Tier 12 :)',
         ephemeral: true,
       });
+      return;
     }
 
     if (!troopAmount || !troopType) {
-      return interaction.reply({
+      await interaction.reply({
         content: 'Missing required parameters',
         ephemeral: true,
       });
+      return;
     }
 
     await interaction.deferReply({ ephemeral: true });
 
     const rows = await getSheetRowsCached(
-      (interaction.client as any).GoogleSheet,
+      (interaction.client as ExtendedClient).GoogleSheet,
       process.env.GOOGLE_SHEET_ID || '',
     );
 
     const troopRows = findTroopRows(rows, troopTier, troopType);
     if (troopRows.length === 0) {
-      return interaction.editReply({ content: 'Troop data not found!' });
+      await interaction.editReply({ content: 'Troop data not found!' });
+      return;
     }
 
     const validByName = buildValidByNameMap(troopRows, troopAmount);
 
     if (validByName.size === 0) {
-      return interaction.editReply({
+      await interaction.editReply({
         content:
           'No usable troop data found for that selection (rows are empty or missing costs).',
       });
+      return;
     }
 
     if (validByName.size > 1) {
@@ -160,7 +153,7 @@ const healtroop: HealtroopCommand = {
 
       const truncated = validByName.size > TRUNCATION_LIMITS.MAX_SELECT_OPTIONS;
 
-      const row = new ActionRowBuilder().addComponents(
+      const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`healtroop:${troopTier}|${troopType}|${troopAmount}`)
           .setPlaceholder('Pick a troop name…')
@@ -173,11 +166,12 @@ const healtroop: HealtroopCommand = {
         ? `Showing first ${TRUNCATION_LIMITS.MAX_SELECT_OPTIONS} of ${validByName.size} troops.`
         : undefined;
 
-      return interaction.editReply({
+      await interaction.editReply({
         content,
         embeds: [embed],
-        components: [row as any],
+        components: [row],
       });
+      return;
     }
 
     const [singleName] = Array.from(validByName.keys());
@@ -185,7 +179,7 @@ const healtroop: HealtroopCommand = {
       .get(singleName)!
       .slice(0, TRUNCATION_LIMITS.MAX_ROWS);
     const perRowCalcs = selectedRows
-      .map((row) => ({ row, calc: calculateHealingCosts(row, troopAmount) }))
+      .map((r) => ({ row: r, calc: calculateHealingCosts(r, troopAmount) }))
       .filter((x): x is RowCalc => x.calc !== null && x.calc.hasData);
 
     const embed = createMultiHealingEmbed(
@@ -199,10 +193,10 @@ const healtroop: HealtroopCommand = {
         : 0,
     );
 
-    return interaction.editReply({ embeds: [embed], components: [] });
+    await interaction.editReply({ embeds: [embed], components: [] });
   },
 
-  async handleSelect(interaction) {
+  async handleSelect(interaction: StringSelectMenuInteraction): Promise<void> {
     try {
       const meta = String(interaction.customId).slice('healtroop:'.length);
       const [tierStr, type, amountStr] = meta.split('|');
@@ -216,14 +210,15 @@ const healtroop: HealtroopCommand = {
         !Number.isFinite(troopAmount) ||
         !selectedName
       ) {
-        return interaction.update({
+        await interaction.update({
           content: 'Invalid selection.',
           components: [],
         });
+        return;
       }
 
       const rows = await getSheetRowsCached(
-        (interaction.client as any).GoogleSheet,
+        (interaction.client as ExtendedClient).GoogleSheet,
         process.env.GOOGLE_SHEET_ID || '',
       );
 
@@ -232,26 +227,28 @@ const healtroop: HealtroopCommand = {
       );
 
       if (troopRows.length === 0) {
-        return interaction.update({
+        await interaction.update({
           content: 'No rows found for that troop name anymore.',
           components: [],
         });
+        return;
       }
 
       const selectedRows = troopRows.slice(0, TRUNCATION_LIMITS.MAX_ROWS);
       const perRowCalcs = selectedRows
-        .map((row) => ({
-          row,
-          calc: calculateHealingCosts(row, troopAmount),
+        .map((r) => ({
+          row: r,
+          calc: calculateHealingCosts(r, troopAmount),
         }))
         .filter((x): x is RowCalc => x.calc !== null && x.calc.hasData);
 
       if (perRowCalcs.length === 0) {
-        return interaction.update({
+        await interaction.update({
           content:
             'No usable troop data found for that selection (rows are empty or missing costs).',
           components: [],
         });
+        return;
       }
 
       const embed = createMultiHealingEmbed(
@@ -265,7 +262,7 @@ const healtroop: HealtroopCommand = {
           : 0,
       );
 
-      return interaction.update({
+      await interaction.update({
         content: '',
         embeds: [embed],
         components: [],
@@ -280,7 +277,6 @@ const healtroop: HealtroopCommand = {
       } catch {
         // Ignore error here
       }
-      return Promise.resolve();
     }
   },
 };

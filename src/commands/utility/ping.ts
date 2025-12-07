@@ -1,5 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
-
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import type { Command } from '../../types/index.js';
 
 const ping: Command = {
@@ -8,7 +7,7 @@ const ping: Command = {
     .setDescription('Replies with Pong as well as latency.'),
   examples: ['/ping'],
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await interaction.reply('Pong!');
     await interaction.editReply(
       `Pong! Latency is ${Date.now() - interaction.createdTimestamp}ms. ` +

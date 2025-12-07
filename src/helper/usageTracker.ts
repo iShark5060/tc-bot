@@ -1,8 +1,8 @@
-import Database from 'better-sqlite3';
+import Database, { type Statement } from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type { CommandUsage } from '../types/index.js';
+import type { CommandUsage, MetricsTotals, MetricsTopCommand } from '../types/index.js';
 
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
 const CHECKPOINT_INTERVAL_MS = Number(
@@ -11,6 +11,10 @@ const CHECKPOINT_INTERVAL_MS = Number(
 
 let db: Database.Database | null = null;
 let checkpointTimer: NodeJS.Timeout | null = null;
+
+let insertStmt: Statement | null = null;
+let totalsStmt: Statement | null = null;
+let topCommandsStmt: Statement | null = null;
 
 function ensureDir(filePath: string): void {
   const dir = path.dirname(filePath);
@@ -46,6 +50,31 @@ function initDb(): void {
     'CREATE INDEX IF NOT EXISTS idx_usage_cmd ON command_usage(command_name);',
   );
 
+  insertStmt = db.prepare(`
+    INSERT INTO command_usage
+      (command_name, user_id, guild_id, success, error_message)
+    VALUES
+      (@command_name, @user_id, @guild_id, @success, @error_message)
+  `);
+
+  totalsStmt = db.prepare(`
+    SELECT
+      SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) AS success_count,
+      SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) AS failure_count,
+      COUNT(*) AS total_count
+    FROM command_usage
+    WHERE created_at >= ?
+  `);
+
+  topCommandsStmt = db.prepare(`
+    SELECT command_name, COUNT(*) AS cnt
+    FROM command_usage
+    WHERE created_at >= ?
+    GROUP BY command_name
+    ORDER BY cnt DESC, command_name ASC
+    LIMIT ?
+  `);
+
   console.log('[USAGE:SQLite] Initialized at', DB_PATH);
 }
 
@@ -58,16 +87,9 @@ export function logCommandUsage({
 }: CommandUsage): void {
   try {
     initDb();
-    if (!db) return;
+    if (!insertStmt) return;
 
-    const stmt = db.prepare(`
-      INSERT INTO command_usage
-        (command_name, user_id, guild_id, success, error_message)
-      VALUES
-        (@command_name, @user_id, @guild_id, @success, @error_message)
-    `);
-
-    stmt.run({
+    insertStmt.run({
       command_name: String(commandName || 'unknown'),
       user_id: userId ? String(userId) : null,
       guild_id: guildId ? String(guildId) : null,
@@ -76,6 +98,35 @@ export function logCommandUsage({
     });
   } catch (err) {
     console.error('[USAGE:SQLite] Failed to log command usage:', err);
+  }
+}
+
+export function getMetricsTotals(sinceUTC: string): MetricsTotals {
+  try {
+    initDb();
+    if (!totalsStmt) return { total_count: 0, success_count: 0, failure_count: 0 };
+
+    const result = totalsStmt.get(sinceUTC) as Partial<MetricsTotals> | undefined;
+    return {
+      total_count: Number(result?.total_count ?? 0),
+      success_count: Number(result?.success_count ?? 0),
+      failure_count: Number(result?.failure_count ?? 0),
+    };
+  } catch (err) {
+    console.error('[USAGE:SQLite] Failed to get metrics totals:', err);
+    return { total_count: 0, success_count: 0, failure_count: 0 };
+  }
+}
+
+export function getTopCommands(sinceUTC: string, limit: number): MetricsTopCommand[] {
+  try {
+    initDb();
+    if (!topCommandsStmt) return [];
+
+    return topCommandsStmt.all(sinceUTC, limit) as MetricsTopCommand[];
+  } catch (err) {
+    console.error('[USAGE:SQLite] Failed to get top commands:', err);
+    return [];
   }
 }
 
@@ -110,6 +161,9 @@ export function stopWALCheckpoint(): void {
 export function closeDb(): void {
   if (db) {
     try {
+      insertStmt = null;
+      totalsStmt = null;
+      topCommandsStmt = null;
       db.close();
       db = null;
       console.log('[USAGE:SQLite] Database closed');

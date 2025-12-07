@@ -1,7 +1,7 @@
-import type { CommandInteraction, Message } from 'discord.js';
+import type { ChatInputCommandInteraction, Message } from 'discord.js';
 
 async function handleCommandError(
-  interaction: CommandInteraction,
+  interaction: ChatInputCommandInteraction,
   error: unknown,
 ): Promise<void> {
   console.error('[ERROR] Command execution failed:', error);

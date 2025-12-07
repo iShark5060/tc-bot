@@ -1,8 +1,7 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
-
+import { EmbedBuilder, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
-import type { Command, KillResult, TroopRow } from '../../types/index.js';
+import type { Command, KillResult, TroopRow, ExtendedClient } from '../../types/index.js';
 
 const its: Command = {
   data: new SlashCommandBuilder()
@@ -35,7 +34,7 @@ const its: Command = {
     '/its level:25 leadership:300000 tier:10 tdr:20',
   ],
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const skillLevel = interaction.options.getInteger('level');
     const leadership = interaction.options.getInteger('leadership');
     const targetTier = interaction.options.getInteger('tier');
@@ -43,30 +42,32 @@ const its: Command = {
     const tdr = Math.min(100, Math.max(0, inputTdr ?? 0));
 
     if (!skillLevel || skillLevel > 60) {
-      return interaction.reply({
+      await interaction.reply({
         content: `You entered skill level ${skillLevel}. Was that intended? Because it's not possible, but it would be REALLY nice if it were...`,
         ephemeral: true,
       });
+      return;
     }
 
     if (!leadership || !targetTier) {
-      return interaction.reply({
+      await interaction.reply({
         content: 'Missing required parameters',
         ephemeral: true,
       });
+      return;
     }
 
     await interaction.deferReply();
 
     const rows = await getSheetRowsCached(
-      (interaction.client as any).GoogleSheet,
+      (interaction.client as ExtendedClient).GoogleSheet,
       process.env.GOOGLE_SHEET_ID || '',
     );
 
     const kills = calculateKills(rows, targetTier, skillLevel, leadership, tdr);
 
     if (kills.length === 0) {
-      return interaction.editReply({
+      await interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setColor(0xcf142b)
@@ -76,11 +77,12 @@ const its: Command = {
             ),
         ],
       });
+      return;
     }
 
     const embed = createItsEmbed(leadership, skillLevel, tdr, kills);
 
-    return interaction.editReply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   },
 };
 

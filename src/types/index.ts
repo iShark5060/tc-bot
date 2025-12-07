@@ -1,16 +1,16 @@
-import type {
-  SlashCommandBuilder,
-  StringSelectMenuInteraction,
-  ChatInputCommandInteraction,
-  CacheType as DiscordCacheType,
-} from 'discord.js';
+import type { ChatInputCommandInteraction, Client, Collection, SlashCommandBuilder, SlashCommandOptionsOnlyBuilder, StringSelectMenuInteraction } from 'discord.js';
 import type { GoogleSpreadsheet } from 'google-spreadsheet';
 
+type CommandData =
+  | SlashCommandBuilder
+  | SlashCommandOptionsOnlyBuilder
+  | Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
+
 export interface Command {
-  data: any; // SlashCommandBuilder type from Discord.js is complex to type properly
+  data: CommandData;
   examples?: string[];
-  execute(interaction: any): Promise<void> | Promise<any>;
-  handleSelect?(interaction: any): Promise<void> | Promise<any>;
+  execute(interaction: ChatInputCommandInteraction): Promise<void> | Promise<unknown>;
+  handleSelect?(interaction: StringSelectMenuInteraction): Promise<void> | Promise<unknown>;
 }
 
 export interface Event {
@@ -61,8 +61,9 @@ export interface GoogleSheetClient {
   GoogleSheet: GoogleSpreadsheet;
 }
 
-export interface ExtendedClient extends GoogleSheetClient {
-  commands: Map<string, Command>;
+export interface ExtendedClient extends Client {
+  commands: Collection<string, Command>;
+  GoogleSheet: GoogleSpreadsheet;
 }
 
 export interface CommandUsage {
@@ -78,4 +79,15 @@ export interface DiscordNotificationParams {
   message?: string;
   error?: Error | string;
   mention?: boolean;
+}
+
+export interface MetricsTotals {
+  total_count: number;
+  success_count: number;
+  failure_count: number;
+}
+
+export interface MetricsTopCommand {
+  command_name: string;
+  cnt: number;
 }

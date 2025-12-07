@@ -1,11 +1,5 @@
-import {
-  SlashCommandBuilder,
-  EmbedBuilder,
-  PermissionsBitField,
-  type CommandInteraction,
-} from 'discord.js';
-
-import type { Command } from '../../types/index.js';
+import { SlashCommandBuilder, EmbedBuilder,PermissionsBitField, type ChatInputCommandInteraction } from 'discord.js';
+import type { Command, ExtendedClient } from '../../types/index.js';
 
 const help: Command = {
   data: new SlashCommandBuilder()
@@ -13,14 +7,15 @@ const help: Command = {
     .setDescription('List all available commands with usage examples'),
   examples: ['/help'],
 
-  async execute(interaction) {
-    const commands = (interaction.client as any).commands;
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const commands = (interaction.client as ExtendedClient).commands;
 
     if (!commands || commands.size === 0) {
-      return interaction.reply({
+      await interaction.reply({
         content: 'No commands are currently available.',
         ephemeral: true,
       });
+      return;
     }
 
     const visible = [...commands.values()].filter((cmd) =>
@@ -28,10 +23,11 @@ const help: Command = {
     );
 
     if (visible.length === 0) {
-      return interaction.reply({
+      await interaction.reply({
         content: 'No commands available for your permissions in this server.',
         ephemeral: true,
       });
+      return;
     }
 
     const commandList = visible
@@ -58,11 +54,10 @@ const help: Command = {
       embeds: [embed],
       flags: 64,
     });
-    return Promise.resolve();
   },
 };
 
-function canSeeCommand(cmd: Command, interaction: CommandInteraction): boolean {
+function canSeeCommand(cmd: Command, interaction: ChatInputCommandInteraction): boolean {
   const json = typeof cmd.data?.toJSON === 'function' ? cmd.data.toJSON() : {};
   const required = (json as { default_member_permissions?: string })
     .default_member_permissions;
@@ -72,7 +67,7 @@ function canSeeCommand(cmd: Command, interaction: CommandInteraction): boolean {
 
   const requiredBits = BigInt(required);
   const memberPerms =
-    interaction.memberPermissions || interaction.member?.permissions;
+    interaction.memberPermissions ?? interaction.member?.permissions;
   if (!memberPerms) return false;
 
   if (typeof memberPerms === 'string') return false;

@@ -1,4 +1,4 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { EmbedBuilder, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 
 import { numberWithCommas } from '../../helper/formatters.js';
 import type { Command, GearCalculations } from '../../types/index.js';
@@ -24,34 +24,37 @@ const gearcheck: Command = {
     ),
   examples: ['/gearcheck stat:120 level:20', '/gearcheck stat:85.5 level:10'],
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await interaction.deferReply();
 
     const statValue = interaction.options.getNumber('stat');
     const gearLevel = interaction.options.getInteger('level');
 
     if (!statValue || statValue <= 0) {
-      return interaction.editReply({
+      await interaction.editReply({
         content: 'Stat value must be greater than 0',
       });
+      return;
     }
 
-    if (!gearLevel || gearLevel < 0) {
-      return interaction.editReply({
+    if (gearLevel === null || gearLevel < 0) {
+      await interaction.editReply({
         content: 'Gear level cannot be negative',
       });
+      return;
     }
 
     if (gearLevel > 100) {
-      return interaction.editReply({
+      await interaction.editReply({
         content: `Gear level ${gearLevel} is unreasonably high (max expected: 100).`,
       });
+      return;
     }
 
     const calculations = calculateGearStats(statValue, gearLevel);
     const embed = createGearEmbed(statValue, gearLevel, calculations);
 
-    return interaction.editReply({ embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   },
 };
 

@@ -17,7 +17,7 @@ if (!TOKEN) {
 
 const rest = new REST({ version: '10' }).setToken(TOKEN!);
 
-(async function deployCommands() {
+(async function deployCommands(): Promise<void> {
   try {
     const commands = await loadCommands();
     await clearExistingCommands();
