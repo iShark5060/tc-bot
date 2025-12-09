@@ -1,6 +1,6 @@
 {
   "name": "tc-bot",
-  "version": "7.2.0",
+  "version": "7.3.0",
   "description": "Ark of War Theorycrafter Bot",
   "keywords": [],
   "homepage": "https://github.com/ishark5060/tc-bot#readme",
@@ -19,11 +19,13 @@
     "build": "tsc",
     "start": "node dist/tc-bot.js",
     "dev": "tsx watch src/tc-bot.ts",
-    "debug": "cross-env DEBUG=true tsx watch src/tc-bot.ts",
     "deploy": "tsx src/deployCommands.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "check-format": "prettier --check ."
+    "check-format": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.48.3",
@@ -35,10 +37,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
-    "@prettier/plugin-php": "^0.24.0",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^24.10.1",
-    "cross-env": "^10.1.0",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -46,6 +46,7 @@
     "eslint-plugin-promise": "^7.2.1",
     "prettier": "^3.6.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.15"
   }
 }

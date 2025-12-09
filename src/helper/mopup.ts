@@ -55,4 +55,4 @@ function formatTime(ms: number): string {
   return new Date(Math.abs(ms)).toISOString().slice(11, 19);
 }
 
-export { calculateMopupTiming };
+export { calculateMopupTiming, getMopupWindow, determineMopupStatus, formatTime };

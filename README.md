@@ -124,4 +124,13 @@ pm2 start ecosystem.config.cjs
 
 # to deploy slash commands to Discord
 npm run deploy
+
+# for debug mode (verbose logging), add DEBUG=true to your .env file
+# then run: npm run dev
+
+# run tests
+npm test
+
+# run tests in watch mode
+npm run test:watch
 ```

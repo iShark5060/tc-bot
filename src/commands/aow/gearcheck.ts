@@ -102,3 +102,4 @@ function createGearEmbed(
 }
 
 export default gearcheck;
+export { calculateGearStats };
