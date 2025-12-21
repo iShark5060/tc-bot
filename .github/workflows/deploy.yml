@@ -1,0 +1,45 @@
+name: Deploy TC-Bot
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:  # Allow manual runs
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci  # Install ALL deps including dev
+      
+      - name: Build TypeScript
+        run: npm run build
+      
+      - name: List built files (debug)
+        run: ls -la dist/
+      
+      - name: Deploy to server
+        uses: easingthemes/ssh-deploy@v2.1.5
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
+          REMOTE_USER: ${{ secrets.SERVER_USER }}
+          SOURCE: "dist/,package*.json,node_modules/,ecosystem.config.js"
+          TARGET: ${{ secrets.SERVER_PATH }}
+          EXCLUDE: "src/,*.ts,.git*,tsconfig.json,README.md"
+      
+      - name: Restart PM2
+        run: |
+          ssh -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "cd ${{ secrets.SERVER_PATH }} && pm2 restart ecosystem.config.js --env production"
