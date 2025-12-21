@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, type ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, MessageFlags, PermissionFlagsBits, type ChatInputCommandInteraction } from 'discord.js';
 import type { Command } from '../../types/index.js';
 
 const reboot: Command = {
@@ -19,7 +19,7 @@ const reboot: Command = {
     if (!interaction.guild) {
       await interaction.reply({
         content: 'This command can only be used in a server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -27,7 +27,7 @@ const reboot: Command = {
     if (interaction.guildId !== process.env.GUILD_ID) {
       await interaction.reply({
         content: 'Permission denied. Command used on wrong server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -37,14 +37,14 @@ const reboot: Command = {
       await interaction.reply({
         content:
           'Reboot cancelled. You must confirm by setting `confirm:true`.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
     await interaction.reply({
       content: 'Bot is shutting down...',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
 
     console.log(

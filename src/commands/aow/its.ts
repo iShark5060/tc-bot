@@ -1,4 +1,4 @@
-import { EmbedBuilder, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
+import { EmbedBuilder, MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import type { Command, KillResult, TroopRow, ExtendedClient } from '../../types/index.js';
@@ -44,7 +44,7 @@ const its: Command = {
     if (!skillLevel || skillLevel > 60) {
       await interaction.reply({
         content: `You entered skill level ${skillLevel}. Was that intended? Because it's not possible, but it would be REALLY nice if it were...`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -52,7 +52,7 @@ const its: Command = {
     if (!leadership || !targetTier) {
       await interaction.reply({
         content: 'Missing required parameters',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }

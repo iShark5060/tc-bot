@@ -1,4 +1,4 @@
-import { Events, type Interaction, type StringSelectMenuInteraction, type ChatInputCommandInteraction } from 'discord.js';
+import { Events, MessageFlags, type Interaction, type StringSelectMenuInteraction, type ChatInputCommandInteraction } from 'discord.js';
 import { handleCommandError } from '../helper/errorHandler.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { commandErrors, commandsCounter, commandsPerSecond } from '../helper/metrics.js';
@@ -33,7 +33,7 @@ const interactionsCreate: Event = {
           debugLogger.warn('INTERACTION', 'Healtroop handleSelect not available');
           await interaction.reply({
             content: 'Selector not available.',
-            ephemeral: true
+            flags: MessageFlags.Ephemeral,
           });
         }
       } catch (error) {

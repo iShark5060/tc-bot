@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder,PermissionsBitField, type ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField, type ChatInputCommandInteraction } from 'discord.js';
 import type { Command, ExtendedClient } from '../../types/index.js';
 
 const help: Command = {
@@ -13,7 +13,7 @@ const help: Command = {
     if (!commands || commands.size === 0) {
       await interaction.reply({
         content: 'No commands are currently available.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -25,7 +25,7 @@ const help: Command = {
     if (visible.length === 0) {
       await interaction.reply({
         content: 'No commands available for your permissions in this server.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -52,7 +52,7 @@ const help: Command = {
 
     await interaction.reply({
       embeds: [embed],
-      flags: 64,
+      flags: MessageFlags.Ephemeral,
     });
   },
 };

@@ -1,4 +1,4 @@
-import { EmbedBuilder, SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, type ChatInputCommandInteraction, type StringSelectMenuInteraction } from 'discord.js';
+import { EmbedBuilder, MessageFlags, SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, type ChatInputCommandInteraction, type StringSelectMenuInteraction } from 'discord.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import type { Command, HealingCosts, TroopRow, ExtendedClient } from '../../types/index.js';
@@ -90,7 +90,7 @@ const healtroop: Command = {
     if (!troopTier || troopTier > 12) {
       await interaction.reply({
         content: 'We currently only have Tier 12 :)',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -98,12 +98,12 @@ const healtroop: Command = {
     if (!troopAmount || !troopType) {
       await interaction.reply({
         content: 'Missing required parameters',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const rows = await getSheetRowsCached(
       (interaction.client as ExtendedClient).GoogleSheet,

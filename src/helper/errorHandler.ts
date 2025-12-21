@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction, Message } from 'discord.js';
+import { MessageFlags, type ChatInputCommandInteraction, type Message } from 'discord.js';
 
 async function handleCommandError(
   interaction: ChatInputCommandInteraction,
@@ -8,8 +8,8 @@ async function handleCommandError(
 
   const errorMessage = {
     content: 'There was an error while executing this command!',
-    ephemeral: true,
-  };
+    flags: MessageFlags.Ephemeral,
+  } as const;
 
   try {
     if (interaction.replied || interaction.deferred) {
