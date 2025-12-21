@@ -11,42 +11,48 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '25'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Create client-secret.json from secret
         run: |
           echo "${{ secrets.GOOGLE_CLIENT_SECRET_BASE64 }}" | base64 -d > client_secret.json
 
       - name: Build TypeScript
         run: npm run build
-      
+
       - name: List built files (debug)
         run: ls -la dist/
-      
+
       - name: Deploy to server
-        uses: easingthemes/ssh-deploy@v2.1.5
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.SERVER_HOST }}
-          REMOTE_USER: ${{ secrets.SERVER_USER }}
-          SOURCE: "dist/,package*.json,node_modules/,ecosystem.config.js,client_secret.json"
-          TARGET: ${{ secrets.SERVER_PATH }}
-          EXCLUDE: "src/,*.ts,.git*,tsconfig.json,README.md"
-      
+        run: |
+          mkdir -p /tmp/deploy
+          cp -r dist/ /tmp/deploy/
+          cp package*.json /tmp/deploy/
+          cp -r node_modules/ /tmp/deploy/
+          cp ecosystem.config.js /tmp/deploy/
+          cp client-secret.json /tmp/deploy/
+          cp .env /tmp/deploy/
+
+          rsync -av --delete \
+            -e "ssh -i <(echo \"${{ secrets.SSH_PRIVATE_KEY }}\") -o StrictHostKeyChecking=no" \
+            /tmp/deploy/ \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
+
       - name: Restart PM2
         run: |
           ssh -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+            -o StrictHostKeyChecking=no \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "cd ${{ secrets.SERVER_PATH }} && pm2 restart ecosystem.config.js --env production"
