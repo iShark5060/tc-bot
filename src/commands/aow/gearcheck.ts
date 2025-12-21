@@ -58,6 +58,15 @@ const gearcheck: Command = {
   },
 };
 
+/**
+ * Calculates gear stats at all upgrade levels (0, 10, 13, 20, 30, 40, 50).
+ * Derives base stat from current stat and level, then applies multipliers.
+ * @param currentStat - Current stat value at the given level
+ * @param currentLevel - Current upgrade level (0-100)
+ * @returns Object mapping level to calculated stat string (e.g., { 0: "100.00", 10: "200.00" })
+ * @example
+ * calculateGearStats(120, 20) // Returns stats for all levels based on base stat of 40
+ */
 function calculateGearStats(
   currentStat: number,
   currentLevel: number,

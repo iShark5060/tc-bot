@@ -2,6 +2,11 @@ import type { DiscordNotificationParams } from '../types/index.js';
 
 const WEBHOOK_BASE = 'https://discord.com/api/webhooks';
 
+/**
+ * Sends a Discord webhook notification (startup, shutdown, error, or custom).
+ * @param params - Notification parameters including type, optional message, error, and mention flag
+ * @returns Promise that resolves when notification is sent (or skipped if webhook not configured)
+ */
 export async function notifyDiscord({
   type,
   message = '',

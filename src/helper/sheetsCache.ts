@@ -15,6 +15,14 @@ function keyFor(doc: GoogleSpreadsheet, sheetId: string): string {
   return `${docId}:${sheetId}`;
 }
 
+/**
+ * Gets sheet rows from cache or fetches from Google Sheets API if cache expired.
+ * Implements deduplication - concurrent requests for the same sheet wait for the same promise.
+ * @param doc - GoogleSpreadsheet instance
+ * @param sheetId - The sheet ID to fetch
+ * @param ttlMs - Optional TTL in milliseconds (defaults to GOOGLE_SHEET_CACHE env var or 300000)
+ * @returns Promise resolving to array of TroopRow objects
+ */
 async function getSheetRowsCached(
   doc: GoogleSpreadsheet,
   sheetId: string,
@@ -63,6 +71,11 @@ async function getSheetRowsCached(
   }
 }
 
+/**
+ * Invalidates cached rows for a specific sheet.
+ * @param sheetId - The sheet ID to invalidate
+ * @param doc - Optional GoogleSpreadsheet instance (if provided, only invalidates that doc's cache)
+ */
 function invalidateSheetCache(sheetId: string, doc?: GoogleSpreadsheet): void {
   if (doc) {
     cache.delete(keyFor(doc, sheetId));
@@ -75,10 +88,17 @@ function invalidateSheetCache(sheetId: string, doc?: GoogleSpreadsheet): void {
   }
 }
 
+/**
+ * Clears all cached sheet data.
+ */
 function clearAllSheetCache(): void {
   cache.clear();
 }
 
+/**
+ * Gets cache statistics including size, keys, and expiration times.
+ * @returns Object with cache size, all keys, and expiration info for each entry
+ */
 function getCacheStats(): {
   size: number;
   keys: string[];

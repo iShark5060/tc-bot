@@ -78,6 +78,10 @@ function initDb(): void {
   console.log('[USAGE:SQLite] Initialized at', DB_PATH);
 }
 
+/**
+ * Logs a command usage event to the SQLite database.
+ * @param commandUsage - Command usage data including name, user, guild, success status, and optional error message
+ */
 export function logCommandUsage({
   commandName,
   userId,
@@ -101,6 +105,11 @@ export function logCommandUsage({
   }
 }
 
+/**
+ * Gets aggregated metrics totals (success, failure, total counts) since a given UTC timestamp.
+ * @param sinceUTC - UTC timestamp string in format 'YYYY-MM-DD HH:MM:SS'
+ * @returns MetricsTotals with total_count, success_count, and failure_count
+ */
 export function getMetricsTotals(sinceUTC: string): MetricsTotals {
   try {
     initDb();
@@ -118,6 +127,12 @@ export function getMetricsTotals(sinceUTC: string): MetricsTotals {
   }
 }
 
+/**
+ * Gets the top N most used commands since a given UTC timestamp.
+ * @param sinceUTC - UTC timestamp string in format 'YYYY-MM-DD HH:MM:SS'
+ * @param limit - Maximum number of commands to return
+ * @returns Array of MetricsTopCommand sorted by usage count (descending)
+ */
 export function getTopCommands(sinceUTC: string, limit: number): MetricsTopCommand[] {
   try {
     initDb();
@@ -130,6 +145,10 @@ export function getTopCommands(sinceUTC: string, limit: number): MetricsTopComma
   }
 }
 
+/**
+ * Performs a WAL checkpoint on the SQLite database.
+ * @param mode - Checkpoint mode ('TRUNCATE', 'RESTART', or 'PASSIVE')
+ */
 export function checkpoint(mode = 'TRUNCATE'): void {
   try {
     initDb();
@@ -140,6 +159,10 @@ export function checkpoint(mode = 'TRUNCATE'): void {
   }
 }
 
+/**
+ * Starts a periodic WAL checkpoint timer.
+ * @param intervalMs - Interval in milliseconds (default: 300000 = 5 minutes)
+ */
 export function startWALCheckpoint(intervalMs: number | null = 300000): void {
   initDb();
   if (checkpointTimer) return;
@@ -150,6 +173,9 @@ export function startWALCheckpoint(intervalMs: number | null = 300000): void {
   console.log('[USAGE:SQLite] WAL checkpoint timer started:', intervalMs, 'ms');
 }
 
+/**
+ * Stops the WAL checkpoint timer if running.
+ */
 export function stopWALCheckpoint(): void {
   if (checkpointTimer) {
     clearInterval(checkpointTimer);
@@ -158,6 +184,10 @@ export function stopWALCheckpoint(): void {
   }
 }
 
+/**
+ * Closes the database connection and clears prepared statements.
+ * Should be called during graceful shutdown.
+ */
 export function closeDb(): void {
   if (db) {
     try {

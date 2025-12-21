@@ -16,3 +16,5 @@ dist/
 *.tsbuildinfo
 logs/
 .pm2
+coverage/
+*.lcov
