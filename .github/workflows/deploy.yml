@@ -1,9 +1,12 @@
 name: Deploy TC-Bot
 
+permissions:
+  contents: read
+
 on:
   push:
-    branches: [main, develop]
-  workflow_dispatch:  # Allow manual runs
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -16,12 +19,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '25'
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci  # Install ALL deps including dev
+        run: npm ci
       
+      - name: Create client-secret.json from secret
+        run: |
+          echo "${{ secrets.GOOGLE_CLIENT_SECRET_BASE64 }}" | base64 -d > client_secret.json
+
       - name: Build TypeScript
         run: npm run build
       
@@ -34,7 +41,7 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.SERVER_HOST }}
           REMOTE_USER: ${{ secrets.SERVER_USER }}
-          SOURCE: "dist/,package*.json,node_modules/,ecosystem.config.js"
+          SOURCE: "dist/,package*.json,node_modules/,ecosystem.config.js,client_secret.json"
           TARGET: ${{ secrets.SERVER_PATH }}
           EXCLUDE: "src/,*.ts,.git*,tsconfig.json,README.md"
       
