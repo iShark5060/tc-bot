@@ -4,7 +4,6 @@ config.json
 eslint.config.js
 .prettierrc.json
 .npmignore
-package-lock.json
 client_secret.json
 config.inc.php
 data/*.db
