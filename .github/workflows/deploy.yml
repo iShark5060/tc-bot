@@ -35,6 +35,13 @@ jobs:
       - name: List built files (debug)
         run: ls -la dist/
 
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
       - name: Deploy to server
         run: |
           mkdir -p /tmp/deploy
@@ -45,13 +52,17 @@ jobs:
           cp client_secret.json /tmp/deploy/
 
           rsync -av --delete \
-            -e "ssh -i <(echo \"${{ secrets.SSH_PRIVATE_KEY }}\") -o StrictHostKeyChecking=no" \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             /tmp/deploy/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
       - name: Restart PM2
         run: |
-          ssh -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
+          ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "cd ${{ secrets.SERVER_PATH }} && pm2 restart tc-bot --update-env"
+            "cd ${{ secrets.SERVER_PATH }} && pm2 restart ecosystem.config.cjs --update-env"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
