@@ -235,7 +235,10 @@ if (file_exists($bgFile)) {
     margin: 0;
     padding: 24px;
     color: var(--text);
-    background: var(--bg);
+    background: linear-gradient(to bottom, #272b36 0%, #050507 100%);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -267,16 +270,31 @@ if (file_exists($bgFile)) {
   form { margin: 0; }
   select {
     padding: 8px 12px; font-size: 14px; color: var(--text);
-    background: var(--select-bg); border: 1px solid var(--border);
-    border-radius: var(--radius); outline: none; box-shadow: var(--shadow);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem; outline: none; box-shadow: var(--shadow);
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 6"><polygon points="3 6 3 6 0 0 6 0 3 6" fill="%239ca3af"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 8px;
+    padding-right: 32px;
   }
-  select:focus { border-color: var(--accent); }
-  select:hover { border-color: var(--muted); }
+  select:focus { border-color: rgba(255, 255, 255, 0.2); }
+  select:hover { border-color: rgba(255, 255, 255, 0.15); }
+  select option {
+    background: rgba(5, 5, 7, 0.98);
+    color: var(--text);
+    padding: 8px;
+  }
   .cards { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
   .card {
-    background: linear-gradient(180deg, var(--panel), var(--panel-2));
-    border: 1px solid var(--border); border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
     padding: 14px 16px; flex: 1; min-width: 180px; box-shadow: var(--shadow);
   }
   .card-title { color: var(--muted); font-size: 0.875rem; margin-bottom: 4px; }
@@ -285,23 +303,25 @@ if (file_exists($bgFile)) {
   .muted { color: var(--muted); }
   table {
     width: 100%; border-collapse: collapse; margin-top: 16px;
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem; overflow: hidden; box-shadow: var(--shadow);
   }
   th, td { padding: 10px 12px; text-align: left; }
   thead th {
-    background: var(--panel-thead); color: var(--muted);
-    font-weight: 600; border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02); color: var(--muted);
+    font-weight: 600; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
-  tbody tr { border-bottom: 1px solid var(--border); }
-  tbody tr:hover { background: rgba(255,255,255,0.03); }
+  tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+  tbody tr:hover { background: rgba(255,255,255,0.05); }
   tbody tr:last-child { border-bottom: none; }
   canvas {
     width: 100%; max-width: 100%; height: <?= (int) (defined('CHART_HEIGHT')
       ? CHART_HEIGHT
       : 260) ?>px; margin-top: 20px;
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem; box-shadow: var(--shadow); padding: 8px;
   }
   @media (max-height: 740px) { body { align-items: flex-start; } }
   @media (max-width: 640px) {
@@ -423,7 +443,7 @@ if (file_exists($bgFile)) {
       const textColor = '#9ca3af';
       const axisColor = 'rgba(31, 41, 55, 0.5)';
 
-      ctx.fillStyle = 'rgba(17, 24, 39, 0.5)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
       ctx.fillRect(0, 0, width, height);
 
       const maxValue = Math.max(...data, 1);
