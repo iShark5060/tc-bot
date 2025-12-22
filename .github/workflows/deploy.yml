@@ -6,6 +6,11 @@ permissions:
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'package*.json'
+      - 'ecosystem.config.cjs'
+      - 'tsconfig.json'
   workflow_dispatch:
 
 jobs:
