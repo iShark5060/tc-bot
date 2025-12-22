@@ -64,7 +64,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "bash -lc 'pm2 restart TC-Bot --update-env'"
+            "cd ${{ secrets.SERVER_PATH }} && source ~/.nvm/nvm.sh && pm2 restart TC-Bot --update-env"
 
       - name: Cleanup SSH key
         if: always()
