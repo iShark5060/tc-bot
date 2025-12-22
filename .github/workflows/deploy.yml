@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create client-secret.json from secret
+      - name: Create client_secret.json from secret
         run: |
           echo "${{ secrets.GOOGLE_CLIENT_SECRET_BASE64 }}" | base64 -d > client_secret.json
 
@@ -41,9 +41,8 @@ jobs:
           cp -r dist/ /tmp/deploy/
           cp package*.json /tmp/deploy/
           cp -r node_modules/ /tmp/deploy/
-          cp ecosystem.config.js /tmp/deploy/
-          cp client-secret.json /tmp/deploy/
-          cp .env /tmp/deploy/
+          cp ecosystem.config.cjs /tmp/deploy/
+          cp client_secret.json /tmp/deploy/
 
           rsync -av --delete \
             -e "ssh -i <(echo \"${{ secrets.SSH_PRIVATE_KEY }}\") -o StrictHostKeyChecking=no" \
@@ -55,4 +54,4 @@ jobs:
           ssh -i <(echo "${{ secrets.SSH_PRIVATE_KEY }}") \
             -o StrictHostKeyChecking=no \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "cd ${{ secrets.SERVER_PATH }} && pm2 restart ecosystem.config.js --env production"
+            "cd ${{ secrets.SERVER_PATH }} && pm2 restart tc-bot --update-env"
