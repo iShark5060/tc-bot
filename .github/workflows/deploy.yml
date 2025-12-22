@@ -52,6 +52,9 @@ jobs:
           cp client_secret.json /tmp/deploy/
 
           rsync -av --delete \
+            --exclude='.env' \
+            --exclude='logs/' \
+            --exclude='data/' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             /tmp/deploy/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
@@ -61,7 +64,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "cd ${{ secrets.SERVER_PATH }} && pm2 restart ecosystem.config.cjs --update-env"
+            "cd ${{ secrets.SERVER_PATH }} && pm2 restart TC-Bot --update-env"
 
       - name: Cleanup SSH key
         if: always()
