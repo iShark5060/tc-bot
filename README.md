@@ -24,10 +24,13 @@ This is why the merges done for the different branches look all so strange, just
 
 From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reasoning as helper, since my skills in JavaScript are not the best. Version 7 was converted to TypeScript via Cursor's Composer 1 to improve code quality and maintainability.
 
+**Current Version: 7.4.1** - Features TypeScript strict mode, automated testing with Vitest, CI/CD with GitHub Actions, and automated dependency updates with Dependabot.
+
 ## Requirements
 
-- Node.js
-- I recommend using PM2
+- Node.js >= 25.0.0
+- npm >= 11.0.0
+- PM2 (recommended for production)
 
 ## Configuration
 
@@ -129,8 +132,87 @@ npm run deploy
 # then run: npm run dev
 
 # run tests
-npm test
+npm run test
 
 # run tests in watch mode
 npm run test:watch
+
+# run tests with coverage
+npm run test:coverage
+
+# lint code
+npm run lint
+
+# format code
+npm run format
+
+# check code formatting
+npm run check-format
+```
+
+## Development Workflow
+
+### Local Development
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Create `.env` file with required configuration (see Configuration section)
+4. Create `client_secret.json` if using Google Sheets features
+5. Build the project: `npm run build`
+6. Deploy commands to Discord: `npm run deploy`
+7. Start the bot: `npm start` or `npm run dev` (with watch mode)
+
+### Testing
+
+The project uses [Vitest](https://vitest.dev/) for unit testing. Tests are located in the `tests/` directory.
+
+- Run all tests: `npm run test`
+- Run tests in watch mode: `npm run test:watch`
+- Generate coverage report: `npm run test:coverage`
+
+### Code Quality
+
+- **ESLint**: Code linting with `npm run lint`
+- **Prettier**: Code formatting with `npm run format`
+- **TypeScript**: Strict mode enabled for better type safety
+
+## CI/CD & Deployment
+
+### Automated Deployment
+
+The project uses GitHub Actions for automated deployment. When code is pushed to the `main` branch (or manually triggered), the workflow:
+
+1. Builds the TypeScript code
+2. Creates deployment package with all necessary files
+3. Deploys to the server via SSH/rsync
+4. Restarts the bot using PM2
+
+**Protected Files**: The deployment preserves the following on the server:
+- `.env` - Environment variables
+- `logs/` - PM2 log files
+- `data/` - SQLite database files
+
+### Dependabot
+
+[Dependabot](https://docs.github.com/en/code-security/dependabot) is configured to automatically:
+- Check for npm dependency updates weekly
+- Check for GitHub Actions updates weekly
+- Create pull requests for minor and patch updates
+- Ignore major version updates for critical packages (requires manual review)
+
+See `.github/dependabot.yml` for configuration details.
+
+### Manual Deployment
+
+If you need to deploy manually:
+
+```bash
+# Build the project
+npm run build
+
+# Deploy commands to Discord
+npm run deploy
+
+# On the server, restart PM2
+pm2 restart TC-Bot --update-env
 ```
