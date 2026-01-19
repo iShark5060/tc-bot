@@ -1,4 +1,4 @@
-import { EmbedBuilder, MessageFlags, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
+import { EmbedBuilder, MessageFlags, SlashCommandBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import type { Command, KillResult, TroopRow, ExtendedClient } from '../../types/index.js';
@@ -70,7 +70,7 @@ const its: Command = {
       await interaction.editReply({
         embeds: [
           new EmbedBuilder()
-            .setColor(0xcf142b)
+            .setColor(Colors.Red)
             .setTitle('Ignore Tier Suppression')
             .setDescription(
               'No usable troop data found (rows are empty, invalid, or would result in 0 kills).',

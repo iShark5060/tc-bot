@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField, type ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField, Colors, type ChatInputCommandInteraction } from 'discord.js';
 import type { Command, ExtendedClient } from '../../types/index.js';
 
 const help: Command = {
@@ -41,7 +41,7 @@ const help: Command = {
       .join('\n\n');
 
     const embed = new EmbedBuilder()
-      .setColor(0x00ae86)
+      .setColor(Colors.Green)
       .setTitle('📜 Available Commands')
       .setDescription(commandList.slice(0, 4000))
       .setFooter({
