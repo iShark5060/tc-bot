@@ -1,5 +1,5 @@
 import '@dotenvx/dotenvx/config';
-import { Client, Collection, GatewayIntentBits, type GuildBasedChannel } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, ChannelType, type VoiceChannel, type StageChannel } from 'discord.js';
 import { JWT } from 'google-auth-library';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import fs from 'node:fs';
@@ -74,25 +74,25 @@ let mopupTimer: NodeJS.Timeout | null = null;
   try {
     debugLogger.step('BOOT', 'Step 1: Notifying Discord of startup');
     await notifyDiscord({ type: 'startup' });
-    
+
     debugLogger.step('BOOT', 'Step 2: Initializing Google Sheets');
     await initializeGoogleSheets();
-    
+
     debugLogger.step('BOOT', 'Step 3: Loading commands');
     await loadCommands();
-    
+
     debugLogger.step('BOOT', 'Step 4: Loading events');
     await loadEvents();
-    
+
     debugLogger.step('BOOT', 'Step 5: Starting mopup timer');
     startMopupTimer();
-    
+
     debugLogger.step('BOOT', 'Step 6: Starting WAL checkpoint');
     usageTracker.startWALCheckpoint(5 * 60 * 1000);
-    
+
     debugLogger.step('BOOT', 'Step 7: Updating mopup channels');
     await updateMopupChannels();
-    
+
     debugLogger.step('BOOT', 'Step 8: Logging in to Discord');
     await client.login(process.env.TOKEN);
     debugLogger.boot('Bot initialization completed successfully');
@@ -251,7 +251,7 @@ async function loadEvents(): Promise<void> {
   debugLogger.debug('EVENTS', 'Events directory', { path: eventsPath });
   const eventFiles = fs.readdirSync(eventsPath).filter((f) => f.endsWith('.js'));
   debugLogger.debug('EVENTS', 'Found event files', { count: eventFiles.length });
-  
+
   for (const file of eventFiles) {
     const filePath = path.join(eventsPath, file);
     debugLogger.debug('EVENTS', 'Loading event file', { file });
@@ -307,25 +307,28 @@ async function updateMopupChannels(): Promise<void> {
       status: mopupInfo.status,
       time: mopupInfo.time,
     });
-    
-    const channel1 = client.channels.cache.get(process.env.CHANNEL_ID1!) as GuildBasedChannel | undefined;
-    const channel2 = client.channels.cache.get(process.env.CHANNEL_ID2!) as GuildBasedChannel | undefined;
+
+    const channel1 = client.channels.cache.get(process.env.CHANNEL_ID1!);
+    const channel2 = client.channels.cache.get(process.env.CHANNEL_ID2!);
     debugLogger.debug('MOPUP', 'Retrieved channels from cache', {
       channel1Found: !!channel1,
       channel2Found: !!channel2,
     });
 
-    if (channel1 && 'setName' in channel1) {
+    const isRenameable = (ch: typeof channel1): ch is VoiceChannel | StageChannel =>
+      ch?.type === ChannelType.GuildVoice || ch?.type === ChannelType.GuildStageVoice;
+
+    if (isRenameable(channel1)) {
       const statusEmoji = mopupInfo.status === 'ACTIVE' ? '🟢' : '🔴';
       const newName = `${statusEmoji} ${mopupInfo.status} Mopup`;
       debugLogger.debug('MOPUP', 'Updating channel 1 name', { newName });
-      await (channel1 as GuildBasedChannel & { setName: (name: string) => Promise<void> }).setName(newName);
+      await channel1.setName(newName);
       debugLogger.step('MOPUP', 'Channel 1 name updated successfully');
     }
-    if (channel2 && 'setName' in channel2) {
+    if (isRenameable(channel2)) {
       const newName = `Time remaining: ${mopupInfo.time}`;
       debugLogger.debug('MOPUP', 'Updating channel 2 name', { newName });
-      await (channel2 as GuildBasedChannel & { setName: (name: string) => Promise<void> }).setName(newName);
+      await channel2.setName(newName);
       debugLogger.step('MOPUP', 'Channel 2 name updated successfully');
     }
     debugLogger.info('MOPUP', 'Mopup channels updated successfully');

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, type ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getMetricsTotals, getTopCommands } from '../../helper/usageTracker.js';
 import type { Command } from '../../types/index.js';
@@ -58,7 +58,7 @@ const metrics: Command = {
           : 'No data yet.';
 
       const embed = new EmbedBuilder()
-        .setColor(0x00ae86)
+        .setColor(Colors.Green)
         .setTitle('Command Metrics')
         .setDescription(`Timeframe: ${label}`)
         .addFields(

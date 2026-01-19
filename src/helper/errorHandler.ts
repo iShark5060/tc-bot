@@ -1,7 +1,7 @@
-import { MessageFlags, type ChatInputCommandInteraction, type Message } from 'discord.js';
+import { MessageFlags, type Message, type RepliableInteraction } from 'discord.js';
 
 async function handleCommandError(
-  interaction: ChatInputCommandInteraction,
+  interaction: RepliableInteraction,
   error: unknown,
 ): Promise<void> {
   console.error('[ERROR] Command execution failed:', error);
@@ -12,10 +12,12 @@ async function handleCommandError(
   } as const;
 
   try {
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(errorMessage);
-    } else {
-      await interaction.reply(errorMessage);
+    if ('isRepliable' in interaction && interaction.isRepliable()) {
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
     }
   } catch (followUpError) {
     console.error('[ERROR] Failed to send error message:', followUpError);

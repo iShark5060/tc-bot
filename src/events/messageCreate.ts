@@ -1,26 +1,34 @@
-import { Events, type Message, type TextChannel } from 'discord.js';
+import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { calculateMopupTiming } from '../helper/mopup.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';
 
+function getChannelName(message: Message): string {
+  if (message.channel.isDMBased()) return 'DM';
+  if ('name' in message.channel) return message.channel.name;
+  return 'unknown';
+}
+
 const messageCreate: Event = {
   name: Events.MessageCreate,
   async execute(message: Message): Promise<void> {
+    const channelName = getChannelName(message);
+
     debugLogger.event(Events.MessageCreate, 'Message received', {
       messageId: message.id,
       authorId: message.author?.id,
       author: message.author?.username,
       channelId: message.channelId,
-      channelName: (message.channel as TextChannel).name ?? 'unknown',
+      channelName,
       content: message.content.substring(0, 100),
       isBot: message.author?.bot,
     });
 
     if (!shouldProcessMessage(message)) {
       debugLogger.debug('MESSAGE', 'Message filtered out (not processing)', {
-        channelName: (message.channel as TextChannel).name ?? 'unknown',
+        channelName,
         isBot: message.author?.bot,
       });
       return;
@@ -44,9 +52,9 @@ const messageCreate: Event = {
         const { status, color, time } = calculateMopupTiming();
         debugLogger.debug('COMMAND', 'Mopup timing calculated', { status, time });
 
-        if ('send' in message.channel) {
+        if (message.channel.isTextBased()) {
           debugLogger.step('COMMAND', 'Sending mopup embed response');
-          await message.channel.send({
+          await (message.channel as TextChannel).send({
             embeds: [
               {
                 color,
@@ -112,8 +120,8 @@ const messageCreate: Event = {
 };
 
 function shouldProcessMessage(message: Message): boolean {
-  const channelName = (message.channel as TextChannel).name;
-  return channelName === 'tc-autobot' && !message.author.bot;
+  if (message.channel.type !== ChannelType.GuildText) return false;
+  return message.channel.name === 'tc-autobot' && !message.author.bot;
 }
 
 export default messageCreate;
