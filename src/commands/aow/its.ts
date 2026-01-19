@@ -148,7 +148,7 @@ function createItsEmbed(
   kills: KillResult[],
 ): EmbedBuilder {
   return new EmbedBuilder()
-    .setColor(0xffffff)
+    .setColor(Colors.White)
     .setTitle('Ignore Tier Suppression')
     .addFields({
       name:

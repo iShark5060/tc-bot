@@ -1,4 +1,4 @@
-import { Events, ChannelType, type Message } from 'discord.js';
+import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { calculateMopupTiming } from '../helper/mopup.js';
@@ -52,9 +52,9 @@ const messageCreate: Event = {
         const { status, color, time } = calculateMopupTiming();
         debugLogger.debug('COMMAND', 'Mopup timing calculated', { status, time });
 
-        if (message.channel.isTextBased() && 'send' in message.channel) {
+        if (message.channel.isTextBased()) {
           debugLogger.step('COMMAND', 'Sending mopup embed response');
-          await message.channel.send({
+          await (message.channel as TextChannel).send({
             embeds: [
               {
                 color,

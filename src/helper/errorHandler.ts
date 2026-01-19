@@ -1,7 +1,7 @@
-import { MessageFlags, type ChatInputCommandInteraction, type Message, type RepliableInteraction } from 'discord.js';
+import { MessageFlags, type Message, type RepliableInteraction } from 'discord.js';
 
 async function handleCommandError(
-  interaction: ChatInputCommandInteraction | RepliableInteraction,
+  interaction: RepliableInteraction,
   error: unknown,
 ): Promise<void> {
   console.error('[ERROR] Command execution failed:', error);

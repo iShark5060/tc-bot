@@ -40,7 +40,7 @@
     "google-spreadsheet": "^5.0.2"
   },
   "overrides": {
-    "undici": "^7.0.0"
+    "undici": "^7.18.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
