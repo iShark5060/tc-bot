@@ -35,7 +35,7 @@
     "@dotenvx/dotenvx": "^1.51.4",
     "@pm2/io": "^6.1.0",
     "better-sqlite3": "^12.6.2",
-    "discord.js": "^14.17.3",
+    "discord.js": "^13.17.1",
     "google-auth-library": "^10.5.0",
     "google-spreadsheet": "^5.0.2"
   },
@@ -49,7 +49,7 @@
     "eslint-plugin-n": "^17.23.2",
     "eslint-plugin-promise": "^7.2.1",
     "prettier": "^3.8.0",
-    "tsx": "^4.19.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.17"
   }
