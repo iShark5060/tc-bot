@@ -34,7 +34,7 @@
   "dependencies": {
     "@dotenvx/dotenvx": "^1.51.4",
     "@pm2/io": "^6.1.0",
-    "better-sqlite3": "^12.6.0",
+    "better-sqlite3": "^12.6.2",
     "discord.js": "^14.17.3",
     "google-auth-library": "^10.5.0",
     "google-spreadsheet": "^5.0.2"
