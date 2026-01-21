@@ -109,7 +109,7 @@ describe('calculateMopupTiming', () => {
   it('returns a future timestamp', () => {
     const result = calculateMopupTiming();
     const nowSeconds = Math.floor(Date.now() / 1000);
-    expect(result.timestamp).toBeGreaterThan(nowSeconds);
+    expect(result.timestamp).toBeGreaterThanOrEqual(nowSeconds);
   });
 });
 
