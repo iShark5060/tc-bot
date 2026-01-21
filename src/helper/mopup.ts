@@ -19,7 +19,7 @@ function calculateMopupTiming(): MopupInfo {
   const { startTime, endTime } = getMopupWindow(daysSinceEpoch);
   const currentTime = Math.floor(now / 1000) * 1000;
 
-  return determineMopupStatus(startTime - currentTime, endTime - currentTime);
+  return determineMopupStatus(startTime - currentTime, endTime - currentTime, currentTime);
 }
 
 /**
@@ -49,23 +49,32 @@ function getMopupWindow(day: number): MopupWindow {
  * Determines the mopup status based on time deltas.
  * @param deltaStart - Milliseconds until mopup starts (negative if already started)
  * @param deltaEnd - Milliseconds until mopup ends (negative if already ended)
- * @returns MopupInfo with status, color, and formatted time string
+ * @param currentTime - Current time in milliseconds
+ * @returns MopupInfo with status, color, formatted time string, and unix timestamp
  */
-function determineMopupStatus(deltaStart: number, deltaEnd: number): MopupInfo {
+function determineMopupStatus(deltaStart: number, deltaEnd: number, currentTime: number): MopupInfo {
   if (deltaStart < 0) {
     if (deltaEnd > 0) {
-      return { status: 'ACTIVE', color: 0x7fff00, time: formatTime(deltaEnd) };
+      return {
+        status: 'ACTIVE',
+        color: 0x7fff00,
+        time: formatTime(deltaEnd),
+        timestamp: Math.floor((currentTime + deltaEnd) / 1000),
+      };
     }
+    const nextStartDelta = deltaEnd + 24 * 60 * 60 * 1000;
     return {
       status: 'INACTIVE',
       color: 0xcf142b,
-      time: formatTime(deltaEnd + 24 * 60 * 60 * 1000),
+      time: formatTime(nextStartDelta),
+      timestamp: Math.floor((currentTime + nextStartDelta) / 1000),
     };
   }
   return {
     status: 'INACTIVE',
     color: 0xcf142b,
     time: formatTime(deltaStart),
+    timestamp: Math.floor((currentTime + deltaStart) / 1000),
   };
 }
 

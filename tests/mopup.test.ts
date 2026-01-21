@@ -50,30 +50,34 @@ describe('getMopupWindow', () => {
     const window1 = getMopupWindow(1);
     const window2 = getMopupWindow(2);
 
-    // Even days should have same relative timing
     expect(window2.endTime - window2.startTime).toBe(window0.endTime - window0.startTime);
-    // Odd days have different duration
-    expect(window1.endTime - window1.startTime).toBe(16 * 60 * 60 * 1000); // 16 hours
+    expect(window1.endTime - window1.startTime).toBe(16 * 60 * 60 * 1000);
   });
 });
 
 describe('determineMopupStatus', () => {
+  const currentTime = 1700000000000;
+
   it('returns ACTIVE when mopup is ongoing', () => {
-    const result = determineMopupStatus(-1000, 3600000); // started, 1 hour left
+    const result = determineMopupStatus(-1000, 3600000, currentTime);
     expect(result.status).toBe('ACTIVE');
-    expect(result.color).toBe(0x7fff00); // green
+    expect(result.color).toBe(0x7fff00);
+    expect(result.timestamp).toBe(Math.floor((currentTime + 3600000) / 1000));
   });
 
   it('returns INACTIVE when mopup has not started', () => {
-    const result = determineMopupStatus(3600000, 7200000); // starts in 1 hour
+    const result = determineMopupStatus(3600000, 7200000, currentTime);
     expect(result.status).toBe('INACTIVE');
-    expect(result.color).toBe(0xcf142b); // red
+    expect(result.color).toBe(0xcf142b);
+    expect(result.timestamp).toBe(Math.floor((currentTime + 3600000) / 1000));
   });
 
   it('returns INACTIVE when mopup has ended', () => {
-    const result = determineMopupStatus(-7200000, -3600000); // ended 1 hour ago
+    const result = determineMopupStatus(-7200000, -3600000, currentTime);
     expect(result.status).toBe('INACTIVE');
-    expect(result.color).toBe(0xcf142b); // red
+    expect(result.color).toBe(0xcf142b);
+    const nextStartDelta = -3600000 + 24 * 60 * 60 * 1000;
+    expect(result.timestamp).toBe(Math.floor((currentTime + nextStartDelta) / 1000));
   });
 });
 
@@ -84,10 +88,12 @@ describe('calculateMopupTiming', () => {
     expect(result).toHaveProperty('status');
     expect(result).toHaveProperty('color');
     expect(result).toHaveProperty('time');
+    expect(result).toHaveProperty('timestamp');
 
     expect(['ACTIVE', 'INACTIVE']).toContain(result.status);
     expect(typeof result.color).toBe('number');
     expect(result.time).toMatch(/^\d{2}:\d{2}:\d{2}$/);
+    expect(typeof result.timestamp).toBe('number');
   });
 
   it('returns consistent color for status', () => {
@@ -98,6 +104,12 @@ describe('calculateMopupTiming', () => {
     } else {
       expect(result.color).toBe(0xcf142b);
     }
+  });
+
+  it('returns a future timestamp', () => {
+    const result = calculateMopupTiming();
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    expect(result.timestamp).toBeGreaterThan(nowSeconds);
   });
 });
 

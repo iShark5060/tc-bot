@@ -23,6 +23,7 @@ export interface MopupInfo {
   status: string;
   color: number;
   time: string;
+  timestamp: number;
 }
 
 export interface KillResult {
