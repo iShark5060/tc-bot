@@ -244,8 +244,8 @@ const healtroop: Command = {
           content: 'Failed to render selection.',
           components: [],
         });
-      } catch {
-        console.warn('[EVENT:HEALTROOP] Secondary update failed', err);
+      } catch (secondaryErr) {
+        console.warn('[EVENT:HEALTROOP] Secondary update failed:', secondaryErr);
       }
     }
   },
