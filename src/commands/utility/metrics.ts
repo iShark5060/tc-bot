@@ -104,11 +104,11 @@ function getSince(period: string): PeriodInfo {
       break;
     case 'monthly':
       since.setUTCMonth(since.getUTCMonth() - 1);
-      label = 'Monthly (last 30 days)';
+      label = 'Monthly (last month)';
       break;
     case 'yearly':
       since.setUTCFullYear(since.getUTCFullYear() - 1);
-      label = 'Yearly (last 365 days)';
+      label = 'Yearly (last year)';
       break;
     case 'daily':
     default:

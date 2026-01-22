@@ -245,7 +245,7 @@ const healtroop: Command = {
           components: [],
         });
       } catch {
-        // Ignore error here
+        console.debug('[EVENT:HEALTROOP] Secondary update failed');
       }
     }
   },
