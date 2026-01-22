@@ -1,9 +1,8 @@
 import { SlashCommandBuilder, EmbedBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import { BOT_ICON_URL, METRICS_TOP_LIMIT } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getMetricsTotals, getTopCommands } from '../../helper/usageTracker.js';
 import type { Command } from '../../types/index.js';
-
-const TOP_LIMIT = 10;
 
 interface PeriodInfo {
   sinceUTC: string;
@@ -28,6 +27,7 @@ const metrics: Command = {
   examples: ['/metrics', '/metrics period:weekly'],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const startTime = Date.now();
     await interaction.deferReply();
 
     const period = interaction.options.getString('period') || 'daily';
@@ -35,7 +35,7 @@ const metrics: Command = {
 
     try {
       const totals = getMetricsTotals(sinceUTC);
-      const top = getTopCommands(sinceUTC, TOP_LIMIT);
+      const top = getTopCommands(sinceUTC, METRICS_TOP_LIMIT);
 
       const totalCount = totals.total_count;
       const successCount = totals.success_count;
@@ -57,6 +57,7 @@ const metrics: Command = {
               .join('\n')
           : 'No data yet.';
 
+      const duration = Date.now() - startTime;
       const embed = new EmbedBuilder()
         .setColor(Colors.Green)
         .setTitle('Command Metrics')
@@ -72,11 +73,12 @@ const metrics: Command = {
             inline: true,
           },
           {
-            name: `Top ${TOP_LIMIT} Commands`,
+            name: `Top ${METRICS_TOP_LIMIT} Commands`,
             value: topLines,
             inline: false,
           },
         )
+        .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
@@ -87,6 +89,9 @@ const metrics: Command = {
   },
 };
 
+/**
+ * Calculates the start date and label for a given time period.
+ */
 function getSince(period: string): PeriodInfo {
   const now = new Date();
   const since = new Date(now.getTime());
@@ -99,11 +104,11 @@ function getSince(period: string): PeriodInfo {
       break;
     case 'monthly':
       since.setUTCMonth(since.getUTCMonth() - 1);
-      label = 'Monthly (last 30 days)';
+      label = 'Monthly (last month)';
       break;
     case 'yearly':
       since.setUTCFullYear(since.getUTCFullYear() - 1);
-      label = 'Yearly (last 365 days)';
+      label = 'Yearly (last year)';
       break;
     case 'daily':
     default:
@@ -115,6 +120,9 @@ function getSince(period: string): PeriodInfo {
   return { sinceUTC, label };
 }
 
+/**
+ * Formats a Date object as a UTC timestamp string for database queries.
+ */
 function formatUTC(d: Date): string {
   const pad = (n: number): string => String(n).padStart(2, '0');
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(

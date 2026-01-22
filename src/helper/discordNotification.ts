@@ -1,3 +1,4 @@
+import { Colors } from 'discord.js';
 import type { DiscordNotificationParams } from '../types/index.js';
 
 const WEBHOOK_BASE = 'https://discord.com/api/webhooks';
@@ -28,10 +29,10 @@ export async function notifyDiscord({
   };
 
   const colors: Record<string, number> = {
-    startup: 0x2ecc71,
-    shutdown: 0xf39c12,
-    error: 0xcf142b,
-    info: 0x3498db,
+    startup: Colors.Green,
+    shutdown: Colors.Yellow,
+    error: Colors.Red,
+    info: Colors.Blue,
   };
 
   const title = defaultTitles[type] || type;

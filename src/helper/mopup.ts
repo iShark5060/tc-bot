@@ -1,5 +1,6 @@
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, Colors } from 'discord.js';
 import type { MopupInfo } from '../types/index.js';
+import { BOT_ICON_URL } from './constants.js';
 
 interface MopupWindow {
   startTime: number;
@@ -58,7 +59,7 @@ function determineMopupStatus(deltaStart: number, deltaEnd: number, currentTime:
     if (deltaEnd > 0) {
       return {
         status: 'ACTIVE',
-        color: 0x7fff00,
+        color: Colors.Green,
         time: formatTime(deltaEnd),
         timestamp: Math.floor((currentTime + deltaEnd) / 1000),
       };
@@ -66,14 +67,14 @@ function determineMopupStatus(deltaStart: number, deltaEnd: number, currentTime:
     const nextStartDelta = deltaEnd + 24 * 60 * 60 * 1000;
     return {
       status: 'INACTIVE',
-      color: 0xcf142b,
+      color: Colors.Red,
       time: formatTime(nextStartDelta),
       timestamp: Math.floor((currentTime + nextStartDelta) / 1000),
     };
   }
   return {
     status: 'INACTIVE',
-    color: 0xcf142b,
+    color: Colors.Red,
     time: formatTime(deltaStart),
     timestamp: Math.floor((currentTime + deltaStart) / 1000),
   };
@@ -84,7 +85,7 @@ function determineMopupStatus(deltaStart: number, deltaEnd: number, currentTime:
  * @param ms - Milliseconds to format (uses absolute value)
  * @returns Time string in format "HH:MM:SS"
  * @example
- * formatTime(3661000) // "01:01:01"
+ * formatTime(3661000)
  */
 function formatTime(ms: number): string {
   return new Date(Math.abs(ms)).toISOString().slice(11, 19);
@@ -93,10 +94,12 @@ function formatTime(ms: number): string {
 /**
  * Builds an embed for displaying mopup status.
  * Used by both /mopup slash command and !tcmu message command.
+ * @param startTime - The timestamp when the command started processing
  * @returns EmbedBuilder configured with mopup status, time remaining, and local timestamp
  */
-function buildMopupEmbed(): EmbedBuilder {
+function buildMopupEmbed(startTime: number): EmbedBuilder {
   const { status, color, time, timestamp } = calculateMopupTiming();
+  const duration = Date.now() - startTime;
   return new EmbedBuilder()
     .setColor(color)
     .setTitle('Mopup')
@@ -104,7 +107,8 @@ function buildMopupEmbed(): EmbedBuilder {
       { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
       { name: 'Time remaining:', value: `\`\`\`asciidoc\n${time}\`\`\`` },
       { name: 'Local time:', value: `<t:${timestamp}:f>` },
-    );
+    )
+    .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
 }
 
 export { calculateMopupTiming, getMopupWindow, determineMopupStatus, formatTime, buildMopupEmbed };

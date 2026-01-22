@@ -53,7 +53,7 @@ const messageCreate: Event = {
         if (message.channel.isTextBased()) {
           debugLogger.step('COMMAND', 'Sending mopup embed response');
           await (message.channel as TextChannel).send({
-            embeds: [buildMopupEmbed()],
+            embeds: [buildMopupEmbed(startTime)],
           });
           debugLogger.step('COMMAND', 'Mopup embed sent successfully');
         } else {

@@ -1,4 +1,5 @@
 import { EmbedBuilder, MessageFlags, SlashCommandBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import { BOT_ICON_URL } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import type { Command, KillResult, TroopRow, ExtendedClient } from '../../types/index.js';
@@ -35,6 +36,7 @@ const its: Command = {
   ],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const startTime = Date.now();
     const skillLevel = interaction.options.getInteger('level');
     const leadership = interaction.options.getInteger('leadership');
     const targetTier = interaction.options.getInteger('tier');
@@ -67,6 +69,7 @@ const its: Command = {
     const kills = calculateKills(rows, targetTier, skillLevel, leadership, tdr);
 
     if (kills.length === 0) {
+      const duration = Date.now() - startTime;
       await interaction.editReply({
         embeds: [
           new EmbedBuilder()
@@ -74,18 +77,22 @@ const its: Command = {
             .setTitle('Ignore Tier Suppression')
             .setDescription(
               'No usable troop data found (rows are empty, invalid, or would result in 0 kills).',
-            ),
+            )
+            .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL }),
         ],
       });
       return;
     }
 
-    const embed = createItsEmbed(leadership, skillLevel, tdr, kills);
+    const embed = createItsEmbed(leadership, skillLevel, tdr, kills, startTime);
 
     await interaction.editReply({ embeds: [embed] });
   },
 };
 
+/**
+ * Calculates how many troops can be killed with Ignore Tier Suppression skill.
+ */
 function calculateKills(
   rows: TroopRow[],
   targetTier: number,
@@ -132,6 +139,9 @@ function calculateKills(
     .sort((a, b) => b.count - a.count);
 }
 
+/**
+ * Formats a list of kill results as text for embed display.
+ */
 function formatKillsList(kills: KillResult[]): string {
   return kills
     .map((kill) => {
@@ -141,12 +151,17 @@ function formatKillsList(kills: KillResult[]): string {
     .join('\n');
 }
 
+/**
+ * Creates a Discord embed displaying iTS kill calculation results.
+ */
 function createItsEmbed(
   leadership: number,
   skillLevel: number,
   tdr: number,
   kills: KillResult[],
+  startTime: number,
 ): EmbedBuilder {
+  const duration = Date.now() - startTime;
   return new EmbedBuilder()
     .setColor(Colors.White)
     .setTitle('Ignore Tier Suppression')
@@ -155,7 +170,8 @@ function createItsEmbed(
         `${numberWithCommas(leadership)} leadership with level ${skillLevel} ` +
         `iTS skill vs ${tdr}% TDR can kill:`,
       value: `\`\`\`\n${formatKillsList(kills)}\`\`\``,
-    });
+    })
+    .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
 }
 
 export default its;

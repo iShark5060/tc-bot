@@ -1,3 +1,4 @@
+import { Colors } from 'discord.js';
 import { describe, it, expect } from 'vitest';
 import {
   calculateMopupTiming,
@@ -61,21 +62,21 @@ describe('determineMopupStatus', () => {
   it('returns ACTIVE when mopup is ongoing', () => {
     const result = determineMopupStatus(-1000, 3600000, currentTime);
     expect(result.status).toBe('ACTIVE');
-    expect(result.color).toBe(0x7fff00);
+    expect(result.color).toBe(Colors.Green);
     expect(result.timestamp).toBe(Math.floor((currentTime + 3600000) / 1000));
   });
 
   it('returns INACTIVE when mopup has not started', () => {
     const result = determineMopupStatus(3600000, 7200000, currentTime);
     expect(result.status).toBe('INACTIVE');
-    expect(result.color).toBe(0xcf142b);
+    expect(result.color).toBe(Colors.Red);
     expect(result.timestamp).toBe(Math.floor((currentTime + 3600000) / 1000));
   });
 
   it('returns INACTIVE when mopup has ended', () => {
     const result = determineMopupStatus(-7200000, -3600000, currentTime);
     expect(result.status).toBe('INACTIVE');
-    expect(result.color).toBe(0xcf142b);
+    expect(result.color).toBe(Colors.Red);
     const nextStartDelta = -3600000 + 24 * 60 * 60 * 1000;
     expect(result.timestamp).toBe(Math.floor((currentTime + nextStartDelta) / 1000));
   });
@@ -100,9 +101,9 @@ describe('calculateMopupTiming', () => {
     const result = calculateMopupTiming();
 
     if (result.status === 'ACTIVE') {
-      expect(result.color).toBe(0x7fff00);
+      expect(result.color).toBe(Colors.Green);
     } else {
-      expect(result.color).toBe(0xcf142b);
+      expect(result.color).toBe(Colors.Red);
     }
   });
 
