@@ -1,3 +1,4 @@
+import { EmbedBuilder } from 'discord.js';
 import type { MopupInfo } from '../types/index.js';
 
 interface MopupWindow {
@@ -89,4 +90,21 @@ function formatTime(ms: number): string {
   return new Date(Math.abs(ms)).toISOString().slice(11, 19);
 }
 
-export { calculateMopupTiming, getMopupWindow, determineMopupStatus, formatTime };
+/**
+ * Builds an embed for displaying mopup status.
+ * Used by both /mopup slash command and !tcmu message command.
+ * @returns EmbedBuilder configured with mopup status, time remaining, and local timestamp
+ */
+function buildMopupEmbed(): EmbedBuilder {
+  const { status, color, time, timestamp } = calculateMopupTiming();
+  return new EmbedBuilder()
+    .setColor(color)
+    .setTitle('Mopup')
+    .addFields(
+      { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
+      { name: 'Time remaining:', value: `\`\`\`asciidoc\n${time}\`\`\`` },
+      { name: 'Local time:', value: `<t:${timestamp}:f>` },
+    );
+}
+
+export { calculateMopupTiming, getMopupWindow, determineMopupStatus, formatTime, buildMopupEmbed };
