@@ -245,7 +245,7 @@ const healtroop: Command = {
           components: [],
         });
       } catch {
-        console.warn('[EVENT:HEALTROOP] Secondary update failed');
+        console.warn('[EVENT:HEALTROOP] Secondary update failed', err);
       }
     }
   },
@@ -327,8 +327,10 @@ function calculateResourceCost(
   amount: number,
   modifier: number,
 ): number | null {
-  if (!costString) return null;
-  const baseCost = parseInt(String(costString).replace(/,/g, ''), 10);
+  if (costString === null || costString === undefined) return null;
+  const raw = String(costString).replace(/,/g, '').trim();
+  if (raw === '') return null;
+  const baseCost = parseInt(raw, 10);
   if (!Number.isFinite(baseCost)) return null;
   return Math.ceil(baseCost * amount * modifier);
 }
