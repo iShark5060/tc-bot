@@ -1,7 +1,7 @@
 import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { debugLogger } from '../helper/debugLogger.js';
-import { calculateMopupTiming } from '../helper/mopup.js';
+import { buildMopupEmbed } from '../helper/mopup.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';
 
@@ -48,26 +48,12 @@ const messageCreate: Event = {
 
       const startTime = Date.now();
       try {
-        debugLogger.step('COMMAND', 'Calculating mopup timing for !tcmu');
-        const { status, color, time } = calculateMopupTiming();
-        debugLogger.debug('COMMAND', 'Mopup timing calculated', { status, time });
+        debugLogger.step('COMMAND', 'Building mopup embed for !tcmu');
 
         if (message.channel.isTextBased()) {
           debugLogger.step('COMMAND', 'Sending mopup embed response');
           await (message.channel as TextChannel).send({
-            embeds: [
-              {
-                color,
-                title: 'Mopup',
-                fields: [
-                  { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
-                  {
-                    name: 'Time remaining:',
-                    value: `\`\`\`asciidoc\n${time}\`\`\``,
-                  },
-                ],
-              },
-            ],
+            embeds: [buildMopupEmbed()],
           });
           debugLogger.step('COMMAND', 'Mopup embed sent successfully');
         } else {
