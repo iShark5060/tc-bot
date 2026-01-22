@@ -251,6 +251,9 @@ const healtroop: Command = {
   },
 };
 
+/**
+ * Filters troop rows by tier and type, excluding NPCs.
+ */
 function findTroopRows(
   rows: TroopRow[],
   tier: number,
@@ -264,6 +267,9 @@ function findTroopRows(
   );
 }
 
+/**
+ * Groups troop rows by name, filtering out rows without valid healing cost data.
+ */
 function buildValidByNameMap(
   rows: TroopRow[],
   troopAmount: number,
@@ -280,6 +286,9 @@ function buildValidByNameMap(
   return byName;
 }
 
+/**
+ * Returns the healing cost modifier based on total unit count.
+ */
 function getModifier(totalUnits: number): number {
   for (const threshold of MODIFIER_THRESHOLDS) {
     if (totalUnits >= threshold.units) {
@@ -289,6 +298,9 @@ function getModifier(totalUnits: number): number {
   return 0.1;
 }
 
+/**
+ * Calculates the optimal modifier and unit threshold for minimum healing cost.
+ */
 function getOptimalModifier(troopUnits: number): ModifierResult {
   for (let i = 0; i < MODIFIER_THRESHOLDS.length - 1; i++) {
     const current = MODIFIER_THRESHOLDS[i];
@@ -307,6 +319,9 @@ function getOptimalModifier(troopUnits: number): ModifierResult {
   return { modifier: lowest.modifier, units: lowest.units };
 }
 
+/**
+ * Calculates the resource cost for healing a given amount of troops.
+ */
 function calculateResourceCost(
   costString: unknown,
   amount: number,
@@ -318,6 +333,9 @@ function calculateResourceCost(
   return Math.ceil(baseCost * amount * modifier);
 }
 
+/**
+ * Calculates all healing costs (resources, special items, other stats) for a troop type.
+ */
 function calculateHealingCosts(
   troopData: TroopRow,
   troopAmount: number,
@@ -393,6 +411,9 @@ function calculateHealingCosts(
   return costs.hasData ? costs : null;
 }
 
+/**
+ * Formats resource and special costs as text for embed display.
+ */
 function formatCostText(costs: HealingCosts, isOptimal = false): string {
   let text = '';
   const allCosts = { ...costs.resources, ...costs.special };
@@ -406,6 +427,9 @@ function formatCostText(costs: HealingCosts, isOptimal = false): string {
   return text;
 }
 
+/**
+ * Formats other stats (MC heal, power lost, etc.) as text for embed display.
+ */
 function formatOtherStats(costs: HealingCosts): string {
   let text = '';
 
@@ -417,6 +441,9 @@ function formatOtherStats(costs: HealingCosts): string {
   return text;
 }
 
+/**
+ * Creates a Discord embed displaying healing costs for multiple troop variants.
+ */
 function createMultiHealingEmbed(
   troopTier: number,
   troopType: string,

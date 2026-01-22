@@ -90,6 +90,9 @@ const its: Command = {
   },
 };
 
+/**
+ * Calculates how many troops can be killed with Ignore Tier Suppression skill.
+ */
 function calculateKills(
   rows: TroopRow[],
   targetTier: number,
@@ -136,6 +139,9 @@ function calculateKills(
     .sort((a, b) => b.count - a.count);
 }
 
+/**
+ * Formats a list of kill results as text for embed display.
+ */
 function formatKillsList(kills: KillResult[]): string {
   return kills
     .map((kill) => {
@@ -145,6 +151,9 @@ function formatKillsList(kills: KillResult[]): string {
     .join('\n');
 }
 
+/**
+ * Creates a Discord embed displaying iTS kill calculation results.
+ */
 function createItsEmbed(
   leadership: number,
   skillLevel: number,

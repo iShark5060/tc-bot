@@ -81,6 +81,14 @@ function calculateGearStats(
   );
 }
 
+/**
+ * Creates a Discord embed displaying gear stat calculations.
+ * @param currentStat - The current stat value
+ * @param currentLevel - The current gear upgrade level
+ * @param calculations - Pre-calculated stats for all upgrade levels
+ * @param startTime - Timestamp when command processing started (for footer timing)
+ * @returns Configured EmbedBuilder with gear stats
+ */
 function createGearEmbed(
   currentStat: number,
   currentLevel: number,

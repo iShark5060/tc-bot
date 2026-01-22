@@ -89,6 +89,9 @@ const metrics: Command = {
   },
 };
 
+/**
+ * Calculates the start date and label for a given time period.
+ */
 function getSince(period: string): PeriodInfo {
   const now = new Date();
   const since = new Date(now.getTime());
@@ -117,6 +120,9 @@ function getSince(period: string): PeriodInfo {
   return { sinceUTC, label };
 }
 
+/**
+ * Formats a Date object as a UTC timestamp string for database queries.
+ */
 function formatUTC(d: Date): string {
   const pad = (n: number): string => String(n).padStart(2, '0');
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(

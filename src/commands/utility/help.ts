@@ -60,6 +60,9 @@ const help: Command = {
   },
 };
 
+/**
+ * Checks if a user has permission to see a command based on required permissions.
+ */
 function canSeeCommand(cmd: Command, interaction: ChatInputCommandInteraction): boolean {
   const json = typeof cmd.data?.toJSON === 'function' ? cmd.data.toJSON() : {};
   const required = (json as { default_member_permissions?: string })
