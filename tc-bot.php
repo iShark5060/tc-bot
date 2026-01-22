@@ -197,7 +197,6 @@ if (!empty($totals['total_count'])) {
   );
 }
 
-// Load ASCII art for background
 $art = '';
 $bgFile = __DIR__ . '/background.txt';
 if (file_exists($bgFile)) {

@@ -1,9 +1,8 @@
 import { SlashCommandBuilder, EmbedBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import { BOT_ICON_URL, METRICS_TOP_LIMIT } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getMetricsTotals, getTopCommands } from '../../helper/usageTracker.js';
 import type { Command } from '../../types/index.js';
-
-const TOP_LIMIT = 10;
 
 interface PeriodInfo {
   sinceUTC: string;
@@ -28,6 +27,7 @@ const metrics: Command = {
   examples: ['/metrics', '/metrics period:weekly'],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const startTime = Date.now();
     await interaction.deferReply();
 
     const period = interaction.options.getString('period') || 'daily';
@@ -35,7 +35,7 @@ const metrics: Command = {
 
     try {
       const totals = getMetricsTotals(sinceUTC);
-      const top = getTopCommands(sinceUTC, TOP_LIMIT);
+      const top = getTopCommands(sinceUTC, METRICS_TOP_LIMIT);
 
       const totalCount = totals.total_count;
       const successCount = totals.success_count;
@@ -57,6 +57,7 @@ const metrics: Command = {
               .join('\n')
           : 'No data yet.';
 
+      const duration = Date.now() - startTime;
       const embed = new EmbedBuilder()
         .setColor(Colors.Green)
         .setTitle('Command Metrics')
@@ -72,11 +73,12 @@ const metrics: Command = {
             inline: true,
           },
           {
-            name: `Top ${TOP_LIMIT} Commands`,
+            name: `Top ${METRICS_TOP_LIMIT} Commands`,
             value: topLines,
             inline: false,
           },
         )
+        .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });

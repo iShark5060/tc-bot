@@ -1,10 +1,7 @@
-import { EmbedBuilder, SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
-
+import { EmbedBuilder, SlashCommandBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import { BOT_ICON_URL, GEARCHECK_LEVELS, GEARCHECK_MULTIPLIERS } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import type { Command, GearCalculations } from '../../types/index.js';
-
-const LEVELS = [0, 10, 13, 20, 30, 40, 50];
-const MULTIPLIERS = [1, 2, 2.3, 3, 4, 5, 6];
 
 const gearcheck: Command = {
   data: new SlashCommandBuilder()
@@ -25,6 +22,7 @@ const gearcheck: Command = {
   examples: ['/gearcheck stat:120 level:20', '/gearcheck stat:85.5 level:10'],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const startTime = Date.now();
     await interaction.deferReply();
 
     const statValue = interaction.options.getNumber('stat');
@@ -52,7 +50,7 @@ const gearcheck: Command = {
     }
 
     const calculations = calculateGearStats(statValue, gearLevel);
-    const embed = createGearEmbed(statValue, gearLevel, calculations);
+    const embed = createGearEmbed(statValue, gearLevel, calculations, startTime);
 
     await interaction.editReply({ embeds: [embed] });
   },
@@ -65,7 +63,7 @@ const gearcheck: Command = {
  * @param currentLevel - Current upgrade level (0-100)
  * @returns Object mapping level to calculated stat string (e.g., { 0: "100.00", 10: "200.00" })
  * @example
- * calculateGearStats(120, 20) // Returns stats for all levels based on base stat of 40
+ * calculateGearStats(120, 20)
  */
 function calculateGearStats(
   currentStat: number,
@@ -74,9 +72,9 @@ function calculateGearStats(
   const currentMultiplier = 1 + currentLevel / 10;
   const baseStat = currentStat / currentMultiplier;
 
-  return LEVELS.reduce(
+  return GEARCHECK_LEVELS.reduce(
     (acc, level, index) => {
-      acc[level] = (baseStat * MULTIPLIERS[index]).toFixed(2);
+      acc[level] = (baseStat * GEARCHECK_MULTIPLIERS[index]).toFixed(2);
       return acc;
     },
     {} as GearCalculations,
@@ -87,13 +85,15 @@ function createGearEmbed(
   currentStat: number,
   currentLevel: number,
   calculations: GearCalculations,
+  startTime: number,
 ): EmbedBuilder {
   const calculatedText = Object.entries(calculations)
     .map(([level, stat]) => `+${level}:: ${numberWithCommas(stat)}%`)
     .join('\n');
 
+  const duration = Date.now() - startTime;
   return new EmbedBuilder()
-    .setColor(0xffffff)
+    .setColor(Colors.White)
     .setTitle('Gearcheck')
     .addFields(
       {
@@ -107,7 +107,8 @@ function createGearEmbed(
         name: 'Calculated:',
         value: `\`\`\`asciidoc\n${calculatedText}\`\`\``,
       },
-    );
+    )
+    .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
 }
 
 export default gearcheck;

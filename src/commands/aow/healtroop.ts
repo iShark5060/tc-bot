@@ -1,44 +1,8 @@
-import { EmbedBuilder, MessageFlags, SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, type ChatInputCommandInteraction, type StringSelectMenuInteraction } from 'discord.js';
+import { EmbedBuilder, MessageFlags, SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, Colors, type ChatInputCommandInteraction, type StringSelectMenuInteraction } from 'discord.js';
+import { BOT_ICON_URL, TRUNCATION_LIMITS, COST_TYPES, MODIFIER_THRESHOLDS, COST_LABELS } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import type { Command, HealingCosts, TroopRow, ExtendedClient } from '../../types/index.js';
-
-const TRUNCATION_LIMITS = {
-  MAX_ROWS: 10,
-  MAX_SELECT_OPTIONS: 25,
-} as const;
-
-const COST_TYPES = {
-  RESOURCES: ['foodCost', 'partsCost', 'eleCost', 'gasCost', 'cashCost'],
-  SPECIAL: ['smCost', 'ucCost', 'hcCost', 'scCost'],
-  OTHER: ['mchealCost', 'arkHP', 'powerLost', 'kePoints', 'hePoints'],
-};
-
-const MODIFIER_THRESHOLDS = [
-  { units: 3501, modifier: 0.25 },
-  { units: 1501, modifier: 0.22 },
-  { units: 901, modifier: 0.19 },
-  { units: 501, modifier: 0.17 },
-  { units: 201, modifier: 0.15 },
-  { units: 0, modifier: 0.1 },
-] as const;
-
-const COST_LABELS: Record<string, string> = {
-  foodCost: 'Food::',
-  partsCost: 'Parts::',
-  eleCost: 'Ele::',
-  gasCost: 'Gas::',
-  cashCost: 'Cash::',
-  smCost: 'SM::',
-  ucCost: 'UC::',
-  hcCost: 'HC::',
-  scCost: 'SC::',
-  mchealCost: 'MC Heal::',
-  arkHP: 'Massacre Dmg::',
-  powerLost: 'Power::',
-  kePoints: 'KE Points::',
-  hePoints: 'Heal Points::',
-};
 
 interface RowCalc {
   row: TroopRow;
@@ -83,6 +47,7 @@ const healtroop: Command = {
   ],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const startTime = Date.now();
     const troopAmount = interaction.options.getInteger('amount');
     const troopTier = interaction.options.getInteger('tier');
     const troopType = interaction.options.getString('type');
@@ -127,8 +92,9 @@ const healtroop: Command = {
     }
 
     if (validByName.size > 1) {
+      const duration = Date.now() - startTime;
       const embed = new EmbedBuilder()
-        .setColor(0xffffff)
+        .setColor(Colors.White)
         .setTitle('Healing cost — choose troop')
         .setDescription(
           `Found ${validByName.size} troop variants for ` +
@@ -141,7 +107,8 @@ const healtroop: Command = {
             `${numberWithCommas(troopAmount)}x ` +
             `(T${troopTier} ${troopType})\n` +
             '```',
-        });
+        })
+        .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
 
       const options = Array.from(validByName.keys())
         .sort((a, b) => a.localeCompare(b))
@@ -191,12 +158,14 @@ const healtroop: Command = {
       selectedRows.length < validByName.get(singleName)!.length
         ? validByName.get(singleName)!.length - selectedRows.length
         : 0,
+      startTime,
     );
 
     await interaction.editReply({ embeds: [embed], components: [] });
   },
 
   async handleSelect(interaction: StringSelectMenuInteraction): Promise<void> {
+    const startTime = Date.now();
     try {
       const meta = String(interaction.customId).slice('healtroop:'.length);
       const [tierStr, type, amountStr] = meta.split('|');
@@ -260,6 +229,7 @@ const healtroop: Command = {
         troopRows.length > TRUNCATION_LIMITS.MAX_ROWS
           ? troopRows.length - TRUNCATION_LIMITS.MAX_ROWS
           : 0,
+        startTime,
       );
 
       await interaction.update({
@@ -454,8 +424,9 @@ function createMultiHealingEmbed(
   troopName: string,
   perRowCalcs: RowCalc[],
   truncatedCount: number,
+  startTime: number,
 ): EmbedBuilder {
-  const embed = new EmbedBuilder().setColor(0xffffff).setTitle('Healing cost:');
+  const embed = new EmbedBuilder().setColor(Colors.White).setTitle('Healing cost:');
 
   embed.addFields({
     name: 'Selection:',
@@ -520,6 +491,9 @@ function createMultiHealingEmbed(
         `+${truncatedCount} more rows omitted.`,
     });
   }
+
+  const duration = Date.now() - startTime;
+  embed.setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
 
   return embed;
 }

@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import { BOT_ICON_URL } from '../../helper/constants.js';
 import type { Command, ExtendedClient } from '../../types/index.js';
 
 const help: Command = {
@@ -8,6 +9,7 @@ const help: Command = {
   examples: ['/help'],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const startTime = Date.now();
     const commands = (interaction.client as ExtendedClient).commands;
 
     if (!commands || commands.size === 0) {
@@ -40,13 +42,14 @@ const help: Command = {
       })
       .join('\n\n');
 
+    const duration = Date.now() - startTime;
     const embed = new EmbedBuilder()
       .setColor(Colors.Green)
       .setTitle('📜 Available Commands')
       .setDescription(commandList.slice(0, 4000))
       .setFooter({
-        text: `Requested by ${interaction.user.username}`,
-        iconURL: interaction.user.displayAvatarURL(),
+        text: `via tc-bot - ${duration}ms`,
+        iconURL: BOT_ICON_URL,
       })
       .setTimestamp();
 
