@@ -67,6 +67,9 @@ GOOGLE_SHEET_CACHE=300000
 WEBHOOK_ID=123456
 # Webhook URL for Discord Notifications when the bot starts (token part).
 WEBHOOK_TOKEN=blablablublala
+
+# Message Command Channel (limits the !tcmu command to this channel).
+MESSAGE_COMMAND_CHANNEL=tc-autobot
 ```
 
 Unless you have a copy of the Theorycrafters Google Docs sheet, you probably will not be able to use the Healing/ITS function.
