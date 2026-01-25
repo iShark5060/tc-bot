@@ -281,6 +281,8 @@ if (file_exists($bgFile)) {
     background-position: right 12px center;
     background-size: 8px;
     padding-right: 32px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   select:focus { border-color: rgba(255, 255, 255, 0.2); }
   select:hover { border-color: rgba(255, 255, 255, 0.15); }
@@ -295,6 +297,8 @@ if (file_exists($bgFile)) {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 1rem;
     padding: 14px 16px; flex: 1; min-width: 180px; box-shadow: var(--shadow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   .card-title { color: var(--muted); font-size: 0.875rem; margin-bottom: 4px; }
   .card-value { font-weight: 700; font-size: 1.5rem; }
@@ -305,6 +309,8 @@ if (file_exists($bgFile)) {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 1rem; overflow: hidden; box-shadow: var(--shadow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   th, td { padding: 10px 12px; text-align: left; }
   thead th {
@@ -321,6 +327,8 @@ if (file_exists($bgFile)) {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 1rem; box-shadow: var(--shadow); padding: 8px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
   @media (max-height: 740px) { body { align-items: flex-start; } }
   @media (max-width: 640px) {
