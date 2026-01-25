@@ -1,5 +1,11 @@
 import { MessageFlags, type Message, type RepliableInteraction } from 'discord.js';
 
+/**
+ * Handles errors during slash command execution.
+ * Sends an ephemeral error message to the user via reply or followUp.
+ * @param interaction - The interaction that caused the error
+ * @param error - The error that occurred
+ */
 async function handleCommandError(
   interaction: RepliableInteraction,
   error: unknown,
@@ -24,6 +30,12 @@ async function handleCommandError(
   }
 }
 
+/**
+ * Handles errors during message-based command execution.
+ * Sends a reply to the original message with error notification.
+ * @param message - The message that triggered the command
+ * @param error - The error that occurred
+ */
 async function handleMessageError(message: Message, error: unknown): Promise<void> {
   console.error('[ERROR] Message command execution failed:', error);
 

@@ -1,11 +1,17 @@
 import { Events, type Client } from 'discord.js';
 
+import { TIMERS } from '../helper/constants.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { discordLatency } from '../helper/metrics.js';
 import type { Event, ExtendedClient } from '../types/index.js';
 
 let latencyTimer: NodeJS.Timeout | null = null;
 
+/**
+ * Discord client ready event handler.
+ * Fires once when the bot successfully connects to Discord.
+ * Logs bot statistics and starts latency monitoring.
+ */
 const clientReady: Event = {
   name: Events.ClientReady,
   once: true,
@@ -34,15 +40,21 @@ const clientReady: Event = {
     console.log(`[BOOT] Users: ${users}`);
     console.log(`[BOOT] Commands: ${commands}`);
 
-    debugLogger.step('METRICS', 'Starting Discord latency monitoring (30s interval)');
+    debugLogger.step('METRICS', 'Starting Discord latency monitoring', {
+      interval: `${TIMERS.LATENCY_MONITOR_INTERVAL_MS / 1000}s`,
+    });
     latencyTimer = setInterval(() => {
       const latency = Math.round(client.ws.ping);
       discordLatency.set(latency);
       debugLogger.debug('METRICS', 'Discord latency updated', { latency: `${latency}ms` });
-    }, 30000);
+    }, TIMERS.LATENCY_MONITOR_INTERVAL_MS);
   },
 };
 
+/**
+ * Stops the Discord latency monitoring interval.
+ * Called during graceful shutdown to clean up timers.
+ */
 export function stopLatencyMonitoring(): void {
   if (latencyTimer) {
     clearInterval(latencyTimer);

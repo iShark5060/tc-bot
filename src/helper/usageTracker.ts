@@ -18,7 +18,7 @@ let topCommandsStmt: Statement | null = null;
 
 function ensureDir(filePath: string): void {
   const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(dir, { recursive: true });
 }
 
 function initDb(): void {

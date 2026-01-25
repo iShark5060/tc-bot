@@ -6,6 +6,11 @@ import { commandErrors, commandsCounter, commandsPerSecond } from '../helper/met
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event, ExtendedClient } from '../types/index.js';
 
+/**
+ * Discord interaction create event handler.
+ * Processes slash commands and select menu interactions.
+ * Handles command execution, error handling, and usage logging.
+ */
 const interactionsCreate: Event = {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction): Promise<void> {

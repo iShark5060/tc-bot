@@ -1,17 +1,27 @@
 import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
 
+import { MESSAGE_COMMAND_CHANNEL } from '../helper/constants.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { buildMopupEmbed } from '../helper/mopup.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';
 
+/**
+ * Gets the name of a channel from a message.
+ * @param message - Discord message object
+ * @returns Channel name, 'DM' for direct messages, or 'unknown'
+ */
 function getChannelName(message: Message): string {
   if (message.channel.isDMBased()) return 'DM';
   if ('name' in message.channel) return message.channel.name;
   return 'unknown';
 }
 
+/**
+ * Discord message create event handler.
+ * Processes legacy message commands (e.g., !tcmu) in designated channels.
+ */
 const messageCreate: Event = {
   name: Events.MessageCreate,
   async execute(message: Message): Promise<void> {
@@ -106,9 +116,15 @@ const messageCreate: Event = {
   },
 };
 
+/**
+ * Determines if a message should be processed for commands.
+ * Filters by channel type, channel name, and ignores bots.
+ * @param message - Discord message to check
+ * @returns True if the message should be processed
+ */
 function shouldProcessMessage(message: Message): boolean {
   if (message.channel.type !== ChannelType.GuildText) return false;
-  return message.channel.name === 'tc-autobot' && !message.author.bot;
+  return message.channel.name === MESSAGE_COMMAND_CHANNEL && !message.author.bot;
 }
 
 export default messageCreate;

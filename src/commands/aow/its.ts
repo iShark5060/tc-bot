@@ -3,8 +3,13 @@ import { EmbedBuilder, MessageFlags, SlashCommandBuilder, Colors, type ChatInput
 import { BOT_ICON_URL, VALIDATION } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
-import type { Command, KillResult, TroopRow, ExtendedClient } from '../../types/index.js';
+import { TroopRow, type Command, type KillResult, type ExtendedClient } from '../../types/index.js';
 
+/**
+ * Ignore Tier Suppression (ITS) kill calculator command.
+ * Calculates how many troops can be killed with ITS skills based on
+ * skill level, leadership, target tier, and target damage reduction.
+ */
 const its: Command = {
   data: new SlashCommandBuilder()
     .setName('its')
@@ -52,7 +57,7 @@ const its: Command = {
       return;
     }
 
-    if (!leadership || !targetTier) {
+    if (!leadership) {
       await interaction.reply({
         content: 'Missing required parameters',
         flags: MessageFlags.Ephemeral,
@@ -60,16 +65,24 @@ const its: Command = {
       return;
     }
 
+    if (targetTier === null || targetTier < VALIDATION.MIN_TIER || targetTier > VALIDATION.MAX_TIER) {
+      await interaction.reply({
+        content: `Tier must be between ${VALIDATION.MIN_TIER} and ${VALIDATION.MAX_TIER}.`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
-    const googleSheet = (interaction.client as ExtendedClient).GoogleSheet;
-    if (!googleSheet) {
+    const googleSheets = (interaction.client as ExtendedClient).GoogleSheets;
+    if (!googleSheets) {
       await interaction.editReply({ content: 'Google Sheets is not available.' });
       return;
     }
 
     const rows = await getSheetRowsCached(
-      googleSheet,
+      googleSheets,
       process.env.GOOGLE_SHEET_ID || '',
     );
 

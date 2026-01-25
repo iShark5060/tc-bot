@@ -5,11 +5,17 @@ import { numberWithCommas } from '../../helper/formatters.js';
 import { getMetricsTotals, getTopCommands } from '../../helper/usageTracker.js';
 import type { Command } from '../../types/index.js';
 
+/** Period calculation result with UTC timestamp and display label */
 interface PeriodInfo {
   sinceUTC: string;
   label: string;
 }
 
+/**
+ * Command usage metrics command.
+ * Displays command execution statistics including totals, success rate,
+ * and top commands for a selected time period.
+ */
 const metrics: Command = {
   data: new SlashCommandBuilder()
     .setName('metrics')
