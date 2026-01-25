@@ -1,5 +1,6 @@
 import { EmbedBuilder, MessageFlags, SlashCommandBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
-import { BOT_ICON_URL } from '../../helper/constants.js';
+
+import { BOT_ICON_URL, VALIDATION } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import type { Command, KillResult, TroopRow, ExtendedClient } from '../../types/index.js';
@@ -43,7 +44,7 @@ const its: Command = {
     const inputTdr = interaction.options.getInteger('tdr');
     const tdr = Math.min(100, Math.max(0, inputTdr ?? 0));
 
-    if (!skillLevel || skillLevel > 60) {
+    if (!skillLevel || skillLevel > VALIDATION.MAX_SKILL_LEVEL) {
       await interaction.reply({
         content: `You entered skill level ${skillLevel}. Was that intended? Because it's not possible, but it would be REALLY nice if it were...`,
         flags: MessageFlags.Ephemeral,
@@ -61,8 +62,14 @@ const its: Command = {
 
     await interaction.deferReply();
 
+    const googleSheet = (interaction.client as ExtendedClient).GoogleSheet;
+    if (!googleSheet) {
+      await interaction.editReply({ content: 'Google Sheets is not available.' });
+      return;
+    }
+
     const rows = await getSheetRowsCached(
-      (interaction.client as ExtendedClient).GoogleSheet,
+      googleSheet,
       process.env.GOOGLE_SHEET_ID || '',
     );
 
@@ -100,9 +107,8 @@ function calculateKills(
   leadership: number,
   tdr: number,
 ): KillResult[] {
-  const DAMAGE_COEFFICIENT = 0.005;
   const coef =
-    DAMAGE_COEFFICIENT * leadership * skillLevel * ((100 - tdr) / 100);
+    VALIDATION.ITS_DAMAGE_COEFFICIENT * leadership * skillLevel * ((100 - tdr) / 100);
 
   const matches = rows.filter(
     (row) =>
@@ -175,3 +181,4 @@ function createItsEmbed(
 }
 
 export default its;
+export { calculateKills };

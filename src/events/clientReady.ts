@@ -1,4 +1,5 @@
 import { Events, type Client } from 'discord.js';
+
 import { debugLogger } from '../helper/debugLogger.js';
 import { discordLatency } from '../helper/metrics.js';
 import type { Event, ExtendedClient } from '../types/index.js';
@@ -17,11 +18,11 @@ const clientReady: Event = {
     });
 
     console.log(`[BOOT] Bot ready: ${client.user?.tag}`);
-    
+
     const guilds = client.guilds.cache.size;
     const users = client.users.cache.size;
     const commands = (client as ExtendedClient).commands.size;
-    
+
     debugLogger.boot('Bot statistics', {
       guilds,
       users,

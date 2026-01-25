@@ -1,6 +1,7 @@
-import { Events, MessageFlags, type Interaction, type StringSelectMenuInteraction, type ChatInputCommandInteraction } from 'discord.js';
-import { handleCommandError } from '../helper/errorHandler.js';
+import { Events, MessageFlags, type Interaction, type StringSelectMenuInteraction } from 'discord.js';
+
 import { debugLogger } from '../helper/debugLogger.js';
+import { handleCommandError } from '../helper/errorHandler.js';
 import { commandErrors, commandsCounter, commandsPerSecond } from '../helper/metrics.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event, ExtendedClient } from '../types/index.js';
@@ -41,7 +42,7 @@ const interactionsCreate: Event = {
           error: error as Error,
           customId: interaction.customId,
         });
-        await handleCommandError(interaction as unknown as ChatInputCommandInteraction, error);
+        await handleCommandError(interaction, error);
       }
       return;
     }
@@ -83,7 +84,7 @@ const interactionsCreate: Event = {
 
       commandsCounter.inc();
       commandsPerSecond.mark();
-      
+
       debugLogger.debug('COMMAND', 'Logging command usage', { commandName });
       logCommandUsage({
         commandName,

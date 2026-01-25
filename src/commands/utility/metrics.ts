@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
+
 import { BOT_ICON_URL, METRICS_TOP_LIMIT } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getMetricsTotals, getTopCommands } from '../../helper/usageTracker.js';

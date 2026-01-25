@@ -1,5 +1,6 @@
 import { EmbedBuilder, MessageFlags, SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, Colors, type ChatInputCommandInteraction, type StringSelectMenuInteraction } from 'discord.js';
-import { BOT_ICON_URL, TRUNCATION_LIMITS, COST_TYPES, MODIFIER_THRESHOLDS, COST_LABELS } from '../../helper/constants.js';
+
+import { BOT_ICON_URL, TRUNCATION_LIMITS, COST_TYPES, MODIFIER_THRESHOLDS, COST_LABELS, VALIDATION } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import type { Command, HealingCosts, TroopRow, ExtendedClient } from '../../types/index.js';
@@ -52,9 +53,9 @@ const healtroop: Command = {
     const troopTier = interaction.options.getInteger('tier');
     const troopType = interaction.options.getString('type');
 
-    if (!troopTier || troopTier > 12) {
+    if (!troopTier || troopTier > VALIDATION.MAX_TIER) {
       await interaction.reply({
-        content: 'We currently only have Tier 12 :)',
+        content: `We currently only have Tier ${VALIDATION.MAX_TIER} :)`,
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -70,8 +71,14 @@ const healtroop: Command = {
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    const googleSheet = (interaction.client as ExtendedClient).GoogleSheet;
+    if (!googleSheet) {
+      await interaction.editReply({ content: 'Google Sheets is not available.' });
+      return;
+    }
+
     const rows = await getSheetRowsCached(
-      (interaction.client as ExtendedClient).GoogleSheet,
+      googleSheet,
       process.env.GOOGLE_SHEET_ID || '',
     );
 
@@ -186,8 +193,17 @@ const healtroop: Command = {
         return;
       }
 
+      const googleSheet = (interaction.client as ExtendedClient).GoogleSheet;
+      if (!googleSheet) {
+        await interaction.update({
+          content: 'Google Sheets is not available.',
+          components: [],
+        });
+        return;
+      }
+
       const rows = await getSheetRowsCached(
-        (interaction.client as ExtendedClient).GoogleSheet,
+        googleSheet,
         process.env.GOOGLE_SHEET_ID || '',
       );
 
@@ -528,3 +544,4 @@ function createMultiHealingEmbed(
 }
 
 export default healtroop;
+export { getModifier, getOptimalModifier, calculateResourceCost, calculateHealingCosts };

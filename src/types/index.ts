@@ -59,12 +59,12 @@ export interface CacheEntry {
 }
 
 export interface GoogleSheetClient {
-  GoogleSheet: GoogleSpreadsheet;
+  GoogleSheet: GoogleSpreadsheet | null;
 }
 
 export interface ExtendedClient extends Client {
   commands: Collection<string, Command>;
-  GoogleSheet: GoogleSpreadsheet;
+  GoogleSheet: GoogleSpreadsheet | null;
 }
 
 export interface CommandUsage {

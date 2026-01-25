@@ -9,20 +9,20 @@ class DebugLogger {
 
   private get enabled(): boolean {
     const isEnabled = process.env.DEBUG === 'true' || process.env.DEBUG === '1';
-    
+
     if (!this.initialized) {
       this.initialized = true;
       if (isEnabled) {
         console.log('[DEBUG] Debug logging enabled');
       }
     }
-    
+
     return isEnabled;
   }
 
   private serializeContext(context: LogContext): string {
     const serialized: Record<string, unknown> = {};
-    
+
     for (const [key, value] of Object.entries(context)) {
       if (value instanceof Error) {
         serialized[key] = {
@@ -34,7 +34,7 @@ class DebugLogger {
         serialized[key] = value;
       }
     }
-    
+
     return JSON.stringify(serialized);
   }
 

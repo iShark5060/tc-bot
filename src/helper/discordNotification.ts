@@ -1,4 +1,5 @@
 import { Colors } from 'discord.js';
+
 import type { DiscordNotificationParams } from '../types/index.js';
 
 const WEBHOOK_BASE = 'https://discord.com/api/webhooks';

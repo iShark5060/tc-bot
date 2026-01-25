@@ -1,5 +1,6 @@
 import { EmbedBuilder, SlashCommandBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
-import { BOT_ICON_URL, GEARCHECK_LEVELS, GEARCHECK_MULTIPLIERS } from '../../helper/constants.js';
+
+import { BOT_ICON_URL, GEARCHECK_LEVELS, GEARCHECK_MULTIPLIERS, VALIDATION } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import type { Command, GearCalculations } from '../../types/index.js';
 
@@ -42,9 +43,9 @@ const gearcheck: Command = {
       return;
     }
 
-    if (gearLevel > 100) {
+    if (gearLevel > VALIDATION.MAX_GEAR_LEVEL) {
       await interaction.editReply({
-        content: `Gear level ${gearLevel} is unreasonably high (max expected: 100).`,
+        content: `Gear level ${gearLevel} is unreasonably high (max expected: ${VALIDATION.MAX_GEAR_LEVEL}).`,
       });
       return;
     }
