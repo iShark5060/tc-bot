@@ -5,16 +5,23 @@ import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import { TroopRow, type Command, type HealingCosts, type ExtendedClient } from '../../types/index.js';
 
+/** Internal type for row with calculated costs */
 interface RowCalc {
   row: TroopRow;
   calc: HealingCosts | null;
 }
 
+/** Result of optimal modifier calculation */
 interface ModifierResult {
   modifier: number;
   units: number;
 }
 
+/**
+ * Troop healing cost calculator command.
+ * Calculates resource costs to heal troops based on amount, tier, and type.
+ * Includes optimization tips for reducing healing costs.
+ */
 const healtroop: Command = {
   data: new SlashCommandBuilder()
     .setName('healtroop')

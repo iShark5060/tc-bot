@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { calculateKills } from '../src/commands/aow/its.js';
 import { TroopRow } from '../src/types/index.js';
 
@@ -57,9 +57,6 @@ describe('calculateKills', () => {
   });
 
   it('calculates kill count using damage coefficient', () => {
-    // coef = 0.005 * leadership * skillLevel * ((100 - tdr) / 100)
-    // coef = 0.005 * 500000 * 30 * 1 = 75000
-    // kills = floor(coef / units) = floor(75000 / 100) = 750
     const kills = calculateKills(mockRows, 12, 30, 500000, 0);
 
     const infantry = kills.find((k) => k.name === 'Test Infantry');
@@ -67,9 +64,6 @@ describe('calculateKills', () => {
   });
 
   it('applies TDR reduction correctly', () => {
-    // With 20% TDR:
-    // coef = 0.005 * 500000 * 30 * 0.8 = 60000
-    // kills = floor(60000 / 100) = 600
     const kills = calculateKills(mockRows, 12, 30, 500000, 20);
 
     const infantry = kills.find((k) => k.name === 'Test Infantry');
@@ -79,8 +73,6 @@ describe('calculateKills', () => {
   it('sorts results by kill count descending', () => {
     const kills = calculateKills(mockRows, 12, 30, 500000, 0);
 
-    // Walker has 50 units, Infantry has 100 units
-    // Walker should have more kills (75000/50 = 1500 vs 75000/100 = 750)
     expect(kills[0].name).toBe('Test Walker');
     expect(kills[0].count).toBe(1500);
     expect(kills[1].name).toBe('Test Infantry');
@@ -94,12 +86,8 @@ describe('calculateKills', () => {
   });
 
   it('handles zero kills correctly', () => {
-    // Very low leadership/skill should result in 0 kills
-    // coef = 0.005 * 1 * 1 * 1 = 0.005
-    // kills = floor(0.005 / 100) = 0
     const kills = calculateKills(mockRows, 12, 1, 1, 0);
 
-    // Should filter out zero-kill results
     expect(kills.length).toBe(0);
   });
 
@@ -150,8 +138,6 @@ describe('calculateKills', () => {
   });
 
   it('clamps TDR to valid range', () => {
-    // TDR is clamped in the command, but calculateKills receives already-clamped value
-    // Test with 100% TDR should result in 0 kills
     const kills = calculateKills(mockRows, 12, 30, 500000, 100);
 
     expect(kills.length).toBe(0);

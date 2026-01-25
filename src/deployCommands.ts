@@ -1,3 +1,9 @@
+/**
+ * Discord Slash Command Deployment Script
+ * Clears existing commands and deploys new ones from the commands directory.
+ * Run with: npx tsx src/deployCommands.ts
+ * @module deployCommands
+ */
 import '@dotenvx/dotenvx/config';
 import { REST, Routes } from 'discord.js';
 import fs from 'node:fs/promises';
@@ -17,6 +23,10 @@ if (!TOKEN) {
 
 const rest = new REST({ version: '10' }).setToken(TOKEN!);
 
+/**
+ * Main deployment entry point.
+ * Loads commands, clears existing, and deploys new ones.
+ */
 (async function deployCommands(): Promise<void> {
   try {
     const commands = await loadCommands();
@@ -28,6 +38,11 @@ const rest = new REST({ version: '10' }).setToken(TOKEN!);
   }
 })();
 
+/**
+ * Loads all command definitions from the commands directory.
+ * Recursively scans subdirectories for .ts command files.
+ * @returns Array of command JSON data for Discord API
+ */
 async function loadCommands(): Promise<unknown[]> {
   const commands: unknown[] = [];
   const root = path.join(__dirname, 'commands');
@@ -64,6 +79,10 @@ async function loadCommands(): Promise<unknown[]> {
   return commands;
 }
 
+/**
+ * Clears all existing slash commands from Discord.
+ * Removes both guild-specific and global commands.
+ */
 async function clearExistingCommands(): Promise<void> {
   try {
     await rest.put(
@@ -85,6 +104,11 @@ async function clearExistingCommands(): Promise<void> {
   }
 }
 
+/**
+ * Deploys command definitions to Discord as global application commands.
+ * Includes a 3-second delay for cancellation opportunity.
+ * @param commands - Array of command JSON data to deploy
+ */
 async function deployNewCommands(commands: unknown[]): Promise<void> {
   console.log(`[DEPLOY] About to deploy ${commands.length} commands.`);
   console.log(

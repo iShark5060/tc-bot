@@ -2,6 +2,10 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.j
 
 import type { Command } from '../../types/index.js';
 
+/**
+ * Ping command.
+ * Responds with "Pong!" and displays bot and API latency.
+ */
 const ping: Command = {
   data: new SlashCommandBuilder()
     .setName('ping')

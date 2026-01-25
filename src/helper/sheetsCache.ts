@@ -57,10 +57,12 @@ async function getSheetRowsCached(
     }
 
     const sheetTitle = sheet.properties.title;
+    const escapedTitle = sheetTitle.replace(/'/g, '\'\'');
+    const range = `'${escapedTitle}'`;
 
     const valuesResponse = await client.sheetsApi.spreadsheets.values.get({
       spreadsheetId: client.spreadsheetId,
-      range: sheetTitle,
+      range,
       valueRenderOption: 'UNFORMATTED_VALUE',
     });
 

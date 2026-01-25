@@ -1,9 +1,16 @@
+/** Log severity levels for categorizing messages */
 type LogLevel = 'INFO' | 'DEBUG' | 'WARN' | 'ERROR' | 'STEP';
 
+/** Context object for structured logging metadata */
 interface LogContext {
   [key: string]: unknown;
 }
 
+/**
+ * Debug logger class for structured, conditional logging.
+ * Logs are enabled via DEBUG=true environment variable.
+ * ERROR and WARN levels always output regardless of DEBUG setting.
+ */
 class DebugLogger {
   private initialized = false;
 
@@ -63,38 +70,47 @@ class DebugLogger {
     }
   }
 
+  /** Logs an informational message (requires DEBUG=true) */
   info(category: string, message: string, context?: LogContext): void {
     this.log('INFO', category, message, context);
   }
 
+  /** Logs a debug message (requires DEBUG=true) */
   debug(category: string, message: string, context?: LogContext): void {
     this.log('DEBUG', category, message, context);
   }
 
+  /** Logs a step/progress message (requires DEBUG=true) */
   step(category: string, message: string, context?: LogContext): void {
     this.log('STEP', category, message, context);
   }
 
+  /** Logs a warning message (always outputs) */
   warn(category: string, message: string, context?: LogContext): void {
     this.log('WARN', category, message, context);
   }
 
+  /** Logs an error message (always outputs) */
   error(category: string, message: string, context?: LogContext): void {
     this.log('ERROR', category, message, context);
   }
 
+  /** Logs a command-related debug message */
   command(commandName: string, action: string, context?: LogContext): void {
     this.debug('COMMAND', `[${commandName}] ${action}`, context);
   }
 
+  /** Logs an event-related debug message */
   event(eventName: string, action: string, context?: LogContext): void {
     this.debug('EVENT', `[${eventName}] ${action}`, context);
   }
 
+  /** Logs a boot/startup step message */
   boot(action: string, context?: LogContext): void {
     this.step('BOOT', action, context);
   }
 
+  /** Returns whether debug logging is currently enabled */
   isEnabled(): boolean {
     return this.enabled;
   }

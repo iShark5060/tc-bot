@@ -40,6 +40,10 @@ const client: ExtendedClient = new Client({
 client.commands = new Collection<string, Command>();
 client.GoogleSheets = null;
 
+/**
+ * Validates that all required environment variables are present.
+ * @throws Error if any required variables are missing
+ */
 function validateEnvironment(): void {
   debugLogger.boot('Validating environment variables');
   const required = ['TOKEN', 'CLIENT_ID', 'GUILD_ID', 'GOOGLE_SHEET_URL', 'GOOGLE_SHEET_ID'];
@@ -73,7 +77,13 @@ process.on('uncaughtException', (error) => {
     error,
   });
   console.error('[PROCESS] Uncaught exception:', error);
-  process.exitCode = 1;
+  const forceExitTimeout = setTimeout(() => {
+    console.error('[PROCESS] Forced exit after uncaught exception');
+    // eslint-disable-next-line n/no-process-exit -- Required for undefined state recovery
+    process.exit(1);
+  }, 10000);
+  forceExitTimeout.unref();
+  gracefulShutdown();
 });
 
 let isShuttingDown = false;
@@ -114,6 +124,11 @@ let mopupTimer: NodeJS.Timeout | null = null;
   }
 })();
 
+/**
+ * Performs graceful shutdown of the bot.
+ * Stops timers, checkpoints database, notifies Discord, and destroys client.
+ * Handles duplicate shutdown signals by ignoring subsequent calls.
+ */
 async function gracefulShutdown(): Promise<void> {
   if (isShuttingDown) {
     debugLogger.warn('SHUTDOWN', 'Shutdown already in progress, ignoring duplicate signal');
@@ -159,6 +174,10 @@ async function gracefulShutdown(): Promise<void> {
   }
 }
 
+/**
+ * Initializes Google Sheets API client with service account authentication.
+ * Creates JWT auth, configures API client, and warms the row cache.
+ */
 async function initializeGoogleSheets(): Promise<void> {
   debugLogger.step('GOOGLE_SHEETS', 'Initializing Google Sheets connection');
   const SCOPES = [
@@ -207,6 +226,10 @@ async function initializeGoogleSheets(): Promise<void> {
   });
 }
 
+/**
+ * Loads all command modules from the commands directory.
+ * Recursively scans subdirectories and registers valid command files.
+ */
 async function loadCommands(): Promise<void> {
   debugLogger.step('COMMANDS', 'Loading commands from filesystem');
   const commandsPath = path.join(__dirname, 'commands');
@@ -239,6 +262,12 @@ async function loadCommands(): Promise<void> {
   });
 }
 
+/**
+ * Registers a single command module from a file path.
+ * Validates that the module exports data and execute properties.
+ * @param filePath - Absolute path to the command file
+ * @param fileName - File name for logging purposes
+ */
 async function registerCommand(filePath: string, fileName: string): Promise<void> {
   debugLogger.debug('COMMANDS', 'Registering command', { file: fileName, path: filePath });
   try {
@@ -268,6 +297,10 @@ async function registerCommand(filePath: string, fileName: string): Promise<void
   }
 }
 
+/**
+ * Loads all event handler modules from the events directory.
+ * Registers each event with appropriate once/on listener.
+ */
 async function loadEvents(): Promise<void> {
   debugLogger.step('EVENTS', 'Loading events from filesystem');
   const eventsPath = path.join(__dirname, 'events');
@@ -302,6 +335,11 @@ async function loadEvents(): Promise<void> {
   debugLogger.info('EVENTS', 'Events loading completed', { totalEvents: eventFiles.length });
 }
 
+/**
+ * Starts the periodic mopup channel update timer.
+ * Updates Discord voice channel names with mopup status and countdown.
+ * Requires CHANNEL_ID1 and CHANNEL_ID2 environment variables.
+ */
 function startMopupTimer(): void {
   if (!process.env.CHANNEL_ID1 || !process.env.CHANNEL_ID2) {
     debugLogger.warn('MOPUP', 'Mopup timer disabled: Channel IDs missing', {
@@ -322,6 +360,10 @@ function startMopupTimer(): void {
   }, TIMERS.MOPUP_INTERVAL_MS);
 }
 
+/**
+ * Updates Discord voice channel names with current mopup status.
+ * Channel 1 shows active/inactive status, Channel 2 shows time remaining.
+ */
 async function updateMopupChannels(): Promise<void> {
   debugLogger.step('MOPUP', 'Updating mopup channels');
   try {

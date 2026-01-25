@@ -3,6 +3,11 @@ import { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField, C
 import { BOT_ICON_URL } from '../../helper/constants.js';
 import type { Command, ExtendedClient } from '../../types/index.js';
 
+/**
+ * Help command.
+ * Lists all available commands with descriptions and usage examples.
+ * Filters commands based on user permissions.
+ */
 const help: Command = {
   data: new SlashCommandBuilder()
     .setName('help')

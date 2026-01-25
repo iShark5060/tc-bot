@@ -4,6 +4,11 @@ import { BOT_ICON_URL, GEARCHECK_LEVELS, GEARCHECK_MULTIPLIERS, VALIDATION } fro
 import { numberWithCommas } from '../../helper/formatters.js';
 import type { Command, GearCalculations } from '../../types/index.js';
 
+/**
+ * Gear stat calculator command.
+ * Calculates gear stats at all upgrade levels (0, 10, 13, 20, 30, 40, 50)
+ * based on a current stat value and upgrade level.
+ */
 const gearcheck: Command = {
   data: new SlashCommandBuilder()
     .setName('gearcheck')

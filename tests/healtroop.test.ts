@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   getModifier,
   getOptimalModifier,
@@ -59,14 +59,12 @@ describe('getOptimalModifier', () => {
   });
 
   it('returns next tier up for units below threshold', () => {
-    // For 1000 units (in 901-1500 range), optimal is to reach 1501 for 0.22
     const result = getOptimalModifier(1000);
     expect(result.modifier).toBe(0.22);
     expect(result.units).toBe(1501);
   });
 
   it('returns next tier up for small units', () => {
-    // For 50 units (in 0-200 range), optimal is to reach 201 for 0.15 modifier
     const result = getOptimalModifier(50);
     expect(result.modifier).toBe(0.15);
     expect(result.units).toBe(201);
@@ -75,7 +73,6 @@ describe('getOptimalModifier', () => {
 
 describe('calculateResourceCost', () => {
   it('calculates cost correctly', () => {
-    // 1000 base * 10 amount * 0.25 modifier = 2500
     const cost = calculateResourceCost('1000', 10, 0.25);
     expect(cost).toBe(2500);
   });
@@ -102,11 +99,9 @@ describe('calculateResourceCost', () => {
   });
 
   it('rounds up to nearest integer', () => {
-    // 100 * 1 * 0.17 = 17
     const cost = calculateResourceCost('100', 1, 0.17);
     expect(cost).toBe(17);
 
-    // 101 * 1 * 0.17 = 17.17 -> ceil -> 18
     const cost2 = calculateResourceCost('101', 1, 0.17);
     expect(cost2).toBe(18);
   });
@@ -141,7 +136,6 @@ describe('calculateHealingCosts', () => {
       foodCost: '1000',
     });
 
-    // 50 troops * 100 units = 5000 total units -> 0.25 modifier
     const costs = calculateHealingCosts(row, 50);
     expect(costs?.modifier).toBe(0.25);
   });
@@ -155,9 +149,7 @@ describe('calculateHealingCosts', () => {
 
     const costs = calculateHealingCosts(row, 50);
 
-    // 1000 * 50 * 0.25 = 12500
     expect(costs?.resources['foodCost']?.current).toBe(12500);
-    // 500 * 50 * 0.25 = 6250
     expect(costs?.resources['partsCost']?.current).toBe(6250);
   });
 
@@ -182,9 +174,7 @@ describe('calculateHealingCosts', () => {
 
     const costs = calculateHealingCosts(row, 10);
 
-    // 500 * 10 = 5000
     expect(costs?.other['powerLost']).toBe(5000);
-    // 100 * 10 = 1000
     expect(costs?.other['kePoints']).toBe(1000);
   });
 
@@ -215,9 +205,6 @@ describe('calculateHealingCosts', () => {
 
     const costs = calculateHealingCosts(row, 10);
 
-    // For 500 units per troop with 10 troops = 5000 total units (in 0.25 tier)
-    // Next tier up is at 501 total units (0.17 modifier)
-    // Since units per troop is 500, optQty = floor(501 / 500) = 1
     expect(costs?.optQty).toBe(1);
   });
 });

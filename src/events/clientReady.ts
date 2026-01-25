@@ -7,6 +7,11 @@ import type { Event, ExtendedClient } from '../types/index.js';
 
 let latencyTimer: NodeJS.Timeout | null = null;
 
+/**
+ * Discord client ready event handler.
+ * Fires once when the bot successfully connects to Discord.
+ * Logs bot statistics and starts latency monitoring.
+ */
 const clientReady: Event = {
   name: Events.ClientReady,
   once: true,
@@ -46,6 +51,10 @@ const clientReady: Event = {
   },
 };
 
+/**
+ * Stops the Discord latency monitoring interval.
+ * Called during graceful shutdown to clean up timers.
+ */
 export function stopLatencyMonitoring(): void {
   if (latencyTimer) {
     clearInterval(latencyTimer);
