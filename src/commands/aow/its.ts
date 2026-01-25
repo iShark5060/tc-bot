@@ -3,7 +3,7 @@ import { EmbedBuilder, MessageFlags, SlashCommandBuilder, Colors, type ChatInput
 import { BOT_ICON_URL, VALIDATION } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
-import type { Command, KillResult, TroopRow, ExtendedClient } from '../../types/index.js';
+import { TroopRow, type Command, type KillResult, type ExtendedClient } from '../../types/index.js';
 
 const its: Command = {
   data: new SlashCommandBuilder()
@@ -62,14 +62,14 @@ const its: Command = {
 
     await interaction.deferReply();
 
-    const googleSheet = (interaction.client as ExtendedClient).GoogleSheet;
-    if (!googleSheet) {
+    const googleSheets = (interaction.client as ExtendedClient).GoogleSheets;
+    if (!googleSheets) {
       await interaction.editReply({ content: 'Google Sheets is not available.' });
       return;
     }
 
     const rows = await getSheetRowsCached(
-      googleSheet,
+      googleSheets,
       process.env.GOOGLE_SHEET_ID || '',
     );
 

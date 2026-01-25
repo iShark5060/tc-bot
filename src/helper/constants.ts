@@ -46,6 +46,15 @@ export const COST_LABELS: Record<string, string> = {
 export const VALIDATION = {
   MAX_GEAR_LEVEL: 100,
   MAX_TIER: 12,
+  MIN_TIER: 1,
   MAX_SKILL_LEVEL: 60,
   ITS_DAMAGE_COEFFICIENT: 0.005,
 } as const;
+
+export const TIMERS = {
+  MOPUP_INTERVAL_MS: 5 * 60 * 1000,
+  WAL_CHECKPOINT_INTERVAL_MS: 5 * 60 * 1000,
+  LATENCY_MONITOR_INTERVAL_MS: 30 * 1000,
+} as const;
+
+export const MESSAGE_COMMAND_CHANNEL = process.env.MESSAGE_COMMAND_CHANNEL || 'tc-autobot';

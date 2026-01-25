@@ -1,13 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { calculateKills } from '../src/commands/aow/its.js';
-import type { TroopRow } from '../src/types/index.js';
+import { TroopRow } from '../src/types/index.js';
 
 function createMockRow(data: Record<string, unknown>): TroopRow {
-  return {
-    get(key: string): unknown {
-      return data[key];
-    },
-  };
+  const headers = Object.keys(data);
+  const values = Object.values(data);
+  return new TroopRow(headers, values);
 }
 
 describe('calculateKills', () => {

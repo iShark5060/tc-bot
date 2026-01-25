@@ -1,5 +1,6 @@
 import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
 
+import { MESSAGE_COMMAND_CHANNEL } from '../helper/constants.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { buildMopupEmbed } from '../helper/mopup.js';
@@ -108,7 +109,7 @@ const messageCreate: Event = {
 
 function shouldProcessMessage(message: Message): boolean {
   if (message.channel.type !== ChannelType.GuildText) return false;
-  return message.channel.name === 'tc-autobot' && !message.author.bot;
+  return message.channel.name === MESSAGE_COMMAND_CHANNEL && !message.author.bot;
 }
 
 export default messageCreate;

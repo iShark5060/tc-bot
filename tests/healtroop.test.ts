@@ -5,14 +5,12 @@ import {
   calculateResourceCost,
   calculateHealingCosts,
 } from '../src/commands/aow/healtroop.js';
-import type { TroopRow } from '../src/types/index.js';
+import { TroopRow } from '../src/types/index.js';
 
 function createMockRow(data: Record<string, unknown>): TroopRow {
-  return {
-    get(key: string): unknown {
-      return data[key];
-    },
-  };
+  const headers = Object.keys(data);
+  const values = Object.values(data);
+  return new TroopRow(headers, values);
 }
 
 describe('getModifier', () => {
@@ -217,8 +215,9 @@ describe('calculateHealingCosts', () => {
 
     const costs = calculateHealingCosts(row, 10);
 
-    // For 500 units per troop, optimal threshold is 501 (0.17 modifier)
-    // optQty = floor(501 / 500) = 1
+    // For 500 units per troop with 10 troops = 5000 total units (in 0.25 tier)
+    // Next tier up is at 501 total units (0.17 modifier)
+    // Since units per troop is 500, optQty = floor(501 / 500) = 1
     expect(costs?.optQty).toBe(1);
   });
 });

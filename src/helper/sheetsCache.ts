@@ -1,39 +1,32 @@
-import type { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from 'google-spreadsheet';
-
 import {
   cachedSheetRows,
   googleSheetCacheHits,
   googleSheetCacheMisses,
 } from './metrics.js';
-import type { TroopRow, CacheEntry } from '../types/index.js';
+import { CacheEntry, GoogleSheetsClient, TroopRow } from '../types/index.js';
 
 const DEFAULT_TTL_MS = Number(process.env.GOOGLE_SHEET_CACHE || 300000);
 const cache = new Map<string, CacheEntry>();
 
-interface SpreadsheetWithSheets extends GoogleSpreadsheet {
-  sheetsById: Record<string, GoogleSpreadsheetWorksheet>;
-}
-
-function keyFor(doc: GoogleSpreadsheet, sheetId: string): string {
-  const docId = doc.spreadsheetId || 'default';
-  return `${docId}:${sheetId}`;
+function keyFor(client: GoogleSheetsClient, sheetId: string): string {
+  return `${client.spreadsheetId}:${sheetId}`;
 }
 
 /**
  * Gets sheet rows from cache or fetches from Google Sheets API if cache expired.
  * Implements deduplication - concurrent requests for the same sheet wait for the same promise.
- * @param doc - GoogleSpreadsheet instance
- * @param sheetId - The sheet ID to fetch
+ * @param client - GoogleSheetsClient with authenticated API and spreadsheet ID
+ * @param sheetId - The sheet ID (gid) to fetch
  * @param ttlMs - Optional TTL in milliseconds (defaults to GOOGLE_SHEET_CACHE env var or 300000)
  * @returns Promise resolving to array of TroopRow objects
  */
 async function getSheetRowsCached(
-  doc: GoogleSpreadsheet,
+  client: GoogleSheetsClient,
   sheetId: string,
   ttlMs?: number,
 ): Promise<TroopRow[]> {
   const ttl = Number.isFinite(ttlMs) ? Number(ttlMs) : DEFAULT_TTL_MS;
-  const key = keyFor(doc, sheetId);
+  const key = keyFor(client, sheetId);
   const now = Date.now();
 
   const entry = cache.get(key);
@@ -51,16 +44,36 @@ async function getSheetRowsCached(
   }
 
   const loadingPromise = (async (): Promise<TroopRow[]> => {
-    const spreadsheet = doc as SpreadsheetWithSheets;
-    let sheet = spreadsheet.sheetsById?.[sheetId];
-    if (!sheet) {
-      await doc.loadInfo();
-      sheet = spreadsheet.sheetsById?.[sheetId];
-    }
-    if (!sheet) throw new Error(`Sheet not found: ${sheetId}`);
+    const response = await client.sheetsApi.spreadsheets.get({
+      spreadsheetId: client.spreadsheetId,
+      includeGridData: false,
+    });
 
-    const rows = await sheet.getRows();
-    return rows as TroopRow[];
+    const sheets = response.data.sheets || [];
+    const sheet = sheets.find((s) => String(s.properties?.sheetId) === sheetId);
+
+    if (!sheet?.properties?.title) {
+      throw new Error(`Sheet not found: ${sheetId}`);
+    }
+
+    const sheetTitle = sheet.properties.title;
+
+    const valuesResponse = await client.sheetsApi.spreadsheets.values.get({
+      spreadsheetId: client.spreadsheetId,
+      range: sheetTitle,
+      valueRenderOption: 'UNFORMATTED_VALUE',
+    });
+
+    const values = valuesResponse.data.values || [];
+
+    if (values.length === 0) {
+      return [];
+    }
+
+    const headers = values[0].map(String);
+    const dataRows = values.slice(1);
+
+    return dataRows.map((row) => new TroopRow(headers, row));
   })();
 
   cache.set(key, { ...(entry || {}), loadingPromise });
@@ -79,11 +92,11 @@ async function getSheetRowsCached(
 /**
  * Invalidates cached rows for a specific sheet.
  * @param sheetId - The sheet ID to invalidate
- * @param doc - Optional GoogleSpreadsheet instance (if provided, only invalidates that doc's cache)
+ * @param client - Optional GoogleSheetsClient (if provided, only invalidates that client's cache)
  */
-function invalidateSheetCache(sheetId: string, doc?: GoogleSpreadsheet): void {
-  if (doc) {
-    cache.delete(keyFor(doc, sheetId));
+function invalidateSheetCache(sheetId: string, client?: GoogleSheetsClient): void {
+  if (client) {
+    cache.delete(keyFor(client, sheetId));
     return;
   }
   for (const k of cache.keys()) {

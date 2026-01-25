@@ -1,6 +1,6 @@
 import '@dotenvx/dotenvx/config';
 import { REST, Routes } from 'discord.js';
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -35,10 +35,11 @@ async function loadCommands(): Promise<unknown[]> {
   const stack: string[] = [root];
   while (stack.length) {
     const current = stack.pop()!;
-    const stat = fs.lstatSync(current);
+    const stat = await fs.lstat(current);
 
     if (stat.isDirectory()) {
-      for (const entry of fs.readdirSync(current)) {
+      const entries = await fs.readdir(current);
+      for (const entry of entries) {
         stack.push(path.join(current, entry));
       }
       continue;

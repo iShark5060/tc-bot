@@ -1,5 +1,5 @@
+import type { sheets_v4 } from '@googleapis/sheets';
 import type { ChatInputCommandInteraction, Client, Collection, SlashCommandBuilder, SlashCommandOptionsOnlyBuilder, StringSelectMenuInteraction } from 'discord.js';
-import type { GoogleSpreadsheet } from 'google-spreadsheet';
 
 type CommandData =
   | SlashCommandBuilder
@@ -48,8 +48,23 @@ export interface HealingCosts {
   hasData: boolean;
 }
 
-export interface TroopRow {
-  get(key: string): unknown;
+/**
+ * Wrapper class for Google Sheets row data that provides column-based access.
+ * Maps column headers to row values for easy data retrieval.
+ */
+export class TroopRow {
+  private data: Map<string, unknown>;
+
+  constructor(headers: string[], values: unknown[]) {
+    this.data = new Map();
+    headers.forEach((header, index) => {
+      this.data.set(header, values[index] ?? '');
+    });
+  }
+
+  get(key: string): unknown {
+    return this.data.get(key);
+  }
 }
 
 export interface CacheEntry {
@@ -58,13 +73,14 @@ export interface CacheEntry {
   loadingPromise?: Promise<TroopRow[]>;
 }
 
-export interface GoogleSheetClient {
-  GoogleSheet: GoogleSpreadsheet | null;
+export interface GoogleSheetsClient {
+  sheetsApi: sheets_v4.Sheets;
+  spreadsheetId: string;
 }
 
 export interface ExtendedClient extends Client {
   commands: Collection<string, Command>;
-  GoogleSheet: GoogleSpreadsheet | null;
+  GoogleSheets: GoogleSheetsClient | null;
 }
 
 export interface CommandUsage {
