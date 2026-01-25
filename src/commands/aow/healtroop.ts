@@ -76,7 +76,7 @@ const healtroop: Command = {
       return;
     }
 
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
 
     const googleSheets = (interaction.client as ExtendedClient).GoogleSheets;
     if (!googleSheets) {
@@ -136,7 +136,7 @@ const healtroop: Command = {
 
       const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
-          .setCustomId(`healtroop:${troopTier}|${troopType}|${troopAmount}`)
+          .setCustomId(`healtroop:${troopTier}|${troopType}|${troopAmount}|${interaction.user.id}`)
           .setPlaceholder('Pick a troop name…')
           .addOptions(options)
           .setMinValues(1)
@@ -182,11 +182,19 @@ const healtroop: Command = {
     const startTime = Date.now();
     try {
       const meta = String(interaction.customId).slice('healtroop:'.length);
-      const [tierStr, type, amountStr] = meta.split('|');
+      const [tierStr, type, amountStr, originalUserId] = meta.split('|');
       const troopTier = parseInt(tierStr, 10);
       const troopType = type;
       const troopAmount = parseInt(amountStr, 10);
       const selectedName = interaction.values?.[0];
+
+      if (originalUserId && interaction.user.id !== originalUserId) {
+        await interaction.reply({
+          content: 'Only the user who ran the command can make this selection.',
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
 
       if (
         !Number.isFinite(troopTier) ||
