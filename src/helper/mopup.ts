@@ -1,6 +1,7 @@
 import { EmbedBuilder, Colors } from 'discord.js';
-import type { MopupInfo } from '../types/index.js';
+
 import { BOT_ICON_URL } from './constants.js';
+import type { MopupInfo } from '../types/index.js';
 
 interface MopupWindow {
   startTime: number;

@@ -1,17 +1,21 @@
-import type { TroopRow, CacheEntry } from '../types/index.js';
-import type { GoogleSpreadsheet } from 'google-spreadsheet';
+import type { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from 'google-spreadsheet';
 
 import {
   cachedSheetRows,
   googleSheetCacheHits,
   googleSheetCacheMisses,
 } from './metrics.js';
+import type { TroopRow, CacheEntry } from '../types/index.js';
 
 const DEFAULT_TTL_MS = Number(process.env.GOOGLE_SHEET_CACHE || 300000);
 const cache = new Map<string, CacheEntry>();
 
+interface SpreadsheetWithSheets extends GoogleSpreadsheet {
+  sheetsById: Record<string, GoogleSpreadsheetWorksheet>;
+}
+
 function keyFor(doc: GoogleSpreadsheet, sheetId: string): string {
-  const docId = doc?.spreadsheetId || 'default';
+  const docId = doc.spreadsheetId || 'default';
   return `${docId}:${sheetId}`;
 }
 
@@ -47,10 +51,11 @@ async function getSheetRowsCached(
   }
 
   const loadingPromise = (async (): Promise<TroopRow[]> => {
-    let sheet = (doc as unknown as { sheetsById?: Record<string, { getRows: () => Promise<TroopRow[]> }> }).sheetsById?.[sheetId];
+    const spreadsheet = doc as SpreadsheetWithSheets;
+    let sheet = spreadsheet.sheetsById?.[sheetId];
     if (!sheet) {
       await doc.loadInfo();
-      sheet = (doc as unknown as { sheetsById?: Record<string, { getRows: () => Promise<TroopRow[]> }> }).sheetsById?.[sheetId];
+      sheet = spreadsheet.sheetsById?.[sheetId];
     }
     if (!sheet) throw new Error(`Sheet not found: ${sheetId}`);
 

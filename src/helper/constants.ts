@@ -42,3 +42,10 @@ export const COST_LABELS: Record<string, string> = {
   kePoints: 'KE Points::',
   hePoints: 'Heal Points::',
 };
+
+export const VALIDATION = {
+  MAX_GEAR_LEVEL: 100,
+  MAX_TIER: 12,
+  MAX_SKILL_LEVEL: 60,
+  ITS_DAMAGE_COEFFICIENT: 0.005,
+} as const;

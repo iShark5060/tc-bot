@@ -1,16 +1,16 @@
-// @ts-nocheck
-
-import js from '@eslint/js';
+import eslint from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import n from 'eslint-plugin-n';
 import promise from 'eslint-plugin-promise';
+import tseslint from 'typescript-eslint';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '*.php', 'tests/**'],
+    ignores: ['dist/**', 'node_modules/**', '*.php', 'tests/**', '*.cjs'],
   },
-  js.configs.recommended,
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
   n.configs['flat/recommended'],
   promise.configs['flat/recommended'],
   prettier,
@@ -63,7 +63,7 @@ export default [
       'no-lonely-if': 'error',
       'no-multi-spaces': 'error',
       'no-multiple-empty-lines': ['error', { max: 2, maxEOF: 1, maxBOF: 0 }],
-      'no-shadow': ['error', { allow: ['err', 'resolve', 'reject'] }],
+      'no-shadow': ['error', { allow: ['err', 'resolve', 'reject', 'Client'] }],
       'no-trailing-spaces': ['error'],
       'no-var': 'error',
       'no-undef': 'off',

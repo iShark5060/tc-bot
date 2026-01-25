@@ -1,13 +1,14 @@
 import '@dotenvx/dotenvx/config';
+import io from '@pm2/io';
 import { Client, Collection, GatewayIntentBits, ChannelType, type VoiceChannel, type StageChannel } from 'discord.js';
 import { JWT } from 'google-auth-library';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import io from '@pm2/io';
 
 import GoogleCredentials from '../client_secret.json' with { type: 'json' };
+import { stopLatencyMonitoring } from './events/clientReady.js';
 import { debugLogger } from './helper/debugLogger.js';
 import { notifyDiscord } from './helper/discordNotification.js';
 import { calculateMopupTiming } from './helper/mopup.js';
@@ -18,7 +19,7 @@ import type { Command, ExtendedClient } from './types/index.js';
 declare module 'discord.js' {
   interface Client {
     commands: Collection<string, Command>;
-    GoogleSheet: GoogleSpreadsheet;
+    GoogleSheet: GoogleSpreadsheet | null;
   }
 }
 
@@ -36,7 +37,7 @@ const client: ExtendedClient = new Client({
 }) as ExtendedClient;
 
 client.commands = new Collection<string, Command>();
-client.GoogleSheet = null as unknown as GoogleSpreadsheet;
+client.GoogleSheet = null;
 
 function validateEnvironment(): void {
   debugLogger.boot('Validating environment variables');
@@ -121,6 +122,9 @@ async function gracefulShutdown(): Promise<void> {
       mopupTimer = null;
     }
 
+    debugLogger.step('SHUTDOWN', 'Stopping latency monitoring');
+    stopLatencyMonitoring();
+
     try {
       debugLogger.step('SHUTDOWN', 'Stopping WAL checkpoint');
       usageTracker.stopWALCheckpoint();
@@ -176,9 +180,11 @@ async function initializeGoogleSheets(): Promise<void> {
   debugLogger.step('GOOGLE_SHEETS', 'Prefetching sheet rows to warm cache', {
     sheetId: process.env.GOOGLE_SHEET_ID,
   });
-  await getSheetRowsCached(client.GoogleSheet, process.env.GOOGLE_SHEET_ID!);
-  console.log('[BOOT] Prefetched Google Sheet rows to warm cache.');
-  console.log('[BOOT] Loaded Google Sheet:', client.GoogleSheet.title);
+  if (client.GoogleSheet) {
+    await getSheetRowsCached(client.GoogleSheet, process.env.GOOGLE_SHEET_ID!);
+    console.log('[BOOT] Prefetched Google Sheet rows to warm cache.');
+    console.log('[BOOT] Loaded Google Sheet:', client.GoogleSheet.title);
+  }
   debugLogger.info('GOOGLE_SHEETS', 'Google Sheets initialized successfully', {
     title: client.GoogleSheet.title,
     sheetId: client.GoogleSheet.spreadsheetId,
@@ -189,15 +195,16 @@ async function loadCommands(): Promise<void> {
   debugLogger.step('COMMANDS', 'Loading commands from filesystem');
   const commandsPath = path.join(__dirname, 'commands');
   debugLogger.debug('COMMANDS', 'Commands directory', { path: commandsPath });
-  const entries = fs.readdirSync(commandsPath);
+  const entries = await fs.readdir(commandsPath);
 
   for (const entry of entries) {
     const entryPath = path.join(commandsPath, entry);
-    const stat = fs.lstatSync(entryPath);
+    const stat = await fs.lstat(entryPath);
 
     if (stat.isDirectory()) {
       debugLogger.debug('COMMANDS', 'Processing command directory', { directory: entry });
-      const files = fs.readdirSync(entryPath).filter((f) => f.endsWith('.js'));
+      const allFiles = await fs.readdir(entryPath);
+      const files = allFiles.filter((f) => f.endsWith('.js'));
       debugLogger.debug('COMMANDS', 'Found command files in directory', {
         directory: entry,
         files: files.length,
@@ -249,7 +256,8 @@ async function loadEvents(): Promise<void> {
   debugLogger.step('EVENTS', 'Loading events from filesystem');
   const eventsPath = path.join(__dirname, 'events');
   debugLogger.debug('EVENTS', 'Events directory', { path: eventsPath });
-  const eventFiles = fs.readdirSync(eventsPath).filter((f) => f.endsWith('.js'));
+  const allFiles = await fs.readdir(eventsPath);
+  const eventFiles = allFiles.filter((f) => f.endsWith('.js'));
   debugLogger.debug('EVENTS', 'Found event files', { count: eventFiles.length });
 
   for (const file of eventFiles) {

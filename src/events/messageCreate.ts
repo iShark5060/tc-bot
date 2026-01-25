@@ -1,6 +1,7 @@
 import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
-import { handleMessageError } from '../helper/errorHandler.js';
+
 import { debugLogger } from '../helper/debugLogger.js';
+import { handleMessageError } from '../helper/errorHandler.js';
 import { buildMopupEmbed } from '../helper/mopup.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';

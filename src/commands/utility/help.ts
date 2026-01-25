@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField, Colors, type ChatInputCommandInteraction } from 'discord.js';
+
 import { BOT_ICON_URL } from '../../helper/constants.js';
 import type { Command, ExtendedClient } from '../../types/index.js';
 
