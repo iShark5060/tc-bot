@@ -5,6 +5,7 @@ module.exports = {
     {
       name: 'TC-Bot',
       script: './dist/tc-bot.js',
+      args: '--reason "PM2 restart"',
       cwd: path.dirname(__filename),
       interpreter: 'node',
       instances: 1,

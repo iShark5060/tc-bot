@@ -41,6 +41,32 @@ client.commands = new Collection<string, Command>();
 client.GoogleSheets = null;
 
 /**
+ * Parses a --reason "some reason" argument from process.argv.
+ * @returns The reason string if provided, or undefined
+ */
+function parseCliReason(): string | undefined {
+  const idx = process.argv.indexOf('--reason');
+  if (idx !== -1 && idx + 1 < process.argv.length) {
+    return process.argv[idx + 1];
+  }
+  return undefined;
+}
+
+const startupReason = parseCliReason();
+
+/** Tracks why the bot is shutting down, included in Discord notifications */
+let shutdownReason = '';
+
+/**
+ * Sets the shutdown reason for the next graceful shutdown.
+ * Used by the reboot command to provide context in notifications.
+ * @param reason - Human-readable reason for shutdown
+ */
+export function setShutdownReason(reason: string): void {
+  shutdownReason = reason;
+}
+
+/**
  * Validates that all required environment variables are present.
  * @throws Error if any required variables are missing
  */
@@ -61,8 +87,14 @@ function validateEnvironment(): void {
 
 validateEnvironment();
 
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', () => {
+  if (!shutdownReason) shutdownReason = 'Received SIGTERM';
+  gracefulShutdown();
+});
+process.on('SIGINT', () => {
+  shutdownReason = 'Received SIGINT';
+  gracefulShutdown();
+});
 
 process.on('unhandledRejection', (reason, promise) => {
   debugLogger.error('PROCESS', 'Unhandled Promise Rejection', {
@@ -77,6 +109,7 @@ process.on('uncaughtException', (error) => {
     error,
   });
   console.error('[PROCESS] Uncaught exception:', error);
+  shutdownReason = `Uncaught exception: ${error.message}`;
   const forceExitTimeout = setTimeout(() => {
     console.error('[PROCESS] Forced exit after uncaught exception');
     // eslint-disable-next-line n/no-process-exit -- Required for undefined state recovery
@@ -93,7 +126,10 @@ let mopupTimer: NodeJS.Timeout | null = null;
   debugLogger.boot('Starting bot initialization');
   try {
     debugLogger.step('BOOT', 'Step 1: Notifying Discord of startup');
-    await notifyDiscord({ type: 'startup' });
+    await notifyDiscord({
+      type: 'startup',
+      message: startupReason ? `Reason: ${startupReason}` : '',
+    });
 
     debugLogger.step('BOOT', 'Step 2: Initializing Google Sheets');
     await initializeGoogleSheets();
@@ -161,7 +197,10 @@ async function gracefulShutdown(): Promise<void> {
       console.error('[SHUTDOWN] WAL checkpoint error:', e);
     }
     debugLogger.step('SHUTDOWN', 'Notifying Discord of shutdown');
-    await notifyDiscord({ type: 'shutdown' });
+    await notifyDiscord({
+      type: 'shutdown',
+      message: shutdownReason ? `Reason: ${shutdownReason}` : '',
+    });
     debugLogger.step('SHUTDOWN', 'Destroying Discord client');
     client.destroy();
     debugLogger.step('SHUTDOWN', 'Bot shut down successfully');

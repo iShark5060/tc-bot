@@ -69,10 +69,11 @@ jobs:
 
       - name: Restart PM2
         run: |
+          COMMIT_MSG=$(git log -1 --format='%s' | head -c 100)
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "cd ${{ secrets.SERVER_PATH }} && source ~/.nvm/nvm.sh && pm2 restart TC-Bot --update-env"
+            "cd ${{ secrets.SERVER_PATH }} && source ~/.nvm/nvm.sh && pm2 restart TC-Bot --update-env -- --reason 'CI deploy: ${COMMIT_MSG}'"
 
       - name: Cleanup SSH key
         if: always()
