@@ -52,7 +52,7 @@ function parseCliReason(): string | undefined {
     delete process.env.DEPLOY_REASON;
     return envReason;
   }
-  const idx = process.argv.indexOf('--reason');
+  const idx = process.argv.lastIndexOf('--reason');
   if (idx !== -1 && idx + 1 < process.argv.length) {
     return process.argv[idx + 1];
   }
