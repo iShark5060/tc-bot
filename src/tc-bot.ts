@@ -116,7 +116,7 @@ process.on('uncaughtException', (error) => {
     error,
   });
   console.error('[PROCESS] Uncaught exception:', error);
-  if (!shutdownReason) shutdownReason = `Uncaught exception: ${error.message}`;
+  if (!shutdownReason) shutdownReason = `Uncaught exception: ${error instanceof Error ? error.message : String(error)}`;
   const forceExitTimeout = setTimeout(() => {
     console.error('[PROCESS] Forced exit after uncaught exception');
     // eslint-disable-next-line n/no-process-exit -- Required for undefined state recovery
