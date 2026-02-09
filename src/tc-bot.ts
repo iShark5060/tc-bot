@@ -41,10 +41,17 @@ client.commands = new Collection<string, Command>();
 client.GoogleSheets = null;
 
 /**
- * Parses a --reason "some reason" argument from process.argv.
+ * Determines the startup reason from environment or CLI args.
+ * Priority: DEPLOY_REASON env var (set by CI) > --reason CLI arg (from ecosystem.config.cjs).
+ * The env var is cleared after reading so child processes don't inherit it.
  * @returns The reason string if provided, or undefined
  */
 function parseCliReason(): string | undefined {
+  const envReason = process.env.DEPLOY_REASON;
+  if (envReason) {
+    delete process.env.DEPLOY_REASON;
+    return envReason;
+  }
   const idx = process.argv.indexOf('--reason');
   if (idx !== -1 && idx + 1 < process.argv.length) {
     return process.argv[idx + 1];
@@ -109,7 +116,7 @@ process.on('uncaughtException', (error) => {
     error,
   });
   console.error('[PROCESS] Uncaught exception:', error);
-  shutdownReason = `Uncaught exception: ${error.message}`;
+  if (!shutdownReason) shutdownReason = `Uncaught exception: ${error.message}`;
   const forceExitTimeout = setTimeout(() => {
     console.error('[PROCESS] Forced exit after uncaught exception');
     // eslint-disable-next-line n/no-process-exit -- Required for undefined state recovery
