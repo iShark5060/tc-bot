@@ -92,7 +92,7 @@ process.on('SIGTERM', () => {
   gracefulShutdown();
 });
 process.on('SIGINT', () => {
-  shutdownReason = 'Received SIGINT';
+  if (!shutdownReason) shutdownReason = 'Received SIGINT';
   gracefulShutdown();
 });
 

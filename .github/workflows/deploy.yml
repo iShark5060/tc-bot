@@ -70,6 +70,7 @@ jobs:
       - name: Restart PM2
         run: |
           COMMIT_MSG=$(git log -1 --format='%s' | head -c 100)
+          COMMIT_MSG=$(printf '%s' "$COMMIT_MSG" | tr -cd 'a-zA-Z0-9 ._:,/()-')
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
