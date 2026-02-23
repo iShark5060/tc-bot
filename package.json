@@ -40,6 +40,7 @@
     "google-auth-library": "^10.5.0"
   },
   "overrides": {
+    "minimatch@>=9": "^10.2.2",
     "undici": "^7.19.2"
   },
   "devDependencies": {
