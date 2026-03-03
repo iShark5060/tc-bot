@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import GoogleCredentials from '../client_secret.json' with { type: 'json' };
 import { stopLatencyMonitoring } from './events/clientReady.js';
-import { TIMERS } from './helper/constants.js';
+import { ENABLE_LEGACY_MESSAGE_COMMANDS, TIMERS } from './helper/constants.js';
 import { debugLogger } from './helper/debugLogger.js';
 import { notifyDiscord } from './helper/discordNotification.js';
 import { calculateMopupTiming } from './helper/mopup.js';
@@ -29,12 +29,16 @@ io.init();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const client: ExtendedClient = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-  ],
-}) as ExtendedClient;
+const intents = [
+  GatewayIntentBits.Guilds,
+  GatewayIntentBits.GuildMessages,
+];
+
+if (ENABLE_LEGACY_MESSAGE_COMMANDS) {
+  intents.push(GatewayIntentBits.MessageContent);
+}
+
+const client: ExtendedClient = new Client({ intents }) as ExtendedClient;
 
 client.commands = new Collection<string, Command>();
 client.GoogleSheets = null;
