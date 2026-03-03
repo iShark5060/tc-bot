@@ -16,6 +16,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_CLIENT_SECRET_BASE64: ${{ secrets.GOOGLE_CLIENT_SECRET_BASE64 }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_PATH: ${{ secrets.SERVER_PATH }}
 
     steps:
       - name: Checkout code
@@ -32,7 +39,11 @@ jobs:
 
       - name: Create client_secret.json from secret
         run: |
-          echo "${{ secrets.GOOGLE_CLIENT_SECRET_BASE64 }}" | base64 -d > client_secret.json
+          if [ -z "$GOOGLE_CLIENT_SECRET_BASE64" ]; then
+            echo "ERROR: GOOGLE_CLIENT_SECRET_BASE64 secret is missing or empty."
+            exit 1
+          fi
+          printf '%s' "$GOOGLE_CLIENT_SECRET_BASE64" | base64 -d > client_secret.json
 
       - name: Build TypeScript
         run: npm run build
@@ -46,16 +57,24 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          if [ -z "${{ secrets.SERVER_KNOWN_HOST }}" ]; then
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "ERROR: SSH_PRIVATE_KEY secret is missing or empty."
+            exit 1
+          fi
+          if [ -z "$SERVER_KNOWN_HOST" ]; then
             echo "ERROR: SERVER_KNOWN_HOST secret is missing or empty."
             exit 1
           fi
-          echo "${{ secrets.SERVER_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SERVER_KNOWN_HOST" >> ~/.ssh/known_hosts
 
       - name: Deploy to server
         run: |
+          if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PATH" ]; then
+            echo "ERROR: SERVER_USER, SERVER_HOST, or SERVER_PATH secret is missing or empty."
+            exit 1
+          fi
           mkdir -p /tmp/deploy
           cp -r dist/ /tmp/deploy/
           cp package*.json /tmp/deploy/
@@ -69,17 +88,21 @@ jobs:
             --exclude='data/' \
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             /tmp/deploy/ \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
+            "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
 
       - name: Restart PM2
         run: |
+          if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PATH" ]; then
+            echo "ERROR: SERVER_USER, SERVER_HOST, or SERVER_PATH secret is missing or empty."
+            exit 1
+          fi
           COMMIT_MSG=$(git log -1 --format='%s' | head -c 100)
           COMMIT_MSG=$(printf '%s' "$COMMIT_MSG" | tr -cd 'a-zA-Z0-9 ._:,/()-')
           ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            "cd ${{ secrets.SERVER_PATH }} && source ~/.nvm/nvm.sh && export DEPLOY_REASON='CI deploy: ${COMMIT_MSG}' && pm2 restart TC-Bot --update-env"
+            "$SERVER_USER@$SERVER_HOST" \
+            "cd \"$SERVER_PATH\" && source ~/.nvm/nvm.sh && export DEPLOY_REASON='CI deploy: ${COMMIT_MSG}' && pm2 restart TC-Bot --update-env"
 
       - name: Cleanup SSH key
         if: always()
