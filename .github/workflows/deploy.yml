@@ -71,11 +71,6 @@ jobs:
           require_non_empty "SERVER_USER" "$SERVER_USER"
           require_non_empty "SERVER_PATH" "$SERVER_PATH"
 
-          # Optional destination override: validate when provided.
-          if [ -n "${RSYNC_DEST:-}" ]; then
-            require_non_empty "RSYNC_DEST" "$RSYNC_DEST"
-          fi
-
           case "$SERVER_PATH" in
             ""|"/"|"."|".."|"~"|"~/"|"/home"|"/root")
               echo "ERROR: SERVER_PATH has unsafe value: '$SERVER_PATH'"
@@ -96,10 +91,6 @@ jobs:
 
       - name: Deploy to server
         run: |
-          if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PATH" ]; then
-            echo "ERROR: SERVER_USER, SERVER_HOST, or SERVER_PATH secret is missing or empty."
-            exit 1
-          fi
           mkdir -p /tmp/deploy
           cp -r dist/ /tmp/deploy/
           cp package*.json /tmp/deploy/
