@@ -61,7 +61,7 @@ function parseCliReason(): string | undefined {
 const startupReason = parseCliReason();
 
 function getSpreadsheetId(): string {
-  return process.env.GOOGLE_SPREADSHEET_ID || process.env.GOOGLE_SHEET_URL || '';
+  return process.env.GOOGLE_SPREADSHEET_ID || '';
 }
 
 /** Tracks why the bot is shutting down, included in Discord notifications */
