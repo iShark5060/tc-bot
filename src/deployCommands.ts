@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 const TOKEN = process.env.TOKEN;
 if (!TOKEN) {
   console.error('[DEPLOY] Missing TOKEN in environment variables.');
-  process.exitCode = 1;
+  throw new Error('Missing TOKEN in environment variables');
 }
 
 const rest = new REST({ version: '10' }).setToken(TOKEN!);
@@ -30,7 +30,6 @@ const rest = new REST({ version: '10' }).setToken(TOKEN!);
 (async function deployCommands(): Promise<void> {
   try {
     const commands = await loadCommands();
-    await clearExistingCommands();
     await deployNewCommands(commands);
   } catch (error) {
     console.error('[DEPLOY] Failed to deploy commands:', error);
@@ -80,31 +79,6 @@ async function loadCommands(): Promise<unknown[]> {
 }
 
 /**
- * Clears all existing slash commands from Discord.
- * Removes both guild-specific and global commands.
- */
-async function clearExistingCommands(): Promise<void> {
-  try {
-    await rest.put(
-      Routes.applicationGuildCommands(
-        process.env.CLIENT_ID!,
-        process.env.GUILD_ID!,
-      ),
-      { body: [] },
-    );
-    console.log('[DEPLOY] Deleted all guild commands.');
-
-    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID!), {
-      body: [],
-    });
-    console.log('[DEPLOY] Deleted all global commands.');
-  } catch (error) {
-    console.error('[DEPLOY] Failed to clear existing commands:', error);
-    throw error;
-  }
-}
-
-/**
  * Deploys command definitions to Discord as global application commands.
  * Includes a 3-second delay for cancellation opportunity.
  * @param commands - Array of command JSON data to deploy
@@ -118,8 +92,21 @@ async function deployNewCommands(commands: unknown[]): Promise<void> {
   console.log('[DEPLOY] Starting in 3 seconds... (Ctrl+C to cancel)');
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
-  const data = (await rest.put(Routes.applicationCommands(process.env.CLIENT_ID!), {
+  const clientId = process.env.CLIENT_ID;
+  if (!clientId) {
+    throw new Error('Missing CLIENT_ID in environment variables');
+  }
+
+  const guildId = process.env.GUILD_ID;
+  if (guildId) {
+    const guildData = (await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+      body: commands,
+    })) as unknown[];
+    console.log(`[DEPLOY] Successfully deployed ${guildData.length} guild commands.`);
+  }
+
+  const globalData = (await rest.put(Routes.applicationCommands(clientId), {
     body: commands,
   })) as unknown[];
-  console.log(`[DEPLOY] Successfully deployed ${data.length} commands.`);
+  console.log(`[DEPLOY] Successfully deployed ${globalData.length} global commands.`);
 }

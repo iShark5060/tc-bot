@@ -8,6 +8,7 @@ const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
 const CHECKPOINT_INTERVAL_MS = Number(
   process.env.CHECKPOINT_INTERVAL_MS || 300000,
 );
+const RETENTION_DAYS = Number(process.env.METRICS_RETENTION_DAYS || 90);
 
 let db: Database.Database | null = null;
 let checkpointTimer: NodeJS.Timeout | null = null;
@@ -15,6 +16,7 @@ let checkpointTimer: NodeJS.Timeout | null = null;
 let insertStmt: Statement | null = null;
 let totalsStmt: Statement | null = null;
 let topCommandsStmt: Statement | null = null;
+let cleanupStmt: Statement | null = null;
 
 function ensureDir(filePath: string): void {
   const dir = path.dirname(filePath);
@@ -75,7 +77,22 @@ function initDb(): void {
     LIMIT ?
   `);
 
+  cleanupStmt = db.prepare(`
+    DELETE FROM command_usage
+    WHERE created_at < datetime('now', ?)
+  `);
+
+  purgeOldRecords();
+
   console.log('[USAGE:SQLite] Initialized at', DB_PATH);
+}
+
+function purgeOldRecords(): void {
+  if (!cleanupStmt) return;
+  if (!Number.isFinite(RETENTION_DAYS) || RETENTION_DAYS <= 0) return;
+
+  const keepWindow = `-${Math.floor(RETENTION_DAYS)} days`;
+  cleanupStmt.run(keepWindow);
 }
 
 /**
@@ -165,9 +182,11 @@ export function checkpoint(mode = 'TRUNCATE'): void {
  */
 export function startWALCheckpoint(intervalMs: number | null = 300000): void {
   initDb();
+  purgeOldRecords();
   if (checkpointTimer) return;
   checkpointTimer = setInterval(() => {
     checkpoint('TRUNCATE');
+    purgeOldRecords();
   }, intervalMs ?? CHECKPOINT_INTERVAL_MS);
   checkpointTimer.unref?.();
   console.log('[USAGE:SQLite] WAL checkpoint timer started:', intervalMs, 'ms');
@@ -194,6 +213,7 @@ export function closeDb(): void {
       insertStmt = null;
       totalsStmt = null;
       topCommandsStmt = null;
+      cleanupStmt = null;
       db.close();
       db = null;
       console.log('[USAGE:SQLite] Database closed');

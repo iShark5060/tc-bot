@@ -48,7 +48,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          if [ -z "${{ secrets.SERVER_KNOWN_HOST }}" ]; then
+            echo "ERROR: SERVER_KNOWN_HOST secret is missing or empty."
+            exit 1
+          fi
+          echo "${{ secrets.SERVER_KNOWN_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Deploy to server
         run: |
@@ -63,7 +67,7 @@ jobs:
             --exclude='.env' \
             --exclude='logs/' \
             --exclude='data/' \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             /tmp/deploy/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PATH }}/
 
@@ -72,7 +76,8 @@ jobs:
           COMMIT_MSG=$(git log -1 --format='%s' | head -c 100)
           COMMIT_MSG=$(printf '%s' "$COMMIT_MSG" | tr -cd 'a-zA-Z0-9 ._:,/()-')
           ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             "cd ${{ secrets.SERVER_PATH }} && source ~/.nvm/nvm.sh && export DEPLOY_REASON='CI deploy: ${COMMIT_MSG}' && pm2 restart TC-Bot --update-env"
 
