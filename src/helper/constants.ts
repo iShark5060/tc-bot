@@ -81,5 +81,10 @@ export const TIMERS = {
   LATENCY_MONITOR_INTERVAL_MS: 30 * 1000,
 } as const;
 
-/** Channel name where message commands are processed */
-export const MESSAGE_COMMAND_CHANNEL = process.env.MESSAGE_COMMAND_CHANNEL || 'tc-autobot';
+/** Enable legacy message commands (disabled by default for least privilege) */
+export const ENABLE_LEGACY_MESSAGE_COMMANDS =
+  process.env.ENABLE_LEGACY_MESSAGE_COMMANDS === 'true' ||
+  process.env.ENABLE_LEGACY_MESSAGE_COMMANDS === '1';
+
+/** Channel ID where legacy message commands are processed */
+export const MESSAGE_COMMAND_CHANNEL_ID = process.env.MESSAGE_COMMAND_CHANNEL_ID || '';

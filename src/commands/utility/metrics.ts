@@ -1,4 +1,10 @@
-import { SlashCommandBuilder, EmbedBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  Colors,
+  PermissionFlagsBits,
+  type ChatInputCommandInteraction,
+} from 'discord.js';
 
 import { BOT_ICON_URL, METRICS_TOP_LIMIT } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
@@ -20,6 +26,7 @@ const metrics: Command = {
   data: new SlashCommandBuilder()
     .setName('metrics')
     .setDescription('Show command usage metrics')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addStringOption((option) =>
       option
         .setName('period')

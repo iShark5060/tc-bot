@@ -1,6 +1,9 @@
 import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
 
-import { MESSAGE_COMMAND_CHANNEL } from '../helper/constants.js';
+import {
+  ENABLE_LEGACY_MESSAGE_COMMANDS,
+  MESSAGE_COMMAND_CHANNEL_ID,
+} from '../helper/constants.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { buildMopupEmbed } from '../helper/mopup.js';
@@ -33,7 +36,6 @@ const messageCreate: Event = {
       author: message.author?.username,
       channelId: message.channelId,
       channelName,
-      content: message.content.substring(0, 100),
       isBot: message.author?.bot,
     });
 
@@ -123,8 +125,10 @@ const messageCreate: Event = {
  * @returns True if the message should be processed
  */
 function shouldProcessMessage(message: Message): boolean {
+  if (!ENABLE_LEGACY_MESSAGE_COMMANDS) return false;
   if (message.channel.type !== ChannelType.GuildText) return false;
-  return message.channel.name === MESSAGE_COMMAND_CHANNEL && !message.author.bot;
+  if (!MESSAGE_COMMAND_CHANNEL_ID) return false;
+  return message.channelId === MESSAGE_COMMAND_CHANNEL_ID && !message.author.bot;
 }
 
 export default messageCreate;

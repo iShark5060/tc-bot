@@ -1,7 +1,7 @@
 import '@dotenvx/dotenvx/config';
 import { sheets } from '@googleapis/sheets';
 import io from '@pm2/io';
-import { Client, Collection, GatewayIntentBits, ChannelType, type VoiceChannel, type StageChannel } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, ChannelType, Events, type VoiceChannel, type StageChannel } from 'discord.js';
 import { JWT } from 'google-auth-library';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -32,7 +32,6 @@ const __dirname = path.dirname(__filename);
 const client: ExtendedClient = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMessages,
   ],
 }) as ExtendedClient;
@@ -61,6 +60,10 @@ function parseCliReason(): string | undefined {
 
 const startupReason = parseCliReason();
 
+function getSpreadsheetId(): string {
+  return process.env.GOOGLE_SPREADSHEET_ID || process.env.GOOGLE_SHEET_URL || '';
+}
+
 /** Tracks why the bot is shutting down, included in Discord notifications */
 let shutdownReason = '';
 
@@ -79,9 +82,12 @@ export function setShutdownReason(reason: string): void {
  */
 function validateEnvironment(): void {
   debugLogger.boot('Validating environment variables');
-  const required = ['TOKEN', 'CLIENT_ID', 'GUILD_ID', 'GOOGLE_SHEET_URL', 'GOOGLE_SHEET_ID'];
+  const required = ['TOKEN', 'CLIENT_ID', 'GUILD_ID', 'GOOGLE_SHEET_ID'];
 
   const missing = required.filter((key) => !process.env[key]);
+  if (!getSpreadsheetId()) {
+    missing.push('GOOGLE_SPREADSHEET_ID');
+  }
 
   if (missing.length > 0) {
     debugLogger.error('BOOT', 'Missing required environment variables', { missing });
@@ -147,17 +153,20 @@ let mopupTimer: NodeJS.Timeout | null = null;
     debugLogger.step('BOOT', 'Step 4: Loading events');
     await loadEvents();
 
-    debugLogger.step('BOOT', 'Step 5: Starting mopup timer');
-    startMopupTimer();
-
-    debugLogger.step('BOOT', 'Step 6: Starting WAL checkpoint');
+    debugLogger.step('BOOT', 'Step 5: Starting WAL checkpoint');
     usageTracker.startWALCheckpoint(TIMERS.WAL_CHECKPOINT_INTERVAL_MS);
 
-    debugLogger.step('BOOT', 'Step 7: Updating mopup channels');
-    await updateMopupChannels();
-
-    debugLogger.step('BOOT', 'Step 8: Logging in to Discord');
+    debugLogger.step('BOOT', 'Step 6: Logging in to Discord');
     await client.login(process.env.TOKEN);
+
+    debugLogger.step('BOOT', 'Step 7: Waiting for ready event');
+    await waitForClientReady();
+
+    debugLogger.step('BOOT', 'Step 8: Starting mopup timer');
+    startMopupTimer();
+
+    debugLogger.step('BOOT', 'Step 9: Updating mopup channels');
+    await updateMopupChannels();
     debugLogger.boot('Bot initialization completed successfully');
   } catch (error) {
     debugLogger.error('BOOT', 'Failed to initialize bot', { error: error as Error });
@@ -241,19 +250,19 @@ async function initializeGoogleSheets(): Promise<void> {
   });
 
   debugLogger.debug('GOOGLE_SHEETS', 'Creating Google Sheets API client', {
-    spreadsheetId: process.env.GOOGLE_SHEET_URL,
+    spreadsheetId: getSpreadsheetId(),
   });
 
   const sheetsApi = sheets({ version: 'v4', auth });
 
   client.GoogleSheets = {
     sheetsApi,
-    spreadsheetId: process.env.GOOGLE_SHEET_URL!,
+    spreadsheetId: getSpreadsheetId(),
   };
 
   debugLogger.step('GOOGLE_SHEETS', 'Fetching spreadsheet metadata');
   const response = await sheetsApi.spreadsheets.get({
-    spreadsheetId: process.env.GOOGLE_SHEET_URL!,
+    spreadsheetId: getSpreadsheetId(),
     includeGridData: false,
   });
 
@@ -268,7 +277,7 @@ async function initializeGoogleSheets(): Promise<void> {
 
   debugLogger.info('GOOGLE_SHEETS', 'Google Sheets initialized successfully', {
     title,
-    spreadsheetId: process.env.GOOGLE_SHEET_URL,
+    spreadsheetId: getSpreadsheetId(),
   });
 }
 
@@ -400,10 +409,33 @@ function startMopupTimer(): void {
     channel1: process.env.CHANNEL_ID1,
     channel2: process.env.CHANNEL_ID2,
   });
+  let updateInProgress = false;
   mopupTimer = setInterval(() => {
+    if (updateInProgress) {
+      debugLogger.warn('MOPUP', 'Skipping timer tick: previous update still running');
+      return;
+    }
+    updateInProgress = true;
     debugLogger.step('MOPUP', 'Mopup timer triggered');
-    updateMopupChannels();
+    void updateMopupChannels()
+      .catch((error) => {
+        debugLogger.error('MOPUP', 'Unhandled mopup timer update failure', {
+          error: error as Error,
+        });
+      })
+      .finally(() => {
+        updateInProgress = false;
+      });
   }, TIMERS.MOPUP_INTERVAL_MS);
+}
+
+function waitForClientReady(): Promise<void> {
+  if (client.isReady()) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    client.once(Events.ClientReady, () => resolve());
+  });
 }
 
 /**

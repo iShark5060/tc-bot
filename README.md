@@ -56,8 +56,15 @@ CHANNEL_ID1=123456
 # Channel for Autoupdated Mopup info (Timer).
 CHANNEL_ID2=123456
 
-# GoogleSheet URL with the data
-GOOGLE_SHEET_URL=blablablub
+# Legacy message command support (optional, disabled by default)
+ENABLE_LEGACY_MESSAGE_COMMANDS=false
+# Channel ID for legacy !tcmu command (required only when enabled)
+MESSAGE_COMMAND_CHANNEL_ID=123456
+
+# Google Spreadsheet ID (preferred)
+GOOGLE_SPREADSHEET_ID=12345
+# Backward compatibility alias (optional, deprecated)
+GOOGLE_SHEET_URL=12345
 # GoogleSheet ID with the data
 GOOGLE_SHEET_ID=12345
 # Cache time in ms
@@ -68,8 +75,8 @@ WEBHOOK_ID=123456
 # Webhook URL for Discord Notifications when the bot starts (token part).
 WEBHOOK_TOKEN=blablablublala
 
-# Message Command Channel (limits the !tcmu command to this channel).
-MESSAGE_COMMAND_CHANNEL=tc-autobot
+# Metrics retention in days (default 90)
+METRICS_RETENTION_DAYS=90
 ```
 
 Unless you have a copy of the Theorycrafters Google Docs sheet, you probably will not be able to use the Healing/ITS function.
