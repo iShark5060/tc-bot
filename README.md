@@ -63,8 +63,6 @@ MESSAGE_COMMAND_CHANNEL_ID=123456
 
 # Google Spreadsheet ID (preferred)
 GOOGLE_SPREADSHEET_ID=12345
-# Backward compatibility alias (optional, deprecated)
-GOOGLE_SHEET_URL=12345
 # GoogleSheet ID with the data
 GOOGLE_SHEET_ID=12345
 # Cache time in ms

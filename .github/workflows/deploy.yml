@@ -56,15 +56,40 @@ jobs:
 
       - name: Setup SSH
         run: |
+          require_non_empty() {
+            name="$1"
+            value="$2"
+            if [ -z "$value" ]; then
+              echo "ERROR: $name is missing or empty."
+              exit 1
+            fi
+          }
+
+          require_non_empty "SSH_PRIVATE_KEY" "$SSH_PRIVATE_KEY"
+          require_non_empty "SERVER_KNOWN_HOST" "$SERVER_KNOWN_HOST"
+          require_non_empty "SERVER_HOST" "$SERVER_HOST"
+          require_non_empty "SERVER_USER" "$SERVER_USER"
+          require_non_empty "SERVER_PATH" "$SERVER_PATH"
+
+          # Optional destination override: validate when provided.
+          if [ -n "${RSYNC_DEST:-}" ]; then
+            require_non_empty "RSYNC_DEST" "$RSYNC_DEST"
+          fi
+
+          case "$SERVER_PATH" in
+            ""|"/"|"."|".."|"~"|"~/"|"/home"|"/root")
+              echo "ERROR: SERVER_PATH has unsafe value: '$SERVER_PATH'"
+              exit 1
+              ;;
+          esac
+          case "$SERVER_PATH" in
+            "~"*|*".."*|*"/./"*|*"/../"*|*"//"*)
+              echo "ERROR: SERVER_PATH contains unsafe path segments: '$SERVER_PATH'"
+              exit 1
+              ;;
+          esac
+
           mkdir -p ~/.ssh
-          if [ -z "$SSH_PRIVATE_KEY" ]; then
-            echo "ERROR: SSH_PRIVATE_KEY secret is missing or empty."
-            exit 1
-          fi
-          if [ -z "$SERVER_KNOWN_HOST" ]; then
-            echo "ERROR: SERVER_KNOWN_HOST secret is missing or empty."
-            exit 1
-          fi
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$SERVER_KNOWN_HOST" >> ~/.ssh/known_hosts
