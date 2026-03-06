@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { numberWithCommas } from '../src/helper/formatters.js';
 
 describe('numberWithCommas', () => {
@@ -22,6 +23,8 @@ describe('numberWithCommas', () => {
   it('handles decimal numbers', () => {
     expect(numberWithCommas('1234.56')).toBe('1,234.56');
     expect(numberWithCommas('1000000.99')).toBe('1,000,000.99');
+    expect(numberWithCommas('1234.56789')).toBe('1,234.56789');
+    expect(numberWithCommas('-1234.56789')).toBe('-1,234.56789');
   });
 
   it('handles negative numbers', () => {
@@ -29,4 +32,3 @@ describe('numberWithCommas', () => {
     expect(numberWithCommas(-1234567)).toBe('-1,234,567');
   });
 });
-

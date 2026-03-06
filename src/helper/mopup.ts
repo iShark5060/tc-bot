@@ -8,11 +8,6 @@ interface MopupWindow {
   endTime: number;
 }
 
-/**
- * Calculates the current mopup status and time remaining.
- * Mopup windows alternate between even days (26-34 hours) and odd days (8-24 hours).
- * @returns MopupInfo with status ('ACTIVE' or 'INACTIVE'), color code, and time string
- */
 function calculateMopupTiming(): MopupInfo {
   const now = Date.now();
   const utcOffset = new Date().getTimezoneOffset() * 60 * 1000;
@@ -22,16 +17,13 @@ function calculateMopupTiming(): MopupInfo {
   const { startTime, endTime } = getMopupWindow(daysSinceEpoch);
   const currentTime = Math.floor(now / 1000) * 1000;
 
-  return determineMopupStatus(startTime - currentTime, endTime - currentTime, currentTime);
+  return determineMopupStatus(
+    startTime - currentTime,
+    endTime - currentTime,
+    currentTime,
+  );
 }
 
-/**
- * Gets the mopup window for a given day number.
- * Even days: 26-34 hours (8 hour window)
- * Odd days: 8-24 hours (16 hour window)
- * @param day - The day number since epoch
- * @returns MopupWindow with startTime and endTime in milliseconds
- */
 function getMopupWindow(day: number): MopupWindow {
   const dayInMs = 24 * 60 * 60 * 1000;
   const hourInMs = 60 * 60 * 1000;
@@ -48,14 +40,11 @@ function getMopupWindow(day: number): MopupWindow {
   };
 }
 
-/**
- * Determines the mopup status based on time deltas.
- * @param deltaStart - Milliseconds until mopup starts (negative if already started)
- * @param deltaEnd - Milliseconds until mopup ends (negative if already ended)
- * @param currentTime - Current time in milliseconds
- * @returns MopupInfo with status, color, formatted time string, and unix timestamp
- */
-function determineMopupStatus(deltaStart: number, deltaEnd: number, currentTime: number): MopupInfo {
+function determineMopupStatus(
+  deltaStart: number,
+  deltaEnd: number,
+  currentTime: number,
+): MopupInfo {
   if (deltaStart < 0) {
     if (deltaEnd > 0) {
       return {
@@ -81,23 +70,10 @@ function determineMopupStatus(deltaStart: number, deltaEnd: number, currentTime:
   };
 }
 
-/**
- * Formats milliseconds into HH:MM:SS time string.
- * @param ms - Milliseconds to format (uses absolute value)
- * @returns Time string in format "HH:MM:SS"
- * @example
- * formatTime(3661000)
- */
 function formatTime(ms: number): string {
   return new Date(Math.abs(ms)).toISOString().slice(11, 19);
 }
 
-/**
- * Builds an embed for displaying mopup status.
- * Used by both /mopup slash command and !tcmu message command.
- * @param startTime - The timestamp when the command started processing
- * @returns EmbedBuilder configured with mopup status, time remaining, and local timestamp
- */
 function buildMopupEmbed(startTime: number): EmbedBuilder {
   const { status, color, time, timestamp } = calculateMopupTiming();
   const duration = Date.now() - startTime;
@@ -112,4 +88,10 @@ function buildMopupEmbed(startTime: number): EmbedBuilder {
     .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
 }
 
-export { calculateMopupTiming, getMopupWindow, determineMopupStatus, formatTime, buildMopupEmbed };
+export {
+  calculateMopupTiming,
+  getMopupWindow,
+  determineMopupStatus,
+  formatTime,
+  buildMopupEmbed,
+};

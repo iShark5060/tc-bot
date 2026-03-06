@@ -1,14 +1,19 @@
-import { EmbedBuilder, SlashCommandBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  EmbedBuilder,
+  SlashCommandBuilder,
+  Colors,
+  type ChatInputCommandInteraction,
+} from 'discord.js';
 
-import { BOT_ICON_URL, GEARCHECK_LEVELS, GEARCHECK_MULTIPLIERS, VALIDATION } from '../../helper/constants.js';
+import {
+  BOT_ICON_URL,
+  GEARCHECK_LEVELS,
+  GEARCHECK_MULTIPLIERS,
+  VALIDATION,
+} from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import type { Command, GearCalculations } from '../../types/index.js';
 
-/**
- * Gear stat calculator command.
- * Calculates gear stats at all upgrade levels (0, 10, 13, 20, 30, 40, 50)
- * based on a current stat value and upgrade level.
- */
 const gearcheck: Command = {
   data: new SlashCommandBuilder()
     .setName('gearcheck')
@@ -56,21 +61,17 @@ const gearcheck: Command = {
     }
 
     const calculations = calculateGearStats(statValue, gearLevel);
-    const embed = createGearEmbed(statValue, gearLevel, calculations, startTime);
+    const embed = createGearEmbed(
+      statValue,
+      gearLevel,
+      calculations,
+      startTime,
+    );
 
     await interaction.editReply({ embeds: [embed] });
   },
 };
 
-/**
- * Calculates gear stats at all upgrade levels (0, 10, 13, 20, 30, 40, 50).
- * Derives base stat from current stat and level, then applies multipliers.
- * @param currentStat - Current stat value at the given level
- * @param currentLevel - Current upgrade level (0-100)
- * @returns Object mapping level to calculated stat string (e.g., { 0: "100.00", 10: "200.00" })
- * @example
- * calculateGearStats(120, 20)
- */
 function calculateGearStats(
   currentStat: number,
   currentLevel: number,
@@ -78,23 +79,12 @@ function calculateGearStats(
   const currentMultiplier = 1 + currentLevel / 10;
   const baseStat = currentStat / currentMultiplier;
 
-  return GEARCHECK_LEVELS.reduce(
-    (acc, level, index) => {
-      acc[level] = (baseStat * GEARCHECK_MULTIPLIERS[index]).toFixed(2);
-      return acc;
-    },
-    {} as GearCalculations,
-  );
+  return GEARCHECK_LEVELS.reduce((acc, level, index) => {
+    acc[level] = (baseStat * GEARCHECK_MULTIPLIERS[index]).toFixed(2);
+    return acc;
+  }, {} as GearCalculations);
 }
 
-/**
- * Creates a Discord embed displaying gear stat calculations.
- * @param currentStat - The current stat value
- * @param currentLevel - The current gear upgrade level
- * @param calculations - Pre-calculated stats for all upgrade levels
- * @param startTime - Timestamp when command processing started (for footer timing)
- * @returns Configured EmbedBuilder with gear stats
- */
 function createGearEmbed(
   currentStat: number,
   currentLevel: number,

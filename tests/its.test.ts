@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { calculateKills } from '../src/commands/aow/its.js';
 import { TroopRow } from '../src/types/index.js';
 

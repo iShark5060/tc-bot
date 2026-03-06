@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import { calculateGearStats } from '../src/commands/aow/gearcheck.js';
 
 describe('calculateGearStats', () => {
@@ -63,4 +64,3 @@ describe('calculateGearStats', () => {
     expect(result[50]).toBe('600.00');
   });
 });
-

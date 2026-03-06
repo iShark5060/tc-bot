@@ -6,5 +6,12 @@
   "trailingComma": "all",
   "arrowParens": "always",
   "plugins": ["@prettier/plugin-php"],
-  "parser": "php"
+  "overrides": [
+    {
+      "files": "*.php",
+      "options": {
+        "parser": "php"
+      }
+    }
+  ]
 }

@@ -1,13 +1,13 @@
-import { SlashCommandBuilder, MessageFlags, PermissionFlagsBits, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  MessageFlags,
+  PermissionFlagsBits,
+  type ChatInputCommandInteraction,
+} from 'discord.js';
 
 import { setShutdownReason } from '../../tc-bot.js';
 import type { Command } from '../../types/index.js';
 
-/**
- * Reboot command (Administrator only).
- * Initiates a graceful shutdown of the bot. PM2 will automatically restart it.
- * Requires confirmation and can only be used in the designated guild.
- */
 const reboot: Command = {
   data: new SlashCommandBuilder()
     .setName('reboot')

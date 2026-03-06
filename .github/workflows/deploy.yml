@@ -51,6 +51,20 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Typecheck tests
+        run: npm run test:typecheck
+
+      - name: Deploy slash commands
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$CLIENT_ID" ]; then
+            echo "Skipping command deploy: TOKEN or CLIENT_ID secret missing."
+            exit 0
+          fi
+          npm run deploy
+
       - name: List built files (debug)
         run: ls -la dist/
 

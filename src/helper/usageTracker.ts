@@ -2,21 +2,65 @@ import Database, { type Statement } from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type { CommandUsage, MetricsTotals, MetricsTopCommand } from '../types/index.js';
+import type {
+  CommandUsage,
+  MetricsTotals,
+  MetricsTopCommand,
+} from '../types/index.js';
 
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
 const CHECKPOINT_INTERVAL_MS = Number(
   process.env.CHECKPOINT_INTERVAL_MS || 300000,
 );
+const FLUSH_INTERVAL_MS = Number(process.env.METRICS_FLUSH_INTERVAL_MS || 1000);
+const FLUSH_BATCH_SIZE = Number(process.env.METRICS_FLUSH_BATCH_SIZE || 50);
+const MAX_QUEUE_LENGTH = Number(process.env.METRICS_MAX_QUEUE_LENGTH || 5000);
+const MAX_RETRIES = Number(process.env.METRICS_MAX_RETRIES || 3);
 const RETENTION_DAYS = Number(process.env.METRICS_RETENTION_DAYS || 90);
+const ALLOWED_CHECKPOINT_MODES = new Set([
+  'PASSIVE',
+  'FULL',
+  'RESTART',
+  'TRUNCATE',
+]);
 
 let db: Database.Database | null = null;
 let checkpointTimer: NodeJS.Timeout | null = null;
+let flushTimer: NodeJS.Timeout | null = null;
+let isFlushing = false;
 
 let insertStmt: Statement | null = null;
 let totalsStmt: Statement | null = null;
 let topCommandsStmt: Statement | null = null;
 let cleanupStmt: Statement | null = null;
+let droppedUsageEvents = 0;
+
+type UsageQueueItem = {
+  command_name: string;
+  user_id: string | null;
+  guild_id: string | null;
+  success: number;
+  error_message: string | null;
+  retryCount: number;
+};
+
+const usageQueue: UsageQueueItem[] = [];
+
+function recordDroppedUsageEvents(count: number, reason: string): void {
+  if (count <= 0) return;
+  droppedUsageEvents += count;
+  console.warn(
+    `[USAGE:SQLite] Dropped ${count} usage event(s) (${reason}). Total dropped: ${droppedUsageEvents}`,
+  );
+}
+
+function enqueueUsageEvent(item: UsageQueueItem): void {
+  usageQueue.push(item);
+  while (usageQueue.length > MAX_QUEUE_LENGTH) {
+    usageQueue.shift();
+    recordDroppedUsageEvents(1, 'queue length cap reached');
+  }
+}
 
 function ensureDir(filePath: string): void {
   const dir = path.dirname(filePath);
@@ -95,10 +139,6 @@ function purgeOldRecords(): void {
   cleanupStmt.run(keepWindow);
 }
 
-/**
- * Logs a command usage event to the SQLite database.
- * @param commandUsage - Command usage data including name, user, guild, success status, and optional error message
- */
 export function logCommandUsage({
   commandName,
   userId,
@@ -106,33 +146,108 @@ export function logCommandUsage({
   success,
   errorMessage,
 }: CommandUsage): void {
-  try {
-    initDb();
-    if (!insertStmt) return;
+  enqueueUsageEvent({
+    command_name: String(commandName || 'unknown'),
+    user_id: userId ? String(userId) : null,
+    guild_id: guildId ? String(guildId) : null,
+    success: success ? 1 : 0,
+    error_message: errorMessage ? String(errorMessage).slice(0, 1000) : null,
+    retryCount: 0,
+  });
 
-    insertStmt.run({
-      command_name: String(commandName || 'unknown'),
-      user_id: userId ? String(userId) : null,
-      guild_id: guildId ? String(guildId) : null,
-      success: success ? 1 : 0,
-      error_message: errorMessage ? String(errorMessage).slice(0, 1000) : null,
-    });
-  } catch (err) {
-    console.error('[USAGE:SQLite] Failed to log command usage:', err);
+  if (usageQueue.length >= FLUSH_BATCH_SIZE) {
+    flushUsageQueue();
+    return;
+  }
+
+  if (!flushTimer) {
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      flushUsageQueue();
+    }, FLUSH_INTERVAL_MS);
+    flushTimer.unref?.();
   }
 }
 
-/**
- * Gets aggregated metrics totals (success, failure, total counts) since a given UTC timestamp.
- * @param sinceUTC - UTC timestamp string in format 'YYYY-MM-DD HH:MM:SS'
- * @returns MetricsTotals with total_count, success_count, and failure_count
- */
+function flushUsageQueue(): void {
+  if (isFlushing || usageQueue.length === 0) return;
+
+  isFlushing = true;
+  const batch = usageQueue.splice(0, usageQueue.length);
+
+  try {
+    initDb();
+    if (!insertStmt || batch.length === 0) return;
+
+    const tx = db?.transaction((rows: UsageQueueItem[]) => {
+      for (const row of rows) {
+        insertStmt?.run({
+          command_name: row.command_name,
+          user_id: row.user_id,
+          guild_id: row.guild_id,
+          success: row.success,
+          error_message: row.error_message,
+        });
+      }
+    });
+    tx?.(batch);
+  } catch (err) {
+    console.error('[USAGE:SQLite] Failed to flush command usage batch:', err);
+
+    const retryable = batch
+      .map((item) => ({
+        ...item,
+        retryCount: item.retryCount + 1,
+      }))
+      .filter((item) => item.retryCount < MAX_RETRIES);
+
+    const droppedForRetries = batch.length - retryable.length;
+    if (droppedForRetries > 0) {
+      recordDroppedUsageEvents(droppedForRetries, 'retry limit reached');
+    }
+
+    const availableCapacity = Math.max(0, MAX_QUEUE_LENGTH - usageQueue.length);
+    if (availableCapacity <= 0) {
+      recordDroppedUsageEvents(
+        retryable.length,
+        'queue full while requeueing failed batch',
+      );
+    } else {
+      const toRequeue = retryable.slice(0, availableCapacity);
+      const droppedForCapacity = retryable.length - toRequeue.length;
+      if (droppedForCapacity > 0) {
+        recordDroppedUsageEvents(
+          droppedForCapacity,
+          'queue capacity exceeded during requeue',
+        );
+      }
+
+      if (toRequeue.length > 0) {
+        usageQueue.unshift(...toRequeue);
+      }
+    }
+  } finally {
+    isFlushing = false;
+    if (usageQueue.length > 0 && !flushTimer) {
+      flushTimer = setTimeout(() => {
+        flushTimer = null;
+        flushUsageQueue();
+      }, FLUSH_INTERVAL_MS);
+      flushTimer.unref?.();
+    }
+  }
+}
+
 export function getMetricsTotals(sinceUTC: string): MetricsTotals {
   try {
     initDb();
-    if (!totalsStmt) return { total_count: 0, success_count: 0, failure_count: 0 };
+    if (!totalsStmt) {
+      return { total_count: 0, success_count: 0, failure_count: 0 };
+    }
 
-    const result = totalsStmt.get(sinceUTC) as Partial<MetricsTotals> | undefined;
+    const result = totalsStmt.get(sinceUTC) as
+      | Partial<MetricsTotals>
+      | undefined;
     return {
       total_count: Number(result?.total_count ?? 0),
       success_count: Number(result?.success_count ?? 0),
@@ -144,13 +259,10 @@ export function getMetricsTotals(sinceUTC: string): MetricsTotals {
   }
 }
 
-/**
- * Gets the top N most used commands since a given UTC timestamp.
- * @param sinceUTC - UTC timestamp string in format 'YYYY-MM-DD HH:MM:SS'
- * @param limit - Maximum number of commands to return
- * @returns Array of MetricsTopCommand sorted by usage count (descending)
- */
-export function getTopCommands(sinceUTC: string, limit: number): MetricsTopCommand[] {
+export function getTopCommands(
+  sinceUTC: string,
+  limit: number,
+): MetricsTopCommand[] {
   try {
     initDb();
     if (!topCommandsStmt) return [];
@@ -162,24 +274,27 @@ export function getTopCommands(sinceUTC: string, limit: number): MetricsTopComma
   }
 }
 
-/**
- * Performs a WAL checkpoint on the SQLite database.
- * @param mode - Checkpoint mode ('TRUNCATE', 'RESTART', or 'PASSIVE')
- */
 export function checkpoint(mode = 'TRUNCATE'): void {
   try {
     initDb();
     if (!db) return;
-    db.pragma(`wal_checkpoint(${mode})`);
+    const normalizedMode = String(mode).toUpperCase();
+    const checkpointMode = ALLOWED_CHECKPOINT_MODES.has(normalizedMode)
+      ? normalizedMode
+      : 'TRUNCATE';
+
+    if (checkpointMode !== normalizedMode) {
+      console.warn(
+        `[USAGE:SQLite] Invalid checkpoint mode "${mode}", defaulting to TRUNCATE`,
+      );
+    }
+
+    db.pragma(`wal_checkpoint(${checkpointMode})`);
   } catch (e) {
     console.error('[USAGE:SQLite] WAL checkpoint failed:', e);
   }
 }
 
-/**
- * Starts a periodic WAL checkpoint timer.
- * @param intervalMs - Interval in milliseconds (default: 300000 = 5 minutes)
- */
 export function startWALCheckpoint(intervalMs: number | null = 300000): void {
   initDb();
   purgeOldRecords();
@@ -192,9 +307,6 @@ export function startWALCheckpoint(intervalMs: number | null = 300000): void {
   console.log('[USAGE:SQLite] WAL checkpoint timer started:', intervalMs, 'ms');
 }
 
-/**
- * Stops the WAL checkpoint timer if running.
- */
 export function stopWALCheckpoint(): void {
   if (checkpointTimer) {
     clearInterval(checkpointTimer);
@@ -203,11 +315,12 @@ export function stopWALCheckpoint(): void {
   }
 }
 
-/**
- * Closes the database connection and clears prepared statements.
- * Should be called during graceful shutdown.
- */
 export function closeDb(): void {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  flushUsageQueue();
   if (db) {
     try {
       insertStmt = null;
