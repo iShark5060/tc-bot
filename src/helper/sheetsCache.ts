@@ -5,27 +5,37 @@ import {
 } from './metrics.js';
 import { CacheEntry, GoogleSheetsClient, TroopRow } from '../types/index.js';
 
-const DEFAULT_TTL_MS = Number(process.env.GOOGLE_SHEET_CACHE || 300000);
+const FALLBACK_TTL_MS = 300000;
+const MAX_TTL_MS = 24 * 60 * 60 * 1000;
 const cache = new Map<string, CacheEntry>();
+
+function resolveTtlMs(value: unknown): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return FALLBACK_TTL_MS;
+  return Math.min(Math.floor(parsed), MAX_TTL_MS);
+}
+
+const DEFAULT_TTL_MS = resolveTtlMs(process.env.GOOGLE_SHEET_CACHE);
+if (
+  process.env.GOOGLE_SHEET_CACHE !== undefined &&
+  DEFAULT_TTL_MS === FALLBACK_TTL_MS &&
+  Number(process.env.GOOGLE_SHEET_CACHE) !== FALLBACK_TTL_MS
+) {
+  console.warn(
+    `[SHEETS:CACHE] Invalid GOOGLE_SHEET_CACHE="${process.env.GOOGLE_SHEET_CACHE}", using fallback ${FALLBACK_TTL_MS}ms`,
+  );
+}
 
 function keyFor(client: GoogleSheetsClient, sheetId: string): string {
   return `${client.spreadsheetId}:${sheetId}`;
 }
 
-/**
- * Gets sheet rows from cache or fetches from Google Sheets API if cache expired.
- * Implements deduplication - concurrent requests for the same sheet wait for the same promise.
- * @param client - GoogleSheetsClient with authenticated API and spreadsheet ID
- * @param sheetId - The sheet ID (gid) to fetch
- * @param ttlMs - Optional TTL in milliseconds (defaults to GOOGLE_SHEET_CACHE env var or 300000)
- * @returns Promise resolving to array of TroopRow objects
- */
 async function getSheetRowsCached(
   client: GoogleSheetsClient,
   sheetId: string,
   ttlMs?: number,
 ): Promise<TroopRow[]> {
-  const ttl = Number.isFinite(ttlMs) ? Number(ttlMs) : DEFAULT_TTL_MS;
+  const ttl = ttlMs === undefined ? DEFAULT_TTL_MS : resolveTtlMs(ttlMs);
   const key = keyFor(client, sheetId);
   const now = Date.now();
 
@@ -57,7 +67,7 @@ async function getSheetRowsCached(
     }
 
     const sheetTitle = sheet.properties.title;
-    const escapedTitle = sheetTitle.replace(/'/g, '\'\'');
+    const escapedTitle = sheetTitle.replace(/'/g, "''");
     const range = `'${escapedTitle}'`;
 
     const valuesResponse = await client.sheetsApi.spreadsheets.values.get({
@@ -91,12 +101,10 @@ async function getSheetRowsCached(
   }
 }
 
-/**
- * Invalidates cached rows for a specific sheet.
- * @param sheetId - The sheet ID to invalidate
- * @param client - Optional GoogleSheetsClient (if provided, only invalidates that client's cache)
- */
-function invalidateSheetCache(sheetId: string, client?: GoogleSheetsClient): void {
+function invalidateSheetCache(
+  sheetId: string,
+  client?: GoogleSheetsClient,
+): void {
   if (client) {
     cache.delete(keyFor(client, sheetId));
     return;
@@ -108,26 +116,20 @@ function invalidateSheetCache(sheetId: string, client?: GoogleSheetsClient): voi
   }
 }
 
-/**
- * Clears all cached sheet data.
- */
 function clearAllSheetCache(): void {
   cache.clear();
 }
 
-/**
- * Gets cache statistics including size, keys, and expiration times.
- * @returns Object with cache size, all keys, and expiration info for each entry
- */
 function getCacheStats(): {
   size: number;
   keys: string[];
-  expirations: Array<{ expiresAt: string; hasRows: boolean }>;
+  expirations: Array<{ key: string; expiresAt: string; hasRows: boolean }>;
 } {
   return {
     size: cache.size,
     keys: Array.from(cache.keys()),
-    expirations: Array.from(cache.values()).map((v) => ({
+    expirations: Array.from(cache.entries()).map(([key, v]) => ({
+      key,
       expiresAt: v.expiresAt ? new Date(v.expiresAt).toISOString() : '',
       hasRows: !!v.rows,
     })),

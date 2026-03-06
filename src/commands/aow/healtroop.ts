@@ -1,27 +1,41 @@
-import { EmbedBuilder, MessageFlags, SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, Colors, type ChatInputCommandInteraction, type StringSelectMenuInteraction } from 'discord.js';
+import {
+  EmbedBuilder,
+  MessageFlags,
+  SlashCommandBuilder,
+  ActionRowBuilder,
+  StringSelectMenuBuilder,
+  Colors,
+  type ChatInputCommandInteraction,
+  type StringSelectMenuInteraction,
+} from 'discord.js';
 
-import { BOT_ICON_URL, TRUNCATION_LIMITS, COST_TYPES, MODIFIER_THRESHOLDS, COST_LABELS, VALIDATION } from '../../helper/constants.js';
+import {
+  BOT_ICON_URL,
+  TRUNCATION_LIMITS,
+  COST_TYPES,
+  MODIFIER_THRESHOLDS,
+  COST_LABELS,
+  VALIDATION,
+} from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
-import { TroopRow, type Command, type HealingCosts, type ExtendedClient } from '../../types/index.js';
+import {
+  TroopRow,
+  type Command,
+  type HealingCosts,
+  type ExtendedClient,
+} from '../../types/index.js';
 
-/** Internal type for row with calculated costs */
 interface RowCalc {
   row: TroopRow;
   calc: HealingCosts | null;
 }
 
-/** Result of optimal modifier calculation */
 interface ModifierResult {
   modifier: number;
   units: number;
 }
 
-/**
- * Troop healing cost calculator command.
- * Calculates resource costs to heal troops based on amount, tier, and type.
- * Includes optimization tips for reducing healing costs.
- */
 const healtroop: Command = {
   data: new SlashCommandBuilder()
     .setName('healtroop')
@@ -60,7 +74,11 @@ const healtroop: Command = {
     const troopTier = interaction.options.getInteger('tier');
     const troopType = interaction.options.getString('type');
 
-    if (troopTier === null || troopTier < VALIDATION.MIN_TIER || troopTier > VALIDATION.MAX_TIER) {
+    if (
+      troopTier === null ||
+      troopTier < VALIDATION.MIN_TIER ||
+      troopTier > VALIDATION.MAX_TIER
+    ) {
       await interaction.reply({
         content: `Tier must be between ${VALIDATION.MIN_TIER} and ${VALIDATION.MAX_TIER}.`,
         flags: MessageFlags.Ephemeral,
@@ -80,7 +98,9 @@ const healtroop: Command = {
 
     const googleSheets = (interaction.client as ExtendedClient).GoogleSheets;
     if (!googleSheets) {
-      await interaction.editReply({ content: 'Google Sheets is not available.' });
+      await interaction.editReply({
+        content: 'Google Sheets is not available.',
+      });
       return;
     }
 
@@ -122,7 +142,10 @@ const healtroop: Command = {
             `(T${troopTier} ${troopType})\n` +
             '```',
         })
-        .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
+        .setFooter({
+          text: `via tc-bot - ${duration}ms`,
+          iconURL: BOT_ICON_URL,
+        });
 
       const options = Array.from(validByName.keys())
         .sort((a, b) => a.localeCompare(b))
@@ -136,7 +159,9 @@ const healtroop: Command = {
 
       const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
-          .setCustomId(`healtroop:${troopTier}|${troopType}|${troopAmount}|${interaction.user.id}`)
+          .setCustomId(
+            `healtroop:${troopTier}|${troopType}|${troopAmount}|${interaction.user.id}`,
+          )
           .setPlaceholder('Pick a troop name…')
           .addOptions(options)
           .setMinValues(1)
@@ -276,15 +301,15 @@ const healtroop: Command = {
           components: [],
         });
       } catch (secondaryErr) {
-        console.warn('[EVENT:HEALTROOP] Secondary update failed:', secondaryErr);
+        console.warn(
+          '[EVENT:HEALTROOP] Secondary update failed:',
+          secondaryErr,
+        );
       }
     }
   },
 };
 
-/**
- * Filters troop rows by tier and type, excluding NPCs.
- */
 function findTroopRows(
   rows: TroopRow[],
   tier: number,
@@ -298,9 +323,6 @@ function findTroopRows(
   );
 }
 
-/**
- * Groups troop rows by name, filtering out rows without valid healing cost data.
- */
 function buildValidByNameMap(
   rows: TroopRow[],
   troopAmount: number,
@@ -317,9 +339,6 @@ function buildValidByNameMap(
   return byName;
 }
 
-/**
- * Returns the healing cost modifier based on total unit count.
- */
 function getModifier(totalUnits: number): number {
   for (const threshold of MODIFIER_THRESHOLDS) {
     if (totalUnits >= threshold.units) {
@@ -329,9 +348,6 @@ function getModifier(totalUnits: number): number {
   return 0.1;
 }
 
-/**
- * Calculates the optimal modifier and unit threshold for minimum healing cost.
- */
 function getOptimalModifier(troopUnits: number): ModifierResult {
   for (let i = 0; i < MODIFIER_THRESHOLDS.length - 1; i++) {
     const current = MODIFIER_THRESHOLDS[i];
@@ -350,9 +366,6 @@ function getOptimalModifier(troopUnits: number): ModifierResult {
   return { modifier: lowest.modifier, units: lowest.units };
 }
 
-/**
- * Calculates the resource cost for healing a given amount of troops.
- */
 function calculateResourceCost(
   costString: unknown,
   amount: number,
@@ -366,9 +379,6 @@ function calculateResourceCost(
   return Math.ceil(baseCost * amount * modifier);
 }
 
-/**
- * Calculates all healing costs (resources, special items, other stats) for a troop type.
- */
 function calculateHealingCosts(
   troopData: TroopRow,
   troopAmount: number,
@@ -403,7 +413,11 @@ function calculateHealingCosts(
   };
 
   COST_TYPES.RESOURCES.forEach((type) => {
-    const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
+    const cost = calculateResourceCost(
+      troopData.get(type),
+      troopAmount,
+      modifier,
+    );
     const optCost = calculateResourceCost(
       troopData.get(type),
       troopAmount,
@@ -416,7 +430,11 @@ function calculateHealingCosts(
   });
 
   COST_TYPES.SPECIAL.forEach((type) => {
-    const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
+    const cost = calculateResourceCost(
+      troopData.get(type),
+      troopAmount,
+      modifier,
+    );
     let optPerChunk = calculateResourceCost(
       troopData.get(type),
       1,
@@ -444,9 +462,6 @@ function calculateHealingCosts(
   return costs.hasData ? costs : null;
 }
 
-/**
- * Formats resource and special costs as text for embed display.
- */
 function formatCostText(costs: HealingCosts, isOptimal = false): string {
   let text = '';
   const allCosts = { ...costs.resources, ...costs.special };
@@ -460,9 +475,6 @@ function formatCostText(costs: HealingCosts, isOptimal = false): string {
   return text;
 }
 
-/**
- * Formats other stats (MC heal, power lost, etc.) as text for embed display.
- */
 function formatOtherStats(costs: HealingCosts): string {
   let text = '';
 
@@ -474,9 +486,6 @@ function formatOtherStats(costs: HealingCosts): string {
   return text;
 }
 
-/**
- * Creates a Discord embed displaying healing costs for multiple troop variants.
- */
 function createMultiHealingEmbed(
   troopTier: number,
   troopType: string,
@@ -486,7 +495,9 @@ function createMultiHealingEmbed(
   truncatedCount: number,
   startTime: number,
 ): EmbedBuilder {
-  const embed = new EmbedBuilder().setColor(Colors.White).setTitle('Healing cost:');
+  const embed = new EmbedBuilder()
+    .setColor(Colors.White)
+    .setTitle('Healing cost:');
 
   embed.addFields({
     name: 'Selection:',
@@ -553,10 +564,18 @@ function createMultiHealingEmbed(
   }
 
   const duration = Date.now() - startTime;
-  embed.setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
+  embed.setFooter({
+    text: `via tc-bot - ${duration}ms`,
+    iconURL: BOT_ICON_URL,
+  });
 
   return embed;
 }
 
 export default healtroop;
-export { getModifier, getOptimalModifier, calculateResourceCost, calculateHealingCosts };
+export {
+  getModifier,
+  getOptimalModifier,
+  calculateResourceCost,
+  calculateHealingCosts,
+};

@@ -196,6 +196,7 @@ The project uses GitHub Actions for automated deployment. When code is pushed to
 4. Restarts the bot using PM2
 
 **Protected Files**: The deployment preserves the following on the server:
+
 - `.env` - Environment variables
 - `logs/` - PM2 log files
 - `data/` - SQLite database files
@@ -203,6 +204,7 @@ The project uses GitHub Actions for automated deployment. When code is pushed to
 ### Dependabot
 
 [Dependabot](https://docs.github.com/en/code-security/dependabot) is configured to automatically:
+
 - Check for npm dependency updates weekly
 - Check for GitHub Actions updates weekly
 - Create pull requests for minor and patch updates

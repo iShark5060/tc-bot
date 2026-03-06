@@ -1,13 +1,15 @@
-import { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  MessageFlags,
+  PermissionsBitField,
+  Colors,
+  type ChatInputCommandInteraction,
+} from 'discord.js';
 
 import { BOT_ICON_URL } from '../../helper/constants.js';
 import type { Command, ExtendedClient } from '../../types/index.js';
 
-/**
- * Help command.
- * Lists all available commands with descriptions and usage examples.
- * Filters commands based on user permissions.
- */
 const help: Command = {
   data: new SlashCommandBuilder()
     .setName('help')
@@ -47,12 +49,17 @@ const help: Command = {
         return entry;
       })
       .join('\n\n');
+    const maxDescriptionLength = 4000;
+    const safeDescription = truncateCommandList(
+      commandList,
+      maxDescriptionLength,
+    );
 
     const duration = Date.now() - startTime;
     const embed = new EmbedBuilder()
       .setColor(Colors.Green)
       .setTitle('📜 Available Commands')
-      .setDescription(commandList.slice(0, 4000))
+      .setDescription(safeDescription)
       .setFooter({
         text: `via tc-bot - ${duration}ms`,
         iconURL: BOT_ICON_URL,
@@ -66,10 +73,22 @@ const help: Command = {
   },
 };
 
-/**
- * Checks if a user has permission to see a command based on required permissions.
- */
-function canSeeCommand(cmd: Command, interaction: ChatInputCommandInteraction): boolean {
+function truncateCommandList(commandList: string, limit: number): string {
+  if (commandList.length <= limit) return commandList;
+
+  const ellipsis = '\n…';
+  const maxContentLength = Math.max(0, limit - ellipsis.length);
+  const cutAt = commandList.lastIndexOf('\n\n', maxContentLength);
+  const safeCut = cutAt > 0 ? cutAt : maxContentLength;
+  const trimmed = commandList.slice(0, safeCut).trimEnd();
+
+  return `${trimmed}${ellipsis}`;
+}
+
+function canSeeCommand(
+  cmd: Command,
+  interaction: ChatInputCommandInteraction,
+): boolean {
   const json = typeof cmd.data?.toJSON === 'function' ? cmd.data.toJSON() : {};
   const required = (json as { default_member_permissions?: string })
     .default_member_permissions;
@@ -77,7 +96,12 @@ function canSeeCommand(cmd: Command, interaction: ChatInputCommandInteraction): 
   if (!required) return true;
   if (!interaction.guild) return false;
 
-  const requiredBits = BigInt(required);
+  let requiredBits: bigint;
+  try {
+    requiredBits = BigInt(required);
+  } catch {
+    return false;
+  }
   const memberPerms =
     interaction.memberPermissions ?? interaction.member?.permissions;
   if (!memberPerms) return false;

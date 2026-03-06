@@ -1,4 +1,9 @@
-import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
+import {
+  Events,
+  ChannelType,
+  type Message,
+  type TextChannel,
+} from 'discord.js';
 
 import {
   ENABLE_LEGACY_MESSAGE_COMMANDS,
@@ -10,21 +15,12 @@ import { buildMopupEmbed } from '../helper/mopup.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';
 
-/**
- * Gets the name of a channel from a message.
- * @param message - Discord message object
- * @returns Channel name, 'DM' for direct messages, or 'unknown'
- */
 function getChannelName(message: Message): string {
   if (message.channel.isDMBased()) return 'DM';
   if ('name' in message.channel) return message.channel.name;
   return 'unknown';
 }
 
-/**
- * Discord message create event handler.
- * Processes legacy message commands (e.g., !tcmu) in designated channels.
- */
 const messageCreate: Event = {
   name: Events.MessageCreate,
   async execute(message: Message): Promise<void> {
@@ -47,9 +43,13 @@ const messageCreate: Event = {
       return;
     }
 
-    debugLogger.debug('MESSAGE', 'Message passed filter, checking for commands', {
-      content: message.content,
-    });
+    debugLogger.debug(
+      'MESSAGE',
+      'Message passed filter, checking for commands',
+      {
+        content: message.content,
+      },
+    );
 
     if (message.content === '!tcmu') {
       debugLogger.command('msg:!tcmu', 'Message command execution started', {
@@ -70,7 +70,10 @@ const messageCreate: Event = {
           });
           debugLogger.step('COMMAND', 'Mopup embed sent successfully');
         } else {
-          debugLogger.warn('COMMAND', 'Channel does not support sending messages');
+          debugLogger.warn(
+            'COMMAND',
+            'Channel does not support sending messages',
+          );
         }
 
         const duration = Date.now() - startTime;
@@ -78,7 +81,9 @@ const messageCreate: Event = {
           duration: `${duration}ms`,
         });
 
-        debugLogger.debug('COMMAND', 'Logging command usage', { commandName: 'msg:!tcmu' });
+        debugLogger.debug('COMMAND', 'Logging command usage', {
+          commandName: 'msg:!tcmu',
+        });
         logCommandUsage({
           commandName: 'msg:!tcmu',
           userId: message.author?.id,
@@ -107,28 +112,27 @@ const messageCreate: Event = {
             commandName: 'msg:!tcmu',
             error: logError as Error,
           });
-          // ignore logging errors
         }
       }
     } else {
-      debugLogger.debug('MESSAGE', 'Message does not match any command pattern', {
-        content: message.content,
-      });
+      debugLogger.debug(
+        'MESSAGE',
+        'Message does not match any command pattern',
+        {
+          content: message.content,
+        },
+      );
     }
   },
 };
 
-/**
- * Determines if a message should be processed for commands.
- * Filters by channel type, channel name, and ignores bots.
- * @param message - Discord message to check
- * @returns True if the message should be processed
- */
 function shouldProcessMessage(message: Message): boolean {
   if (!ENABLE_LEGACY_MESSAGE_COMMANDS) return false;
   if (message.channel.type !== ChannelType.GuildText) return false;
   if (!MESSAGE_COMMAND_CHANNEL_ID) return false;
-  return message.channelId === MESSAGE_COMMAND_CHANNEL_ID && !message.author.bot;
+  return (
+    message.channelId === MESSAGE_COMMAND_CHANNEL_ID && !message.author.bot
+  );
 }
 
 export default messageCreate;

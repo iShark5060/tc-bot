@@ -1,6 +1,6 @@
 {
   "name": "tc-bot",
-  "version": "7.5.5",
+  "version": "7.6.0",
   "description": "Ark of War Theorycrafter Bot",
   "keywords": [],
   "homepage": "https://github.com/ishark5060/tc-bot#readme",
@@ -29,7 +29,8 @@
     "check-format": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:typecheck": "tsc -p tsconfig.test.json --noEmit"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
@@ -40,6 +41,7 @@
     "google-auth-library": "^10.6.1"
   },
   "overrides": {
+    "gaxios": "^7.1.4",
     "minimatch@>=9": "^10.2.2",
     "undici": "^7.19.2"
   },

@@ -4,11 +4,6 @@ import type { DiscordNotificationParams } from '../types/index.js';
 
 const WEBHOOK_BASE = 'https://discord.com/api/webhooks';
 
-/**
- * Sends a Discord webhook notification (startup, shutdown, error, or custom).
- * @param params - Notification parameters including type, optional message, error, and mention flag
- * @returns Promise that resolves when notification is sent (or skipped if webhook not configured)
- */
 export async function notifyDiscord({
   type,
   message = '',
@@ -41,13 +36,14 @@ export async function notifyDiscord({
 
   let description = message || '';
   if (error) {
+    const err = error as Error;
     const errorText =
       typeof error === 'string'
         ? error
-        : (error as Error)?.stack || (error as Error)?.message || JSON.stringify(error);
+        : err?.stack || err?.message || JSON.stringify(error);
     description += `\n\`\`\`\n${String(errorText).slice(0, 1800)}\n\`\`\``;
   }
-  if (mention) description = `@here\n${description}`;
+  const content = mention ? '@here' : undefined;
 
   try {
     const response = await fetch(`${WEBHOOK_BASE}/${id}/${token}`, {
@@ -55,6 +51,12 @@ export async function notifyDiscord({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: 'TC-Bot Notifications',
+        content,
+        allowed_mentions: mention
+          ? {
+              parse: ['everyone'],
+            }
+          : undefined,
         embeds: [
           {
             title,

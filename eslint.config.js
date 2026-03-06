@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '*.php', 'tests/**', '*.cjs'],
+    ignores: ['dist/**', 'node_modules/**', '*.php', '*.cjs'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -38,7 +38,7 @@ export default [
       'n/no-unsupported-features/node-builtins': [
         'error',
         {
-          version: '>=24.0.0',
+          version: '>=25.0.0',
           ignores: [],
         },
       ],
@@ -69,7 +69,7 @@ export default [
       'no-undef': 'off',
       'object-curly-spacing': ['error', 'always'],
       'prefer-const': 'error',
-      quotes: ['error', 'single'],
+      quotes: ['error', 'single', { avoidEscape: true }],
       semi: ['error', 'always'],
       'space-before-blocks': 'error',
       'space-before-function-paren': [

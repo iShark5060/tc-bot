@@ -1,21 +1,33 @@
 import '@dotenvx/dotenvx/config';
 import { sheets } from '@googleapis/sheets';
 import io from '@pm2/io';
-import { Client, Collection, GatewayIntentBits, ChannelType, Events, type VoiceChannel, type StageChannel } from 'discord.js';
+import {
+  Client,
+  Collection,
+  GatewayIntentBits,
+  ChannelType,
+  Events,
+  type VoiceChannel,
+  type StageChannel,
+} from 'discord.js';
 import { JWT } from 'google-auth-library';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import GoogleCredentials from '../client_secret.json' with { type: 'json' };
 import { stopLatencyMonitoring } from './events/clientReady.js';
+import { discoverCommandFiles } from './helper/commandDiscovery.js';
 import { ENABLE_LEGACY_MESSAGE_COMMANDS, TIMERS } from './helper/constants.js';
 import { debugLogger } from './helper/debugLogger.js';
 import { notifyDiscord } from './helper/discordNotification.js';
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
-import type { Command, ExtendedClient, GoogleSheetsClient } from './types/index.js';
+import type {
+  Command,
+  ExtendedClient,
+  GoogleSheetsClient,
+} from './types/index.js';
 
 declare module 'discord.js' {
   interface Client {
@@ -24,18 +36,22 @@ declare module 'discord.js' {
   }
 }
 
+interface ServiceAccountCredentials {
+  client_email: string;
+  private_key: string;
+}
+
 io.init();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const intents = [
-  GatewayIntentBits.Guilds,
-  GatewayIntentBits.GuildMessages,
-];
-
+const intents = [GatewayIntentBits.Guilds];
 if (ENABLE_LEGACY_MESSAGE_COMMANDS) {
-  intents.push(GatewayIntentBits.MessageContent);
+  intents.push(
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  );
 }
 
 const client: ExtendedClient = new Client({ intents }) as ExtendedClient;
@@ -43,12 +59,6 @@ const client: ExtendedClient = new Client({ intents }) as ExtendedClient;
 client.commands = new Collection<string, Command>();
 client.GoogleSheets = null;
 
-/**
- * Determines the startup reason from environment or CLI args.
- * Priority: DEPLOY_REASON env var (set by CI) > --reason CLI arg (from ecosystem.config.cjs).
- * The env var is cleared after reading so child processes don't inherit it.
- * @returns The reason string if provided, or undefined
- */
 function parseCliReason(): string | undefined {
   const envReason = process.env.DEPLOY_REASON;
   if (envReason) {
@@ -68,22 +78,12 @@ function getSpreadsheetId(): string {
   return process.env.GOOGLE_SPREADSHEET_ID || '';
 }
 
-/** Tracks why the bot is shutting down, included in Discord notifications */
 let shutdownReason = '';
 
-/**
- * Sets the shutdown reason for the next graceful shutdown.
- * Used by the reboot command to provide context in notifications.
- * @param reason - Human-readable reason for shutdown
- */
 export function setShutdownReason(reason: string): void {
   shutdownReason = reason;
 }
 
-/**
- * Validates that all required environment variables are present.
- * @throws Error if any required variables are missing
- */
 function validateEnvironment(): void {
   debugLogger.boot('Validating environment variables');
   const required = ['TOKEN', 'CLIENT_ID', 'GUILD_ID', 'GOOGLE_SHEET_ID'];
@@ -94,12 +94,16 @@ function validateEnvironment(): void {
   }
 
   if (missing.length > 0) {
-    debugLogger.error('BOOT', 'Missing required environment variables', { missing });
+    debugLogger.error('BOOT', 'Missing required environment variables', {
+      missing,
+    });
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}`,
     );
   }
-  debugLogger.boot('Environment validation passed', { checked: required.length });
+  debugLogger.boot('Environment validation passed', {
+    checked: required.length,
+  });
 }
 
 validateEnvironment();
@@ -126,7 +130,9 @@ process.on('uncaughtException', (error) => {
     error,
   });
   console.error('[PROCESS] Uncaught exception:', error);
-  if (!shutdownReason) shutdownReason = `Uncaught exception: ${error instanceof Error ? error.message : String(error)}`;
+  if (!shutdownReason) {
+    shutdownReason = `Uncaught exception: ${error instanceof Error ? error.message : String(error)}`;
+  }
   const forceExitTimeout = setTimeout(() => {
     console.error('[PROCESS] Forced exit after uncaught exception');
     // eslint-disable-next-line n/no-process-exit -- Required for undefined state recovery
@@ -173,21 +179,27 @@ let mopupTimer: NodeJS.Timeout | null = null;
     await updateMopupChannels();
     debugLogger.boot('Bot initialization completed successfully');
   } catch (error) {
-    debugLogger.error('BOOT', 'Failed to initialize bot', { error: error as Error });
+    debugLogger.error('BOOT', 'Failed to initialize bot', {
+      error: error as Error,
+    });
     console.error('[BOOT] Failed to initialize bot:', error);
-    await notifyDiscord({ type: 'error', error: error as Error });
+    if (!shutdownReason) {
+      shutdownReason = `Initialization failure: ${
+        error instanceof Error ? error.message : String(error)
+      }`;
+    }
     process.exitCode = 1;
+    await notifyDiscord({ type: 'error', error: error as Error });
+    await gracefulShutdown();
   }
 })();
 
-/**
- * Performs graceful shutdown of the bot.
- * Stops timers, checkpoints database, notifies Discord, and destroys client.
- * Handles duplicate shutdown signals by ignoring subsequent calls.
- */
 async function gracefulShutdown(): Promise<void> {
   if (isShuttingDown) {
-    debugLogger.warn('SHUTDOWN', 'Shutdown already in progress, ignoring duplicate signal');
+    debugLogger.warn(
+      'SHUTDOWN',
+      'Shutdown already in progress, ignoring duplicate signal',
+    );
     return;
   }
   isShuttingDown = true;
@@ -213,7 +225,9 @@ async function gracefulShutdown(): Promise<void> {
       debugLogger.step('SHUTDOWN', 'Closing database connection');
       usageTracker.closeDb();
     } catch (e) {
-      debugLogger.error('SHUTDOWN', 'WAL checkpoint error during shutdown', { error: e });
+      debugLogger.error('SHUTDOWN', 'WAL checkpoint error during shutdown', {
+        error: e,
+      });
       console.error('[SHUTDOWN] WAL checkpoint error:', e);
     }
     debugLogger.step('SHUTDOWN', 'Notifying Discord of shutdown');
@@ -225,31 +239,34 @@ async function gracefulShutdown(): Promise<void> {
     client.destroy();
     debugLogger.step('SHUTDOWN', 'Bot shut down successfully');
     console.log('[SHUTDOWN] Bot shut down successfully');
-    process.exitCode = 0;
+    if (process.exitCode === undefined) {
+      process.exitCode = 0;
+    }
   } catch (error) {
-    debugLogger.error('SHUTDOWN', 'Error during shutdown', { error: error as Error });
+    debugLogger.error('SHUTDOWN', 'Error during shutdown', {
+      error: error as Error,
+    });
     console.error('[SHUTDOWN] Error during shutdown:', error);
     process.exitCode = 1;
   }
 }
 
-/**
- * Initializes Google Sheets API client with service account authentication.
- * Creates JWT auth, configures API client, and warms the row cache.
- */
 async function initializeGoogleSheets(): Promise<void> {
   debugLogger.step('GOOGLE_SHEETS', 'Initializing Google Sheets connection');
-  const SCOPES = [
-    'https://www.googleapis.com/auth/spreadsheets.readonly',
-  ];
+  const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+  const credentials = await loadGoogleCredentials();
 
-  debugLogger.debug('GOOGLE_SHEETS', 'Creating JWT service account authentication', {
-    email: GoogleCredentials.client_email,
-    scopes: SCOPES,
-  });
+  debugLogger.debug(
+    'GOOGLE_SHEETS',
+    'Creating JWT service account authentication',
+    {
+      email: credentials.client_email,
+      scopes: SCOPES,
+    },
+  );
   const auth = new JWT({
-    email: GoogleCredentials.client_email,
-    key: GoogleCredentials.private_key,
+    email: credentials.client_email,
+    key: credentials.private_key,
     scopes: SCOPES,
   });
 
@@ -285,50 +302,61 @@ async function initializeGoogleSheets(): Promise<void> {
   });
 }
 
-/**
- * Loads all command modules from the commands directory.
- * Recursively scans subdirectories and registers valid command files.
- */
+async function loadGoogleCredentials(): Promise<ServiceAccountCredentials> {
+  const credentialsPath = path.resolve(process.cwd(), 'client_secret.json');
+  let parsed: unknown;
+
+  try {
+    const raw = await fs.readFile(credentialsPath, 'utf8');
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(
+      `Failed to load Google credentials from ${credentialsPath}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+
+  const clientEmail = (parsed as { client_email?: unknown })?.client_email;
+  const privateKey = (parsed as { private_key?: unknown })?.private_key;
+  if (typeof clientEmail !== 'string' || typeof privateKey !== 'string') {
+    throw new Error(
+      `Invalid Google credentials file at ${credentialsPath}: missing client_email/private_key`,
+    );
+  }
+
+  return {
+    client_email: clientEmail,
+    private_key: privateKey,
+  };
+}
+
 async function loadCommands(): Promise<void> {
   debugLogger.step('COMMANDS', 'Loading commands from filesystem');
   const commandsPath = path.join(__dirname, 'commands');
   debugLogger.debug('COMMANDS', 'Commands directory', { path: commandsPath });
-  const entries = await fs.readdir(commandsPath);
 
-  for (const entry of entries) {
-    const entryPath = path.join(commandsPath, entry);
-    const stat = await fs.lstat(entryPath);
+  const files = await discoverCommandFiles(commandsPath, '.js');
+  debugLogger.debug('COMMANDS', 'Discovered command files recursively', {
+    count: files.length,
+  });
 
-    if (stat.isDirectory()) {
-      debugLogger.debug('COMMANDS', 'Processing command directory', { directory: entry });
-      const allFiles = await fs.readdir(entryPath);
-      const files = allFiles.filter((f) => f.endsWith('.js'));
-      debugLogger.debug('COMMANDS', 'Found command files in directory', {
-        directory: entry,
-        files: files.length,
-      });
-      for (const file of files) {
-        const filePath = path.join(entryPath, file);
-        await registerCommand(filePath, file);
-      }
-    } else if (entry.endsWith('.js')) {
-      debugLogger.debug('COMMANDS', 'Processing command file', { file: entry });
-      await registerCommand(entryPath, entry);
-    }
+  for (const filePath of files) {
+    await registerCommand(filePath, path.basename(filePath));
   }
   debugLogger.info('COMMANDS', 'Commands loading completed', {
     totalCommands: client.commands.size,
   });
 }
 
-/**
- * Registers a single command module from a file path.
- * Validates that the module exports data and execute properties.
- * @param filePath - Absolute path to the command file
- * @param fileName - File name for logging purposes
- */
-async function registerCommand(filePath: string, fileName: string): Promise<void> {
-  debugLogger.debug('COMMANDS', 'Registering command', { file: fileName, path: filePath });
+async function registerCommand(
+  filePath: string,
+  fileName: string,
+): Promise<void> {
+  debugLogger.debug('COMMANDS', 'Registering command', {
+    file: fileName,
+    path: filePath,
+  });
   try {
     const mod = await import(pathToFileURL(filePath).href);
     const command = mod.default ?? mod;
@@ -356,17 +384,15 @@ async function registerCommand(filePath: string, fileName: string): Promise<void
   }
 }
 
-/**
- * Loads all event handler modules from the events directory.
- * Registers each event with appropriate once/on listener.
- */
 async function loadEvents(): Promise<void> {
   debugLogger.step('EVENTS', 'Loading events from filesystem');
   const eventsPath = path.join(__dirname, 'events');
   debugLogger.debug('EVENTS', 'Events directory', { path: eventsPath });
   const allFiles = await fs.readdir(eventsPath);
   const eventFiles = allFiles.filter((f) => f.endsWith('.js'));
-  debugLogger.debug('EVENTS', 'Found event files', { count: eventFiles.length });
+  debugLogger.debug('EVENTS', 'Found event files', {
+    count: eventFiles.length,
+  });
 
   for (const file of eventFiles) {
     const filePath = path.join(eventsPath, file);
@@ -374,31 +400,59 @@ async function loadEvents(): Promise<void> {
     try {
       const mod = await import(pathToFileURL(filePath).href);
       const event = mod.default ?? mod;
+      if (
+        !ENABLE_LEGACY_MESSAGE_COMMANDS &&
+        event.name === Events.MessageCreate
+      ) {
+        debugLogger.info(
+          'EVENTS',
+          'Skipping MessageCreate event: legacy commands disabled',
+          { file },
+        );
+        continue;
+      }
+
+      const executeSafely = (...args: unknown[]): void => {
+        debugLogger.event(event.name, 'Event triggered', { file });
+        void Promise.resolve(event.execute(...args)).catch((error: unknown) => {
+          debugLogger.error('EVENTS', 'Event handler execution failed', {
+            eventName: event.name,
+            file,
+            error: error as Error,
+          });
+        });
+      };
+
       if (event.once) {
         client.once(event.name, (...args: unknown[]) => {
-          debugLogger.event(event.name, 'Event triggered (once)', { file });
-          event.execute(...args);
+          executeSafely(...args);
         });
-        debugLogger.step('EVENTS', 'Registered once event', { name: event.name, file });
+        debugLogger.step('EVENTS', 'Registered once event', {
+          name: event.name,
+          file,
+        });
       } else {
         client.on(event.name, (...args: unknown[]) => {
-          debugLogger.event(event.name, 'Event triggered', { file });
-          event.execute(...args);
+          executeSafely(...args);
         });
-        debugLogger.step('EVENTS', 'Registered event listener', { name: event.name, file });
+        debugLogger.step('EVENTS', 'Registered event listener', {
+          name: event.name,
+          file,
+        });
       }
     } catch (err) {
-      debugLogger.error('EVENTS', 'Failed to load event', { file, error: err as Error });
+      debugLogger.error('EVENTS', 'Failed to load event', {
+        file,
+        error: err as Error,
+      });
+      console.error(`[BOOT] Failed to load event: ${file}`, err);
     }
   }
-  debugLogger.info('EVENTS', 'Events loading completed', { totalEvents: eventFiles.length });
+  debugLogger.info('EVENTS', 'Events loading completed', {
+    totalEvents: eventFiles.length,
+  });
 }
 
-/**
- * Starts the periodic mopup channel update timer.
- * Updates Discord voice channel names with mopup status and countdown.
- * Requires CHANNEL_ID1 and CHANNEL_ID2 environment variables.
- */
 function startMopupTimer(): void {
   if (!process.env.CHANNEL_ID1 || !process.env.CHANNEL_ID2) {
     debugLogger.warn('MOPUP', 'Mopup timer disabled: Channel IDs missing', {
@@ -416,7 +470,10 @@ function startMopupTimer(): void {
   let updateInProgress = false;
   mopupTimer = setInterval(() => {
     if (updateInProgress) {
-      debugLogger.warn('MOPUP', 'Skipping timer tick: previous update still running');
+      debugLogger.warn(
+        'MOPUP',
+        'Skipping timer tick: previous update still running',
+      );
       return;
     }
     updateInProgress = true;
@@ -433,19 +490,30 @@ function startMopupTimer(): void {
   }, TIMERS.MOPUP_INTERVAL_MS);
 }
 
-function waitForClientReady(): Promise<void> {
+function waitForClientReady(timeoutMs = 30000): Promise<void> {
   if (client.isReady()) {
     return Promise.resolve();
   }
-  return new Promise((resolve) => {
-    client.once(Events.ClientReady, () => resolve());
+  return new Promise((resolve, reject) => {
+    const onReady = (): void => {
+      clearTimeout(timeout);
+      resolve();
+    };
+
+    const timeout = setTimeout(() => {
+      client.removeListener(Events.ClientReady, onReady);
+      reject(
+        new Error(
+          `waitForClientReady timed out after ${timeoutMs}ms waiting for ${Events.ClientReady}`,
+        ),
+      );
+    }, timeoutMs);
+    timeout.unref?.();
+
+    client.once(Events.ClientReady, onReady);
   });
 }
 
-/**
- * Updates Discord voice channel names with current mopup status.
- * Channel 1 shows active/inactive status, Channel 2 shows time remaining.
- */
 async function updateMopupChannels(): Promise<void> {
   debugLogger.step('MOPUP', 'Updating mopup channels');
   try {
@@ -456,32 +524,69 @@ async function updateMopupChannels(): Promise<void> {
       time: mopupInfo.time,
     });
 
-    const channel1 = client.channels.cache.get(process.env.CHANNEL_ID1!);
-    const channel2 = client.channels.cache.get(process.env.CHANNEL_ID2!);
-    debugLogger.debug('MOPUP', 'Retrieved channels from cache', {
+    const getChannel = async (
+      channelId: string,
+    ): Promise<ReturnType<typeof client.channels.cache.get> | null> => {
+      const cached = client.channels.cache.get(channelId);
+      if (cached) return cached;
+      try {
+        return await client.channels.fetch(channelId);
+      } catch (error) {
+        debugLogger.warn('MOPUP', 'Failed to fetch channel', {
+          channelId,
+          error: error as Error,
+        });
+        return null;
+      }
+    };
+
+    const [channel1, channel2] = await Promise.all([
+      getChannel(process.env.CHANNEL_ID1!),
+      getChannel(process.env.CHANNEL_ID2!),
+    ]);
+    debugLogger.debug('MOPUP', 'Retrieved channels for mopup update', {
       channel1Found: !!channel1,
       channel2Found: !!channel2,
     });
 
-    const isRenameable = (ch: typeof channel1): ch is VoiceChannel | StageChannel =>
-      ch?.type === ChannelType.GuildVoice || ch?.type === ChannelType.GuildStageVoice;
+    const isRenameable = (
+      ch: typeof channel1,
+    ): ch is VoiceChannel | StageChannel =>
+      ch?.type === ChannelType.GuildVoice ||
+      ch?.type === ChannelType.GuildStageVoice;
 
     if (isRenameable(channel1)) {
       const statusEmoji = mopupInfo.status === 'ACTIVE' ? '🟢' : '🔴';
       const newName = `${statusEmoji} ${mopupInfo.status} Mopup`;
-      debugLogger.debug('MOPUP', 'Updating channel 1 name', { newName });
-      await channel1.setName(newName);
-      debugLogger.step('MOPUP', 'Channel 1 name updated successfully');
+      if (channel1.name !== newName) {
+        debugLogger.debug('MOPUP', 'Updating channel 1 name', { newName });
+        await channel1.setName(newName);
+        debugLogger.step('MOPUP', 'Channel 1 name updated successfully');
+      } else {
+        debugLogger.debug('MOPUP', 'Skipping channel 1 rename (unchanged)', {
+          channelId: channel1.id,
+          currentName: channel1.name,
+        });
+      }
     }
     if (isRenameable(channel2)) {
       const newName = `Time remaining: ${mopupInfo.time}`;
-      debugLogger.debug('MOPUP', 'Updating channel 2 name', { newName });
-      await channel2.setName(newName);
-      debugLogger.step('MOPUP', 'Channel 2 name updated successfully');
+      if (channel2.name !== newName) {
+        debugLogger.debug('MOPUP', 'Updating channel 2 name', { newName });
+        await channel2.setName(newName);
+        debugLogger.step('MOPUP', 'Channel 2 name updated successfully');
+      } else {
+        debugLogger.debug('MOPUP', 'Skipping channel 2 rename (unchanged)', {
+          channelId: channel2.id,
+          currentName: channel2.name,
+        });
+      }
     }
     debugLogger.info('MOPUP', 'Mopup channels updated successfully');
   } catch (error) {
-    debugLogger.error('MOPUP', 'Failed to update mopup channels', { error: error as Error });
+    debugLogger.error('MOPUP', 'Failed to update mopup channels', {
+      error: error as Error,
+    });
     console.error('[EVENT:MOPUP] Failed to update mopup channels:', error);
   }
 }

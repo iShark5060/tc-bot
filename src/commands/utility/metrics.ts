@@ -11,17 +11,11 @@ import { numberWithCommas } from '../../helper/formatters.js';
 import { getMetricsTotals, getTopCommands } from '../../helper/usageTracker.js';
 import type { Command } from '../../types/index.js';
 
-/** Period calculation result with UTC timestamp and display label */
 interface PeriodInfo {
   sinceUTC: string;
   label: string;
 }
 
-/**
- * Command usage metrics command.
- * Displays command execution statistics including totals, success rate,
- * and top commands for a selected time period.
- */
 const metrics: Command = {
   data: new SlashCommandBuilder()
     .setName('metrics')
@@ -92,7 +86,10 @@ const metrics: Command = {
             inline: false,
           },
         )
-        .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL })
+        .setFooter({
+          text: `via tc-bot - ${duration}ms`,
+          iconURL: BOT_ICON_URL,
+        })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
@@ -103,9 +100,6 @@ const metrics: Command = {
   },
 };
 
-/**
- * Calculates the start date and label for a given time period.
- */
 function getSince(period: string): PeriodInfo {
   const now = new Date();
   const since = new Date(now.getTime());
@@ -134,9 +128,6 @@ function getSince(period: string): PeriodInfo {
   return { sinceUTC, label };
 }
 
-/**
- * Formats a Date object as a UTC timestamp string for database queries.
- */
 function formatUTC(d: Date): string {
   const pad = (n: number): string => String(n).padStart(2, '0');
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(

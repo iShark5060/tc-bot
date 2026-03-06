@@ -1,16 +1,20 @@
-import { Events, MessageFlags, type Interaction, type StringSelectMenuInteraction } from 'discord.js';
+import {
+  Events,
+  MessageFlags,
+  type Interaction,
+  type StringSelectMenuInteraction,
+} from 'discord.js';
 
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleCommandError } from '../helper/errorHandler.js';
-import { commandErrors, commandsCounter, commandsPerSecond } from '../helper/metrics.js';
+import {
+  commandErrors,
+  commandsCounter,
+  commandsPerSecond,
+} from '../helper/metrics.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event, ExtendedClient } from '../types/index.js';
 
-/**
- * Discord interaction create event handler.
- * Processes slash commands and select menu interactions.
- * Handles command execution, error handling, and usage logging.
- */
 const interactionsCreate: Event = {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction): Promise<void> {
@@ -31,31 +35,50 @@ const interactionsCreate: Event = {
       try {
         const mod = await import('../commands/aow/healtroop.js');
         const healtroop = mod.default ?? mod;
-        if ('handleSelect' in healtroop && typeof healtroop.handleSelect === 'function') {
+        if (
+          'handleSelect' in healtroop &&
+          typeof healtroop.handleSelect === 'function'
+        ) {
           debugLogger.debug('INTERACTION', 'Calling healtroop.handleSelect');
-          await healtroop.handleSelect(interaction as StringSelectMenuInteraction);
-          debugLogger.step('INTERACTION', 'Healtroop select menu handled successfully');
+          await healtroop.handleSelect(
+            interaction as StringSelectMenuInteraction,
+          );
+          debugLogger.step(
+            'INTERACTION',
+            'Healtroop select menu handled successfully',
+          );
         } else {
-          debugLogger.warn('INTERACTION', 'Healtroop handleSelect not available');
+          debugLogger.warn(
+            'INTERACTION',
+            'Healtroop handleSelect not available',
+          );
           await interaction.reply({
             content: 'Selector not available.',
             flags: MessageFlags.Ephemeral,
           });
         }
       } catch (error) {
-        debugLogger.error('INTERACTION', 'Error handling healtroop select menu', {
-          error: error as Error,
-          customId: interaction.customId,
-        });
+        debugLogger.error(
+          'INTERACTION',
+          'Error handling healtroop select menu',
+          {
+            error: error as Error,
+            customId: interaction.customId,
+          },
+        );
         await handleCommandError(interaction, error);
       }
       return;
     }
 
     if (!interaction.isChatInputCommand()) {
-      debugLogger.debug('INTERACTION', 'Interaction is not a chat input command, skipping', {
-        type: interaction.type,
-      });
+      debugLogger.debug(
+        'INTERACTION',
+        'Interaction is not a chat input command, skipping',
+        {
+          type: interaction.type,
+        },
+      );
       return;
     }
 
@@ -65,16 +88,30 @@ const interactionsCreate: Event = {
       username: interaction.user?.username,
       guildId: interaction.guildId,
       channelId: interaction.channelId,
-      options: interaction.options.data.map(opt => ({
+      options: interaction.options.data.map((opt) => ({
         name: opt.name,
         value: opt.value,
       })),
     });
 
-    const command = (interaction.client as ExtendedClient).commands.get(commandName);
+    const command = (interaction.client as ExtendedClient).commands.get(
+      commandName,
+    );
     if (!command) {
-      debugLogger.warn('INTERACTION', 'Command not found in registry', { commandName });
+      debugLogger.warn('INTERACTION', 'Command not found in registry', {
+        commandName,
+      });
       console.warn(`[EVENT:INTERACTION] Command not found: ${commandName}`);
+      const fallback = {
+        content:
+          'That command is currently unavailable. Please try again in a moment.',
+        flags: MessageFlags.Ephemeral,
+      } as const;
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(fallback);
+      } else {
+        await interaction.reply(fallback);
+      }
       return;
     }
 
@@ -109,7 +146,9 @@ const interactionsCreate: Event = {
       commandErrors.inc();
       await handleCommandError(interaction, error);
       try {
-        debugLogger.debug('COMMAND', 'Logging failed command usage', { commandName });
+        debugLogger.debug('COMMAND', 'Logging failed command usage', {
+          commandName,
+        });
         logCommandUsage({
           commandName,
           userId: interaction.user?.id,
@@ -122,7 +161,6 @@ const interactionsCreate: Event = {
           commandName,
           error: logError as Error,
         });
-        // ignore logging errors
       }
     }
   },

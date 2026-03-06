@@ -1,12 +1,11 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from 'discord.js';
 
 import { buildMopupEmbed } from '../../helper/mopup.js';
 import type { Command } from '../../types/index.js';
 
-/**
- * Mopup timer command.
- * Displays the current mopup event status and countdown to the next event.
- */
 const mopup: Command = {
   data: new SlashCommandBuilder()
     .setName('mopup')

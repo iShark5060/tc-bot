@@ -1,15 +1,21 @@
-import { EmbedBuilder, MessageFlags, SlashCommandBuilder, Colors, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  EmbedBuilder,
+  MessageFlags,
+  SlashCommandBuilder,
+  Colors,
+  type ChatInputCommandInteraction,
+} from 'discord.js';
 
 import { BOT_ICON_URL, VALIDATION } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
-import { TroopRow, type Command, type KillResult, type ExtendedClient } from '../../types/index.js';
+import {
+  TroopRow,
+  type Command,
+  type KillResult,
+  type ExtendedClient,
+} from '../../types/index.js';
 
-/**
- * Ignore Tier Suppression (ITS) kill calculator command.
- * Calculates how many troops can be killed with ITS skills based on
- * skill level, leadership, target tier, and target damage reduction.
- */
 const its: Command = {
   data: new SlashCommandBuilder()
     .setName('its')
@@ -49,7 +55,11 @@ const its: Command = {
     const inputTdr = interaction.options.getInteger('tdr');
     const tdr = Math.min(100, Math.max(0, inputTdr ?? 0));
 
-    if (!skillLevel || skillLevel > VALIDATION.MAX_SKILL_LEVEL) {
+    if (
+      !skillLevel ||
+      skillLevel < 1 ||
+      skillLevel > VALIDATION.MAX_SKILL_LEVEL
+    ) {
       await interaction.reply({
         content: `You entered skill level ${skillLevel}. Was that intended? Because it's not possible, but it would be REALLY nice if it were...`,
         flags: MessageFlags.Ephemeral,
@@ -65,7 +75,11 @@ const its: Command = {
       return;
     }
 
-    if (targetTier === null || targetTier < VALIDATION.MIN_TIER || targetTier > VALIDATION.MAX_TIER) {
+    if (
+      targetTier === null ||
+      targetTier < VALIDATION.MIN_TIER ||
+      targetTier > VALIDATION.MAX_TIER
+    ) {
       await interaction.reply({
         content: `Tier must be between ${VALIDATION.MIN_TIER} and ${VALIDATION.MAX_TIER}.`,
         flags: MessageFlags.Ephemeral,
@@ -77,7 +91,9 @@ const its: Command = {
 
     const googleSheets = (interaction.client as ExtendedClient).GoogleSheets;
     if (!googleSheets) {
-      await interaction.editReply({ content: 'Google Sheets is not available.' });
+      await interaction.editReply({
+        content: 'Google Sheets is not available.',
+      });
       return;
     }
 
@@ -98,7 +114,10 @@ const its: Command = {
             .setDescription(
               'No usable troop data found (rows are empty, invalid, or would result in 0 kills).',
             )
-            .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL }),
+            .setFooter({
+              text: `via tc-bot - ${duration}ms`,
+              iconURL: BOT_ICON_URL,
+            }),
         ],
       });
       return;
@@ -110,9 +129,6 @@ const its: Command = {
   },
 };
 
-/**
- * Calculates how many troops can be killed with Ignore Tier Suppression skill.
- */
 function calculateKills(
   rows: TroopRow[],
   targetTier: number,
@@ -121,7 +137,10 @@ function calculateKills(
   tdr: number,
 ): KillResult[] {
   const coef =
-    VALIDATION.ITS_DAMAGE_COEFFICIENT * leadership * skillLevel * ((100 - tdr) / 100);
+    VALIDATION.ITS_DAMAGE_COEFFICIENT *
+    leadership *
+    skillLevel *
+    ((100 - tdr) / 100);
 
   const matches = rows.filter(
     (row) =>
@@ -158,9 +177,6 @@ function calculateKills(
     .sort((a, b) => b.count - a.count);
 }
 
-/**
- * Formats a list of kill results as text for embed display.
- */
 function formatKillsList(kills: KillResult[]): string {
   return kills
     .map((kill) => {
@@ -170,9 +186,6 @@ function formatKillsList(kills: KillResult[]): string {
     .join('\n');
 }
 
-/**
- * Creates a Discord embed displaying iTS kill calculation results.
- */
 function createItsEmbed(
   leadership: number,
   skillLevel: number,
