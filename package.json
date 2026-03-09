@@ -33,7 +33,7 @@
     "test:typecheck": "tsc -p tsconfig.test.json --noEmit"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.52.0",
+    "@dotenvx/dotenvx": "^1.54.1",
     "@googleapis/sheets": "^13.0.1",
     "@pm2/io": "^6.1.0",
     "better-sqlite3": "^12.6.2",
