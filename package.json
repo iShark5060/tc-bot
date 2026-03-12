@@ -22,7 +22,6 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/tc-bot.js",
-    "dev": "tsx watch src/tc-bot.ts",
     "deploy": "tsx src/deployCommands.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -30,7 +29,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:typecheck": "tsc -p tsconfig.test.json --noEmit"
+    "validate": "node run-quality-checks.mjs",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.54.1",

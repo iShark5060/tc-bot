@@ -7,6 +7,7 @@ export async function discoverCommandFiles(
 ): Promise<string[]> {
   const files: string[] = [];
   const stack: string[] = [rootDir];
+  const visitedDirectories = new Set<string>();
 
   while (stack.length > 0) {
     const current = stack.pop();
@@ -14,6 +15,12 @@ export async function discoverCommandFiles(
 
     const stat = await fs.stat(current);
     if (stat.isDirectory()) {
+      const realPath = await fs.realpath(current);
+      if (visitedDirectories.has(realPath)) {
+        continue;
+      }
+      visitedDirectories.add(realPath);
+
       const entries = await fs.readdir(current);
       for (const entry of entries) {
         stack.push(path.join(current, entry));
