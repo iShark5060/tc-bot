@@ -1,18 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { createMockRow } from './helpers.js';
 import {
   getModifier,
   getOptimalModifier,
   calculateResourceCost,
   calculateHealingCosts,
 } from '../src/commands/aow/healtroop.js';
-import { TroopRow } from '../src/types/index.js';
-
-function createMockRow(data: Record<string, unknown>): TroopRow {
-  const headers = Object.keys(data);
-  const values = Object.values(data);
-  return new TroopRow(headers, values);
-}
 
 describe('getModifier', () => {
   it('returns 0.25 for units >= 3501', () => {

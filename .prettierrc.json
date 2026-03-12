@@ -4,14 +4,5 @@
   "tabWidth": 2,
   "useTabs": false,
   "trailingComma": "all",
-  "arrowParens": "always",
-  "plugins": ["@prettier/plugin-php"],
-  "overrides": [
-    {
-      "files": "*.php",
-      "options": {
-        "parser": "php"
-      }
-    }
-  ]
+  "arrowParens": "always"
 }

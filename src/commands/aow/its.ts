@@ -96,11 +96,18 @@ const its: Command = {
       });
       return;
     }
+    const sheetId = process.env.GOOGLE_SHEET_ID?.trim();
+    if (!sheetId) {
+      console.error(
+        '[ITS] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.',
+      );
+      await interaction.editReply({
+        content: 'Google Sheet is not configured (missing GOOGLE_SHEET_ID).',
+      });
+      return;
+    }
 
-    const rows = await getSheetRowsCached(
-      googleSheets,
-      process.env.GOOGLE_SHEET_ID || '',
-    );
+    const rows = await getSheetRowsCached(googleSheets, sheetId);
 
     const kills = calculateKills(rows, targetTier, skillLevel, leadership, tdr);
 

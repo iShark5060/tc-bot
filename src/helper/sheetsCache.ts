@@ -88,7 +88,7 @@ async function getSheetRowsCached(
     return dataRows.map((row) => new TroopRow(headers, row));
   })();
 
-  cache.set(key, { ...(entry || {}), loadingPromise });
+  cache.set(key, { loadingPromise });
 
   try {
     const rows = await loadingPromise;

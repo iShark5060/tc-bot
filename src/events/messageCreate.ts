@@ -47,7 +47,10 @@ const messageCreate: Event = {
       'MESSAGE',
       'Message passed filter, checking for commands',
       {
-        content: message.content,
+        contentMeta: {
+          length: message.content.length,
+          startsWithBang: message.content.startsWith('!'),
+        },
       },
     );
 
@@ -119,7 +122,10 @@ const messageCreate: Event = {
         'MESSAGE',
         'Message does not match any command pattern',
         {
-          content: message.content,
+          contentMeta: {
+            length: message.content.length,
+            startsWithBang: message.content.startsWith('!'),
+          },
         },
       );
     }

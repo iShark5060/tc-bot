@@ -103,11 +103,18 @@ const healtroop: Command = {
       });
       return;
     }
+    const sheetId = process.env.GOOGLE_SHEET_ID?.trim();
+    if (!sheetId) {
+      console.error(
+        '[HEALTROOP] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.',
+      );
+      await interaction.editReply({
+        content: 'Google Sheet is not configured (missing GOOGLE_SHEET_ID).',
+      });
+      return;
+    }
 
-    const rows = await getSheetRowsCached(
-      googleSheets,
-      process.env.GOOGLE_SHEET_ID || '',
-    );
+    const rows = await getSheetRowsCached(googleSheets, sheetId);
 
     const troopRows = findTroopRows(rows, troopTier, troopType);
     if (troopRows.length === 0) {
@@ -241,11 +248,19 @@ const healtroop: Command = {
         });
         return;
       }
+      const sheetId = process.env.GOOGLE_SHEET_ID?.trim();
+      if (!sheetId) {
+        console.error(
+          '[HEALTROOP] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.',
+        );
+        await interaction.update({
+          content: 'Google Sheet is not configured (missing GOOGLE_SHEET_ID).',
+          components: [],
+        });
+        return;
+      }
 
-      const rows = await getSheetRowsCached(
-        googleSheets,
-        process.env.GOOGLE_SHEET_ID || '',
-      );
+      const rows = await getSheetRowsCached(googleSheets, sheetId);
 
       const troopRows = findTroopRows(rows, troopTier, troopType).filter(
         (r) => String(r.get('troopName')) === String(selectedName),

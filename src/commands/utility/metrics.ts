@@ -49,9 +49,7 @@ const metrics: Command = {
       const successCount = totals.success_count;
       const failureCount = totals.failure_count;
       const successRate =
-        totalCount > 0
-          ? Math.round((successCount / totalCount) * 1000) / 10
-          : 0;
+        totalCount > 0 ? ((successCount / totalCount) * 100).toFixed(1) : '0.0';
 
       const topLines =
         top.length > 0

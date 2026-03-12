@@ -295,16 +295,21 @@ export function checkpoint(mode = 'TRUNCATE'): void {
   }
 }
 
-export function startWALCheckpoint(intervalMs: number | null = 300000): void {
+export function startWALCheckpoint(intervalMs?: number | null): void {
   initDb();
   purgeOldRecords();
   if (checkpointTimer) return;
+  const effectiveIntervalMs = intervalMs ?? CHECKPOINT_INTERVAL_MS;
   checkpointTimer = setInterval(() => {
     checkpoint('TRUNCATE');
     purgeOldRecords();
-  }, intervalMs ?? CHECKPOINT_INTERVAL_MS);
+  }, effectiveIntervalMs);
   checkpointTimer.unref?.();
-  console.log('[USAGE:SQLite] WAL checkpoint timer started:', intervalMs, 'ms');
+  console.log(
+    '[USAGE:SQLite] WAL checkpoint timer started:',
+    effectiveIntervalMs,
+    'ms',
+  );
 }
 
 export function stopWALCheckpoint(): void {
