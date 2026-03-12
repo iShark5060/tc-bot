@@ -78,8 +78,9 @@ function calculateGearStats(
 ): GearCalculations {
   const currentMultiplier = 1 + currentLevel / 10;
   const baseStat = currentStat / currentMultiplier;
+  const len = Math.min(GEARCHECK_LEVELS.length, GEARCHECK_MULTIPLIERS.length);
 
-  return GEARCHECK_LEVELS.reduce((acc, level, index) => {
+  return GEARCHECK_LEVELS.slice(0, len).reduce((acc, level, index) => {
     acc[level] = (baseStat * GEARCHECK_MULTIPLIERS[index]).toFixed(2);
     return acc;
   }, {} as GearCalculations);

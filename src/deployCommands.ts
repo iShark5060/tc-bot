@@ -55,15 +55,20 @@ async function deployNewCommands(commands: unknown[]): Promise<void> {
     `[DEPLOY] Commands: ${commands.map((c) => (c as { name: string }).name).join(', ')}`,
   );
 
-  console.log('[DEPLOY] Starting in 3 seconds... (Ctrl+C to cancel)');
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-
   const clientId = process.env.CLIENT_ID;
   if (!clientId) {
     throw new Error('Missing CLIENT_ID in environment variables');
   }
 
   const guildId = process.env.GUILD_ID;
+  if (guildId) {
+    console.log(`[DEPLOY] Target: guild deployment (${guildId}).`);
+  } else {
+    console.log('[DEPLOY] Target: global deployment.');
+  }
+
+  console.log('[DEPLOY] Starting in 3 seconds... (Ctrl+C to cancel)');
+  await new Promise((resolve) => setTimeout(resolve, 3000));
   if (guildId) {
     const guildData = (await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),

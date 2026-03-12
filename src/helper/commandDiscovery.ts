@@ -12,7 +12,7 @@ export async function discoverCommandFiles(
     const current = stack.pop();
     if (!current) continue;
 
-    const stat = await fs.lstat(current);
+    const stat = await fs.stat(current);
     if (stat.isDirectory()) {
       const entries = await fs.readdir(current);
       for (const entry of entries) {

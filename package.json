@@ -1,6 +1,6 @@
 {
   "name": "tc-bot",
-  "version": "7.6.0",
+  "version": "7.6.1",
   "description": "Ark of War Theorycrafter Bot",
   "keywords": [],
   "homepage": "https://github.com/ishark5060/tc-bot#readme",
@@ -47,7 +47,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@prettier/plugin-php": "^0.24.0",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^25.3.3",
     "eslint": "^9.28.0",
