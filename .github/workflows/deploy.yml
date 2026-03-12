@@ -23,6 +23,7 @@ jobs:
       SERVER_USER: ${{ secrets.SERVER_USER }}
       SERVER_HOST: ${{ secrets.SERVER_HOST }}
       SERVER_PATH: ${{ secrets.SERVER_PATH }}
+      SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
 
     steps:
       - name: Checkout code
@@ -84,6 +85,7 @@ jobs:
           require_non_empty "SERVER_HOST" "$SERVER_HOST"
           require_non_empty "SERVER_USER" "$SERVER_USER"
           require_non_empty "SERVER_PATH" "$SERVER_PATH"
+          require_non_empty "SERVER_SSH_PORT" "$SERVER_SSH_PORT"
 
           case "$SERVER_PATH" in
             ""|"/"|"."|".."|"~"|"~/"|"/home"|"/root")
@@ -116,19 +118,20 @@ jobs:
             --exclude='.env' \
             --exclude='logs/' \
             --exclude='data/' \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
+            -e "ssh -p $SERVER_SSH_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             /tmp/deploy/ \
             "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
 
       - name: Restart PM2
         run: |
-          if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PATH" ]; then
-            echo "ERROR: SERVER_USER, SERVER_HOST, or SERVER_PATH secret is missing or empty."
+          if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_PATH" ] || [ -z "$SERVER_SSH_PORT" ]; then
+            echo "ERROR: SERVER_USER, SERVER_HOST, SERVER_PATH, or SERVER_SSH_PORT secret is missing or empty."
             exit 1
           fi
           COMMIT_MSG=$(git log -1 --format='%s' | head -c 100)
           COMMIT_MSG=$(printf '%s' "$COMMIT_MSG" | tr -cd 'a-zA-Z0-9 ._:,/()-')
           ssh -i ~/.ssh/deploy_key \
+            -p "$SERVER_SSH_PORT" \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
             "$SERVER_USER@$SERVER_HOST" \
