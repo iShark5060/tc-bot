@@ -34,68 +34,64 @@ From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reaso
 
 ## Configuration
 
-You will need to create several files and fill them out in order to use the bot.
+Use `.env.example` as your template:
 
-.env
-
-```
-# Your Discord Bot Token
-TOKEN=balblub
-
-#SQLite
-SQLITE_DB_PATH='./data/metrics.db'
-CHECKPOINT_INTERVAL_MS=300000
-
-# Your userID.
-CLIENT_ID=123456
-# Your ServerID.
-GUILD_ID=123456
-
-# Channel for Autoupdated Mopup info (Status).
-CHANNEL_ID1=123456
-# Channel for Autoupdated Mopup info (Timer).
-CHANNEL_ID2=123456
-
-# Legacy message command support (optional, disabled by default)
-ENABLE_LEGACY_MESSAGE_COMMANDS=false
-# Channel ID for legacy !tcmu command (required only when enabled)
-MESSAGE_COMMAND_CHANNEL_ID=123456
-
-# Google Spreadsheet ID (preferred)
-GOOGLE_SPREADSHEET_ID=12345
-# GoogleSheet ID with the data
-GOOGLE_SHEET_ID=12345
-# Cache time in ms
-GOOGLE_SHEET_CACHE=300000
-
-# Webhook URL for Discord Notifications when the bot starts (number part).
-WEBHOOK_ID=123456
-# Webhook URL for Discord Notifications when the bot starts (token part).
-WEBHOOK_TOKEN=blablablublala
-
-# Metrics retention in days (default 90)
-METRICS_RETENTION_DAYS=90
+```bash
+cp .env.example .env
 ```
 
-Unless you have a copy of the Theorycrafters Google Docs sheet, you probably will not be able to use the Healing/ITS function.
-If you do - the API access credentials go into the client_secret.json
+PowerShell equivalent:
 
-client_secret.json
-
+```powershell
+Copy-Item .env.example .env
 ```
+
+Fill all required values in `.env`. At minimum, these are required for startup:
+
+- `TOKEN`
+- `CLIENT_ID`
+- `GUILD_ID`
+- `GOOGLE_SPREADSHEET_ID`
+- `GOOGLE_SHEET_ID`
+
+### dotenvx encrypted env files
+
+This project supports encrypted env files with dotenvx.
+
+1. Keep local plaintext env in `.env` (gitignored).
+2. Encrypt environment files when ready:
+
+   ```bash
+   npx dotenvx encrypt -f .env.production
+   npx dotenvx encrypt -f .env.development
+   ```
+
+3. Keep `.env.keys` private (never commit it - ensure it's in `.gitignore`).
+4. Add GitHub secret for CI/deploy decryption:
+   - `DOTENV_PRIVATE_KEY_PRODUCTION`
+
+> The deploy workflow now reads build/test/typecheck/deploy env from `.env.production` via dotenvx.
+
+### Google service account credentials
+
+For Google Sheets access, provide `client_secret.json` in project root.
+
+```json
 {
   "type": "service_account",
   "project_id": "your_project_id",
   "private_key_id": "your_private_key_id",
-  "private_key": "-----BEGIN PRIVATE KEY-----so much of a private key here-----END PRIVATE KEY-----\n",
+  "private_key": "-----BEGIN PRIVATE KEY-----...-----END PRIVATE KEY-----\n",
   "client_email": "your@client.email",
   "client_id": "123456",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "insertthegooglecerturlhere"
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/..."
 }
 ```
+
+Unless you have a copy of the Theorycrafters Google Sheet and valid API credentials, Healing/ITS features will not work.
 
 ## Running the App
 

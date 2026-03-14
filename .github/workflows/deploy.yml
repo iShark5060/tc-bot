@@ -11,6 +11,7 @@ on:
       - 'package*.json'
       - 'ecosystem.config.cjs'
       - 'tsconfig.json'
+      - '.env.production'
   workflow_dispatch:
 
 jobs:
@@ -24,6 +25,7 @@ jobs:
       SERVER_HOST: ${{ secrets.SERVER_HOST }}
       SERVER_PATH: ${{ secrets.SERVER_PATH }}
       SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+      DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
 
     steps:
       - name: Checkout code
@@ -46,14 +48,21 @@ jobs:
           fi
           printf '%s' "$GOOGLE_CLIENT_SECRET_BASE64" | base64 -d > client_secret.json
 
+      - name: Validate dotenv private key
+        run: |
+          if [ -z "$DOTENV_PRIVATE_KEY_PRODUCTION" ]; then
+            echo "ERROR: DOTENV_PRIVATE_KEY_PRODUCTION secret is missing or empty."
+            exit 1
+          fi
+
       - name: Build TypeScript
-        run: npm run build
+        run: npx dotenvx run --strict -f .env.production -- npm run build
 
       - name: Run tests
-        run: npm run test
+        run: npx dotenvx run --strict -f .env.production -- npm run test
 
       - name: Typecheck tests
-        run: npm run typecheck
+        run: npx dotenvx run --strict -f .env.production -- npm run typecheck
 
       - name: Deploy slash commands
         env:
@@ -64,7 +73,7 @@ jobs:
             echo "Skipping command deploy: TOKEN or CLIENT_ID secret missing."
             exit 0
           fi
-          npm run deploy
+          npx dotenvx run --strict -f .env.production -- npm run deploy
 
       - name: List built files (debug)
         run: ls -la dist/
