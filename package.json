@@ -1,6 +1,6 @@
 {
   "name": "tc-bot",
-  "version": "7.6.1",
+  "version": "7.7.0",
   "description": "Ark of War Theorycrafter Bot",
   "keywords": [],
   "homepage": "https://github.com/ishark5060/tc-bot#readme",
@@ -33,10 +33,10 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.54.1",
+    "@dotenvx/dotenvx": "^1.55.1",
     "@googleapis/sheets": "^13.0.1",
     "@pm2/io": "^6.1.0",
-    "better-sqlite3": "^12.6.2",
+    "better-sqlite3": "^12.8.0",
     "discord.js": "^14.25.1",
     "google-auth-library": "^10.6.1"
   },

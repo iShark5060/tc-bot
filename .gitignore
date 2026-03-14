@@ -1,6 +1,8 @@
 node_modules/
 
 .env
+.env.local
+.env.keys
 client_secret.json
 
 dist/
@@ -11,6 +13,7 @@ data/*.db-shm
 data/*.db-wal
 
 logs/
+_resources/
 
 .pm2
 

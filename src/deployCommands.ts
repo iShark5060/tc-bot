@@ -1,4 +1,4 @@
-import '@dotenvx/dotenvx/config';
+import './env/loadEnv.js';
 import { REST, Routes } from 'discord.js';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';

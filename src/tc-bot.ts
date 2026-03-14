@@ -1,4 +1,4 @@
-import '@dotenvx/dotenvx/config';
+import './env/loadEnv.js';
 import { sheets } from '@googleapis/sheets';
 import io from '@pm2/io';
 import {
