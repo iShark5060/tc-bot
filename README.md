@@ -66,7 +66,7 @@ This project supports encrypted env files with dotenvx.
    npx dotenvx encrypt -f .env.development
    ```
 
-3. Keep `.env.keys` private (never commit it).
+3. Keep `.env.keys` private (never commit it - ensure it's in `.gitignore`).
 4. Add GitHub secret for CI/deploy decryption:
    - `DOTENV_PRIVATE_KEY_PRODUCTION`
 

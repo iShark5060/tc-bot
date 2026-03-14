@@ -14,4 +14,6 @@ if (fs.existsSync(envPath)) {
     );
     throw error;
   }
+} else {
+  console.debug(`[Config] No .env file found at "${envPath}", skipping loadEnv.`);
 }
