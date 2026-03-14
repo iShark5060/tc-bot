@@ -53,7 +53,7 @@ jobs:
         run: npm run test
 
       - name: Typecheck tests
-        run: npm run test:typecheck
+        run: npm run typecheck
 
       - name: Deploy slash commands
         env:
