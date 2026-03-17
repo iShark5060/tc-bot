@@ -43,7 +43,7 @@
   "overrides": {
     "gaxios": "^7.1.4",
     "minimatch@>=9": "^10.2.4",
-    "undici": "^7.24.0"
+    "undici": "^7.24.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
