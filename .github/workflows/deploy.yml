@@ -124,8 +124,9 @@ jobs:
           cp client_secret.json /tmp/deploy/
           cp .env.production /tmp/deploy/
           printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' "$DOTENV_PRIVATE_KEY_PRODUCTION" > /tmp/deploy/.env.keys
+          chmod 600 /tmp/deploy/.env.keys
 
-          rsync -av --delete \
+          rsync -avp --delete \
             --exclude='.env' \
             --exclude='logs/' \
             --exclude='data/' \
