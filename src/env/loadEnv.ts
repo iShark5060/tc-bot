@@ -39,6 +39,10 @@ function resolveEnvPath(): string {
       return path.resolve(baseDir, defaultFile);
     }
 
+    if (!fs.existsSync(resolved)) {
+      return resolved;
+    }
+
     try {
       const baseRealPath = fs.realpathSync.native(baseDir);
       const resolvedRealPath = fs.realpathSync.native(resolved);
@@ -58,9 +62,7 @@ function resolveEnvPath(): string {
 
       return resolved;
     } catch {
-      rejectExplicitFile(
-        'ignored path resolving outside baseDir or symlink traversal',
-      );
+      rejectExplicitFile('ignored path due to realpath validation failure');
       return path.resolve(baseDir, defaultFile);
     }
   }
