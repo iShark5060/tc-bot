@@ -20,6 +20,7 @@ import { discoverCommandFiles } from './helper/commandDiscovery.js';
 import { ENABLE_LEGACY_MESSAGE_COMMANDS, TIMERS } from './helper/constants.js';
 import { debugLogger } from './helper/debugLogger.js';
 import { notifyDiscord } from './helper/discordNotification.js';
+import { stopIdempotencyCleanup } from './helper/idempotencyGuard.js';
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
@@ -144,6 +145,9 @@ process.on('uncaughtException', (error) => {
 
 let isShuttingDown = false;
 let mopupTimer: NodeJS.Timeout | null = null;
+let mopupUpdateInProgress = false;
+const MOPUP_SCHEDULER_STATE_KEY = 'mopup:scheduler';
+const MOPUP_CHANNEL_STATE_PREFIX = 'mopup:channel:';
 
 (async function initializeBot(): Promise<void> {
   debugLogger.boot('Starting bot initialization');
@@ -175,8 +179,8 @@ let mopupTimer: NodeJS.Timeout | null = null;
     debugLogger.step('BOOT', 'Step 8: Starting mopup timer');
     startMopupTimer();
 
-    debugLogger.step('BOOT', 'Step 9: Updating mopup channels');
-    await updateMopupChannels();
+    debugLogger.step('BOOT', 'Step 9: Running initial mopup schedule check');
+    await runMopupUpdateIfDue('startup');
     debugLogger.boot('Bot initialization completed successfully');
   } catch (error) {
     debugLogger.error('BOOT', 'Failed to initialize bot', {
@@ -216,6 +220,9 @@ async function gracefulShutdown(): Promise<void> {
 
     debugLogger.step('SHUTDOWN', 'Stopping latency monitoring');
     stopLatencyMonitoring();
+
+    debugLogger.step('SHUTDOWN', 'Stopping idempotency cleanup timer');
+    stopIdempotencyCleanup();
 
     try {
       debugLogger.step('SHUTDOWN', 'Stopping WAL checkpoint');
@@ -463,31 +470,71 @@ function startMopupTimer(): void {
     return;
   }
   debugLogger.step('MOPUP', 'Starting mopup timer', {
-    interval: `${TIMERS.MOPUP_INTERVAL_MS / 1000 / 60} minutes`,
+    pollInterval: `${TIMERS.MOPUP_POLL_INTERVAL_MS / 1000}s`,
+    minUpdateInterval: `${TIMERS.MOPUP_INTERVAL_MS / 1000 / 60} minutes`,
     channel1: process.env.CHANNEL_ID1,
     channel2: process.env.CHANNEL_ID2,
   });
-  let updateInProgress = false;
   mopupTimer = setInterval(() => {
-    if (updateInProgress) {
+    void runMopupUpdateIfDue('timer');
+  }, TIMERS.MOPUP_POLL_INTERVAL_MS);
+  mopupTimer.unref?.();
+}
+
+function getMopupChannelStateKey(channelId: string): string {
+  return `${MOPUP_CHANNEL_STATE_PREFIX}${channelId}`;
+}
+
+async function runMopupUpdateIfDue(
+  trigger: 'startup' | 'timer',
+): Promise<void> {
+  if (mopupUpdateInProgress) {
+    if (trigger === 'timer') {
       debugLogger.warn(
         'MOPUP',
         'Skipping timer tick: previous update still running',
       );
-      return;
     }
-    updateInProgress = true;
-    debugLogger.step('MOPUP', 'Mopup timer triggered');
-    void updateMopupChannels()
-      .catch((error) => {
-        debugLogger.error('MOPUP', 'Unhandled mopup timer update failure', {
-          error: error as Error,
-        });
-      })
-      .finally(() => {
-        updateInProgress = false;
-      });
-  }, TIMERS.MOPUP_INTERVAL_MS);
+    return;
+  }
+
+  const waitMs = usageTracker.getMopupUpdateWaitMs(
+    MOPUP_SCHEDULER_STATE_KEY,
+    TIMERS.MOPUP_INTERVAL_MS,
+  );
+  if (waitMs > 0) {
+    if (trigger === 'startup') {
+      debugLogger.info(
+        'MOPUP',
+        'Skipping startup mopup update: cooldown still active',
+        {
+          remainingSeconds: Math.ceil(waitMs / 1000),
+        },
+      );
+    }
+    return;
+  }
+
+  mopupUpdateInProgress = true;
+  debugLogger.step('MOPUP', 'Mopup update due, running channel refresh', {
+    trigger,
+  });
+  try {
+    const updatedChannelIds = await updateMopupChannels();
+    usageTracker.setMopupUpdateTimestamp(MOPUP_SCHEDULER_STATE_KEY);
+    debugLogger.info('MOPUP', 'Persisted mopup scheduler timestamp', {
+      trigger,
+      updatedChannelCount: updatedChannelIds.length,
+      updatedChannelIds,
+    });
+  } catch (error) {
+    debugLogger.error('MOPUP', 'Unhandled mopup timer update failure', {
+      trigger,
+      error: error as Error,
+    });
+  } finally {
+    mopupUpdateInProgress = false;
+  }
 }
 
 function waitForClientReady(timeoutMs = 30000): Promise<void> {
@@ -514,8 +561,9 @@ function waitForClientReady(timeoutMs = 30000): Promise<void> {
   });
 }
 
-async function updateMopupChannels(): Promise<void> {
+async function updateMopupChannels(): Promise<string[]> {
   debugLogger.step('MOPUP', 'Updating mopup channels');
+  const updatedChannelIds: string[] = [];
   try {
     debugLogger.debug('MOPUP', 'Calculating mopup timing');
     const mopupInfo = calculateMopupTiming();
@@ -555,38 +603,68 @@ async function updateMopupChannels(): Promise<void> {
       ch?.type === ChannelType.GuildVoice ||
       ch?.type === ChannelType.GuildStageVoice;
 
-    if (isRenameable(channel1)) {
-      const statusEmoji = mopupInfo.status === 'ACTIVE' ? '🟢' : '🔴';
-      const newName = `${statusEmoji} ${mopupInfo.status} Mopup`;
-      if (channel1.name !== newName) {
-        debugLogger.debug('MOPUP', 'Updating channel 1 name', { newName });
-        await channel1.setName(newName);
-        debugLogger.step('MOPUP', 'Channel 1 name updated successfully');
-      } else {
-        debugLogger.debug('MOPUP', 'Skipping channel 1 rename (unchanged)', {
-          channelId: channel1.id,
-          currentName: channel1.name,
+    const tryRenameChannel = async (
+      channel: typeof channel1,
+      newName: string,
+      updatedIds: string[],
+      label: 'channel 1' | 'channel 2',
+    ): Promise<void> => {
+      if (!isRenameable(channel)) return;
+
+      if (channel.name === newName) {
+        debugLogger.debug('MOPUP', `Skipping ${label} rename (unchanged)`, {
+          channelId: channel.id,
+          currentName: channel.name,
         });
+        return;
       }
-    }
-    if (isRenameable(channel2)) {
-      const newName = `Time remaining: ${mopupInfo.time}`;
-      if (channel2.name !== newName) {
-        debugLogger.debug('MOPUP', 'Updating channel 2 name', { newName });
-        await channel2.setName(newName);
-        debugLogger.step('MOPUP', 'Channel 2 name updated successfully');
-      } else {
-        debugLogger.debug('MOPUP', 'Skipping channel 2 rename (unchanged)', {
-          channelId: channel2.id,
-          currentName: channel2.name,
-        });
+
+      const waitMs = usageTracker.getMopupUpdateWaitMs(
+        getMopupChannelStateKey(channel.id),
+        TIMERS.MOPUP_INTERVAL_MS,
+      );
+      if (waitMs > 0) {
+        debugLogger.warn(
+          'MOPUP',
+          `Skipping ${label} rename: channel cooldown still active`,
+          {
+            channelId: channel.id,
+            remainingSeconds: Math.ceil(waitMs / 1000),
+          },
+        );
+        return;
       }
-    }
+
+      debugLogger.debug('MOPUP', `Updating ${label} name`, { newName });
+      await channel.setName(newName);
+      usageTracker.setMopupUpdateTimestamp(getMopupChannelStateKey(channel.id));
+      updatedIds.push(channel.id);
+      debugLogger.step(
+        'MOPUP',
+        `${label.charAt(0).toUpperCase()}${label.slice(1)} name updated successfully`,
+      );
+    };
+
+    const statusEmoji = mopupInfo.status === 'ACTIVE' ? '🟢' : '🔴';
+    await tryRenameChannel(
+      channel1,
+      `${statusEmoji} ${mopupInfo.status} Mopup`,
+      updatedChannelIds,
+      'channel 1',
+    );
+    await tryRenameChannel(
+      channel2,
+      `Time remaining: ${mopupInfo.time}`,
+      updatedChannelIds,
+      'channel 2',
+    );
     debugLogger.info('MOPUP', 'Mopup channels updated successfully');
+    return updatedChannelIds;
   } catch (error) {
     debugLogger.error('MOPUP', 'Failed to update mopup channels', {
       error: error as Error,
     });
     console.error('[EVENT:MOPUP] Failed to update mopup channels:', error);
+    throw error;
   }
 }

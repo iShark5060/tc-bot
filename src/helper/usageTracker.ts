@@ -33,6 +33,8 @@ let insertStmt: Statement | null = null;
 let totalsStmt: Statement | null = null;
 let topCommandsStmt: Statement | null = null;
 let cleanupStmt: Statement | null = null;
+let upsertMopupStateStmt: Statement | null = null;
+let getMopupStateStmt: Statement | null = null;
 let droppedUsageEvents = 0;
 
 type UsageQueueItem = {
@@ -89,6 +91,13 @@ function initDb(): void {
     );
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS mopup_update_state (
+      key TEXT PRIMARY KEY,
+      updated_at_ms INTEGER NOT NULL
+    );
+  `);
+
   db.exec(
     'CREATE INDEX IF NOT EXISTS idx_usage_created_at ON command_usage(created_at);',
   );
@@ -124,6 +133,18 @@ function initDb(): void {
   cleanupStmt = db.prepare(`
     DELETE FROM command_usage
     WHERE created_at < datetime('now', ?)
+  `);
+
+  upsertMopupStateStmt = db.prepare(`
+    INSERT INTO mopup_update_state (key, updated_at_ms)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET updated_at_ms = excluded.updated_at_ms
+  `);
+
+  getMopupStateStmt = db.prepare(`
+    SELECT updated_at_ms
+    FROM mopup_update_state
+    WHERE key = ?
   `);
 
   purgeOldRecords();
@@ -295,6 +316,39 @@ export function checkpoint(mode = 'TRUNCATE'): void {
   }
 }
 
+export function setMopupUpdateTimestamp(
+  key: string,
+  timestampMs = Date.now(),
+): void {
+  try {
+    initDb();
+    if (!upsertMopupStateStmt) return;
+    upsertMopupStateStmt.run(String(key), Math.floor(timestampMs));
+  } catch (e) {
+    console.error('[USAGE:SQLite] Failed to set mopup update timestamp:', e);
+  }
+}
+
+export function getMopupUpdateWaitMs(
+  key: string,
+  minIntervalMs: number,
+  nowMs = Date.now(),
+): number {
+  try {
+    initDb();
+    if (!getMopupStateStmt) return 0;
+    const row = getMopupStateStmt.get(String(key)) as
+      | { updated_at_ms?: number }
+      | undefined;
+    const lastUpdateMs = Number(row?.updated_at_ms ?? 0);
+    if (!Number.isFinite(lastUpdateMs) || lastUpdateMs <= 0) return 0;
+    return Math.max(0, Math.floor(lastUpdateMs + minIntervalMs - nowMs));
+  } catch (e) {
+    console.error('[USAGE:SQLite] Failed to get mopup wait time:', e);
+    return 0;
+  }
+}
+
 export function startWALCheckpoint(intervalMs?: number | null): void {
   initDb();
   purgeOldRecords();
@@ -332,6 +386,8 @@ export function closeDb(): void {
       totalsStmt = null;
       topCommandsStmt = null;
       cleanupStmt = null;
+      upsertMopupStateStmt = null;
+      getMopupStateStmt = null;
       db.close();
       db = null;
       console.log('[USAGE:SQLite] Database closed');
