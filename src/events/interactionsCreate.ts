@@ -7,6 +7,7 @@ import {
 
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleCommandError } from '../helper/errorHandler.js';
+import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
 import {
   commandErrors,
   commandsCounter,
@@ -18,6 +19,20 @@ import type { Event, ExtendedClient } from '../types/index.js';
 const interactionsCreate: Event = {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction): Promise<void> {
+    if (isDuplicateEventId(`interaction:${interaction.id}`)) {
+      debugLogger.warn(
+        'INTERACTION',
+        'Skipping duplicate InteractionCreate event',
+        {
+          interactionId: interaction.id,
+          type: interaction.type,
+          userId: interaction.user?.id,
+          guildId: interaction.guildId,
+        },
+      );
+      return;
+    }
+
     debugLogger.event(Events.InteractionCreate, 'Interaction received', {
       type: interaction.type,
       id: interaction.id,

@@ -11,6 +11,7 @@ import {
 } from '../helper/constants.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleMessageError } from '../helper/errorHandler.js';
+import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
 import { buildMopupEmbed } from '../helper/mopup.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';
@@ -40,6 +41,19 @@ const messageCreate: Event = {
         channelName,
         isBot: message.author?.bot,
       });
+      return;
+    }
+
+    if (isDuplicateEventId(`message:${message.id}`)) {
+      debugLogger.warn(
+        'MESSAGE',
+        'Skipping duplicate MessageCreate event for message command',
+        {
+          messageId: message.id,
+          channelId: message.channelId,
+          userId: message.author?.id,
+        },
+      );
       return;
     }
 
