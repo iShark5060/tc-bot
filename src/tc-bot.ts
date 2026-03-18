@@ -146,8 +146,12 @@ process.on('uncaughtException', (error) => {
 let isShuttingDown = false;
 let mopupTimer: NodeJS.Timeout | null = null;
 let mopupUpdateInProgress = false;
+let mopupUpdateStartedAtMs = 0;
+let mopupLastLockWarnAtMs = 0;
 const MOPUP_SCHEDULER_STATE_KEY = 'mopup:scheduler';
 const MOPUP_CHANNEL_STATE_PREFIX = 'mopup:channel:';
+const MOPUP_LOCK_WARN_AFTER_MS = 30 * 1000;
+const MOPUP_LOCK_WARN_EVERY_MS = 60 * 1000;
 
 (async function initializeBot(): Promise<void> {
   debugLogger.boot('Starting bot initialization');
@@ -490,10 +494,22 @@ async function runMopupUpdateIfDue(
 ): Promise<void> {
   if (mopupUpdateInProgress) {
     if (trigger === 'timer') {
-      debugLogger.warn(
-        'MOPUP',
-        'Skipping timer tick: previous update still running',
-      );
+      const now = Date.now();
+      const lockDurationMs =
+        mopupUpdateStartedAtMs > 0 ? now - mopupUpdateStartedAtMs : 0;
+      const shouldWarn =
+        lockDurationMs >= MOPUP_LOCK_WARN_AFTER_MS &&
+        now - mopupLastLockWarnAtMs >= MOPUP_LOCK_WARN_EVERY_MS;
+      if (shouldWarn) {
+        mopupLastLockWarnAtMs = now;
+        debugLogger.warn(
+          'MOPUP',
+          'Skipping timer tick: previous update still running',
+          {
+            lockDurationSeconds: Math.ceil(lockDurationMs / 1000),
+          },
+        );
+      }
     }
     return;
   }
@@ -516,6 +532,8 @@ async function runMopupUpdateIfDue(
   }
 
   mopupUpdateInProgress = true;
+  mopupUpdateStartedAtMs = Date.now();
+  mopupLastLockWarnAtMs = 0;
   debugLogger.step('MOPUP', 'Mopup update due, running channel refresh', {
     trigger,
   });
@@ -534,6 +552,8 @@ async function runMopupUpdateIfDue(
     });
   } finally {
     mopupUpdateInProgress = false;
+    mopupUpdateStartedAtMs = 0;
+    mopupLastLockWarnAtMs = 0;
   }
 }
 
