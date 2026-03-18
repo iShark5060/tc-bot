@@ -138,6 +138,12 @@ jobs:
             echo "ERROR: SERVER_USER, SERVER_HOST, SERVER_PATH, or SERVER_SSH_PORT secret is missing or empty."
             exit 1
           fi
+          case "$SERVER_PATH" in
+            *"'"*|*'$'*|*'`'*|*'&'*|*';'*|*'|'*|*'<'*|*'>'*|*$'\n'*|*$'\r'*)
+              echo "ERROR: SERVER_PATH contains unsafe shell metacharacters and cannot be passed safely to remote shell."
+              exit 1
+              ;;
+          esac
           COMMIT_MSG=$(git log -1 --format='%s' | head -c 100)
           COMMIT_MSG=$(printf '%s' "$COMMIT_MSG" | tr -cd 'a-zA-Z0-9 ._:,/()-')
           DOTENV_KEY_B64=$(printf '%s' "$DOTENV_PRIVATE_KEY_PRODUCTION" | base64 | tr -d '\n')
@@ -146,7 +152,16 @@ jobs:
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
             "$SERVER_USER@$SERVER_HOST" \
-            "cd \"$SERVER_PATH\" && printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' \"\$(printf '%s' '$DOTENV_KEY_B64' | base64 -d)\" > .env.keys && chmod 600 .env.keys && test -f .env.keys || { echo 'ERROR: Failed to create or configure .env.keys on server'; exit 1; } && cp .env.production .env && source ~/.nvm/nvm.sh && export DEPLOY_REASON='CI deploy: ${COMMIT_MSG}' && pm2 restart TC-Bot --update-env"
+            "DOTENV_KEY_B64='$DOTENV_KEY_B64' COMMIT_MSG='$COMMIT_MSG' SERVER_PATH='$SERVER_PATH' bash -s" <<'EOF'
+          set -euo pipefail
+          cd "$SERVER_PATH"
+          printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' "$(printf '%s' "$DOTENV_KEY_B64" | base64 -d)" > .env.keys
+          chmod 600 .env.keys
+          rm -f .env
+          source ~/.nvm/nvm.sh
+          export DEPLOY_REASON="CI deploy: ${COMMIT_MSG}"
+          pm2 restart TC-Bot --update-env
+          EOF
       - name: Cleanup SSH key
         if: always()
         run: rm -f ~/.ssh/deploy_key
