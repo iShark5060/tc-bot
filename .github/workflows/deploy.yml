@@ -123,8 +123,6 @@ jobs:
           cp ecosystem.config.cjs /tmp/deploy/
           cp client_secret.json /tmp/deploy/
           cp .env.production /tmp/deploy/
-          printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' "$DOTENV_PRIVATE_KEY_PRODUCTION" > /tmp/deploy/.env.keys
-          chmod 600 /tmp/deploy/.env.keys
 
           rsync -avp --delete \
             --exclude='.env' \
@@ -142,13 +140,13 @@ jobs:
           fi
           COMMIT_MSG=$(git log -1 --format='%s' | head -c 100)
           COMMIT_MSG=$(printf '%s' "$COMMIT_MSG" | tr -cd 'a-zA-Z0-9 ._:,/()-')
+          DOTENV_KEY_B64=$(printf '%s' "$DOTENV_PRIVATE_KEY_PRODUCTION" | base64 | tr -d '\n')
           ssh -i ~/.ssh/deploy_key \
             -p "$SERVER_SSH_PORT" \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
             "$SERVER_USER@$SERVER_HOST" \
-            "cd \"$SERVER_PATH\" && test -f .env.keys || { echo 'ERROR: .env.keys missing on server'; exit 1; } && cp .env.production .env && source ~/.nvm/nvm.sh && export DEPLOY_REASON='CI deploy: ${COMMIT_MSG}' && pm2 restart TC-Bot --update-env"
-
+            "cd \"$SERVER_PATH\" && printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' \"\$(printf '%s' '$DOTENV_KEY_B64' | base64 -d)\" > .env.keys && chmod 600 .env.keys && test -f .env.keys || { echo 'ERROR: Failed to create or configure .env.keys on server'; exit 1; } && cp .env.production .env && source ~/.nvm/nvm.sh && export DEPLOY_REASON='CI deploy: ${COMMIT_MSG}' && pm2 restart TC-Bot --update-env"
       - name: Cleanup SSH key
         if: always()
         run: rm -f ~/.ssh/deploy_key
