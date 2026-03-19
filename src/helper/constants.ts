@@ -60,5 +60,4 @@ export const ENABLE_LEGACY_MESSAGE_COMMANDS =
   process.env.ENABLE_LEGACY_MESSAGE_COMMANDS === 'true' ||
   process.env.ENABLE_LEGACY_MESSAGE_COMMANDS === '1';
 
-export const MESSAGE_COMMAND_CHANNEL_ID =
-  process.env.MESSAGE_COMMAND_CHANNEL_ID || '';
+export const MESSAGE_COMMAND_CHANNEL_ID = process.env.MESSAGE_COMMAND_CHANNEL_ID || '';

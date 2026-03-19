@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMockRow } from './helpers.js';
 import { calculateKills } from '../src/commands/aow/its.js';
 import { TroopRow } from '../src/types/index.js';
+import { createMockRow } from './helpers.js';
 
 describe('calculateKills', () => {
   const mockRows: TroopRow[] = [

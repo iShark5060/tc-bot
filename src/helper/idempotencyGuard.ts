@@ -27,10 +27,7 @@ function startPeriodicCleanup(): void {
   cleanupTimer.unref?.();
 }
 
-export function isDuplicateEventId(
-  id: string,
-  ttlMs = DEFAULT_TTL_MS,
-): boolean {
+export function isDuplicateEventId(id: string, ttlMs = DEFAULT_TTL_MS): boolean {
   const now = Date.now();
 
   if (seenIds.size >= MAX_ENTRIES) {

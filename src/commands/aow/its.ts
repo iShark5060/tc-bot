@@ -9,38 +9,23 @@ import {
 import { BOT_ICON_URL, VALIDATION } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
-import {
-  TroopRow,
-  type Command,
-  type KillResult,
-  type ExtendedClient,
-} from '../../types/index.js';
+import { TroopRow, type Command, type KillResult, type ExtendedClient } from '../../types/index.js';
 
 const its: Command = {
   data: new SlashCommandBuilder()
     .setName('its')
-    .setDescription(
-      'How many troops can I kill with Ignore Tier Suppression skills?',
+    .setDescription('How many troops can I kill with Ignore Tier Suppression skills?')
+    .addIntegerOption((option) =>
+      option.setName('level').setDescription('iTS Skill Level').setRequired(true),
     )
     .addIntegerOption((option) =>
-      option
-        .setName('level')
-        .setDescription('iTS Skill Level')
-        .setRequired(true),
-    )
-    .addIntegerOption((option) =>
-      option
-        .setName('leadership')
-        .setDescription('Leadership amount')
-        .setRequired(true),
+      option.setName('leadership').setDescription('Leadership amount').setRequired(true),
     )
     .addIntegerOption((option) =>
       option.setName('tier').setDescription('Target Tier').setRequired(true),
     )
     .addIntegerOption((option) =>
-      option
-        .setName('tdr')
-        .setDescription('Target Total Damage Reduction amount'),
+      option.setName('tdr').setDescription('Target Total Damage Reduction amount'),
     ),
   examples: [
     '/its level:30 leadership:500000 tier:12',
@@ -55,11 +40,7 @@ const its: Command = {
     const inputTdr = interaction.options.getInteger('tdr');
     const tdr = Math.min(100, Math.max(0, inputTdr ?? 0));
 
-    if (
-      !skillLevel ||
-      skillLevel < 1 ||
-      skillLevel > VALIDATION.MAX_SKILL_LEVEL
-    ) {
+    if (!skillLevel || skillLevel < 1 || skillLevel > VALIDATION.MAX_SKILL_LEVEL) {
       await interaction.reply({
         content: `You entered skill level ${skillLevel}. Was that intended? Because it's not possible, but it would be REALLY nice if it were...`,
         flags: MessageFlags.Ephemeral,
@@ -98,9 +79,7 @@ const its: Command = {
     }
     const sheetId = process.env.GOOGLE_SHEET_ID?.trim();
     if (!sheetId) {
-      console.error(
-        '[ITS] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.',
-      );
+      console.error('[ITS] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.');
       await interaction.editReply({
         content: 'Google Sheet is not configured (missing GOOGLE_SHEET_ID).',
       });
@@ -143,16 +122,10 @@ function calculateKills(
   leadership: number,
   tdr: number,
 ): KillResult[] {
-  const coef =
-    VALIDATION.ITS_DAMAGE_COEFFICIENT *
-    leadership *
-    skillLevel *
-    ((100 - tdr) / 100);
+  const coef = VALIDATION.ITS_DAMAGE_COEFFICIENT * leadership * skillLevel * ((100 - tdr) / 100);
 
   const matches = rows.filter(
-    (row) =>
-      String(row.get('troopTier')) === String(targetTier) &&
-      row.get('isNPC') === 'N',
+    (row) => String(row.get('troopTier')) === String(targetTier) && row.get('isNPC') === 'N',
   );
 
   return matches

@@ -1,21 +1,17 @@
 {
   "name": "tc-bot",
-  "version": "7.7.1",
+  "version": "7.7.2",
   "description": "Ark of War Theorycrafter Bot",
   "keywords": [],
   "homepage": "https://github.com/ishark5060/tc-bot#readme",
   "bugs": {
     "url": "https://github.com/ishark5060/tc-bot/issues"
   },
+  "license": "GPL-3.0-or-later",
+  "author": "Shark5060",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ishark5060/tc-bot.git"
-  },
-  "license": "GPL-3.0-or-later",
-  "author": "Shark5060",
-  "engines": {
-    "node": ">=25.0.0",
-    "npm": ">=11.0.0"
   },
   "type": "module",
   "main": "dist/tc-bot.js",
@@ -23,9 +19,9 @@
     "build": "tsc",
     "start": "node dist/tc-bot.js",
     "deploy": "tsx src/deployCommands.ts",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "check-format": "prettier --check .",
+    "lint": "oxlint --node-plugin --promise-plugin --import-plugin --vitest-plugin .",
+    "format": "oxfmt --write .",
+    "check-format": "oxfmt --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -33,31 +29,30 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.55.1",
+    "@dotenvx/dotenvx": "^1.56.0",
     "@googleapis/sheets": "^13.0.1",
     "@pm2/io": "^6.1.0",
     "better-sqlite3": "^12.8.0",
     "discord.js": "^14.25.1",
-    "google-auth-library": "^10.6.1"
+    "google-auth-library": "^10.6.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.5.0",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   },
   "overrides": {
     "gaxios": "^7.1.4",
     "minimatch@>=9": "^10.2.4",
     "undici": "^7.24.4"
   },
-  "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@types/better-sqlite3": "^7.6.12",
-    "@types/node": "^25.3.5",
-    "eslint": "^9.28.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-n": "^17.24.0",
-    "eslint-plugin-promise": "^7.2.1",
-    "prettier": "^3.8.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1",
-    "vitest": "^4.0.18"
-  }
+  "engines": {
+    "node": ">=25.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.32.1"
 }

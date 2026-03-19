@@ -11,9 +11,7 @@ import type { Command } from '../../types/index.js';
 const reboot: Command = {
   data: new SlashCommandBuilder()
     .setName('reboot')
-    .setDescription(
-      'Shuts down the bot. PM2 will restart the container automatically.',
-    )
+    .setDescription('Shuts down the bot. PM2 will restart the container automatically.')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addBooleanOption((option) =>
       option
@@ -42,8 +40,7 @@ const reboot: Command = {
     const confirm = interaction.options.getBoolean('confirm');
     if (!confirm) {
       await interaction.reply({
-        content:
-          'Reboot cancelled. You must confirm by setting `confirm:true`.',
+        content: 'Reboot cancelled. You must confirm by setting `confirm:true`.',
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -54,9 +51,7 @@ const reboot: Command = {
       flags: MessageFlags.Ephemeral,
     });
 
-    console.log(
-      `[REBOOT] Command issued by ${interaction.user.tag} in ${interaction.guild.name}`,
-    );
+    console.log(`[REBOOT] Command issued by ${interaction.user.tag} in ${interaction.guild.name}`);
 
     setShutdownReason(`/reboot command issued by ${interaction.user.tag}`);
     setTimeout(() => process.emit('SIGTERM'), 500);

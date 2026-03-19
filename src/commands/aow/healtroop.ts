@@ -41,16 +41,10 @@ const healtroop: Command = {
     .setName('healtroop')
     .setDescription('Calculate cost to heal troops')
     .addIntegerOption((option) =>
-      option
-        .setName('amount')
-        .setDescription('How many troops are injured')
-        .setRequired(true),
+      option.setName('amount').setDescription('How many troops are injured').setRequired(true),
     )
     .addIntegerOption((option) =>
-      option
-        .setName('tier')
-        .setDescription('Tier of the injured units')
-        .setRequired(true),
+      option.setName('tier').setDescription('Tier of the injured units').setRequired(true),
     )
     .addStringOption((option) =>
       option
@@ -74,11 +68,7 @@ const healtroop: Command = {
     const troopTier = interaction.options.getInteger('tier');
     const troopType = interaction.options.getString('type');
 
-    if (
-      troopTier === null ||
-      troopTier < VALIDATION.MIN_TIER ||
-      troopTier > VALIDATION.MAX_TIER
-    ) {
+    if (troopTier === null || troopTier < VALIDATION.MIN_TIER || troopTier > VALIDATION.MAX_TIER) {
       await interaction.reply({
         content: `Tier must be between ${VALIDATION.MIN_TIER} and ${VALIDATION.MAX_TIER}.`,
         flags: MessageFlags.Ephemeral,
@@ -105,9 +95,7 @@ const healtroop: Command = {
     }
     const sheetId = process.env.GOOGLE_SHEET_ID?.trim();
     if (!sheetId) {
-      console.error(
-        '[HEALTROOP] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.',
-      );
+      console.error('[HEALTROOP] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.');
       await interaction.editReply({
         content: 'Google Sheet is not configured (missing GOOGLE_SHEET_ID).',
       });
@@ -126,8 +114,7 @@ const healtroop: Command = {
 
     if (validByName.size === 0) {
       await interaction.editReply({
-        content:
-          'No usable troop data found for that selection (rows are empty or missing costs).',
+        content: 'No usable troop data found for that selection (rows are empty or missing costs).',
       });
       return;
     }
@@ -166,9 +153,7 @@ const healtroop: Command = {
 
       const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
         new StringSelectMenuBuilder()
-          .setCustomId(
-            `healtroop:${troopTier}|${troopType}|${troopAmount}|${interaction.user.id}`,
-          )
+          .setCustomId(`healtroop:${troopTier}|${troopType}|${troopAmount}|${interaction.user.id}`)
           .setPlaceholder('Pick a troop name…')
           .addOptions(options)
           .setMinValues(1)
@@ -188,9 +173,7 @@ const healtroop: Command = {
     }
 
     const [singleName] = Array.from(validByName.keys());
-    const selectedRows = validByName
-      .get(singleName)!
-      .slice(0, TRUNCATION_LIMITS.MAX_ROWS);
+    const selectedRows = validByName.get(singleName)!.slice(0, TRUNCATION_LIMITS.MAX_ROWS);
     const perRowCalcs = selectedRows
       .map((r) => ({ row: r, calc: calculateHealingCosts(r, troopAmount) }))
       .filter((x): x is RowCalc => x.calc !== null && x.calc.hasData);
@@ -228,11 +211,7 @@ const healtroop: Command = {
         return;
       }
 
-      if (
-        !Number.isFinite(troopTier) ||
-        !Number.isFinite(troopAmount) ||
-        !selectedName
-      ) {
+      if (!Number.isFinite(troopTier) || !Number.isFinite(troopAmount) || !selectedName) {
         await interaction.update({
           content: 'Invalid selection.',
           components: [],
@@ -250,9 +229,7 @@ const healtroop: Command = {
       }
       const sheetId = process.env.GOOGLE_SHEET_ID?.trim();
       if (!sheetId) {
-        console.error(
-          '[HEALTROOP] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.',
-        );
+        console.error('[HEALTROOP] Missing GOOGLE_SHEET_ID: cannot call getSheetRowsCached.');
         await interaction.update({
           content: 'Google Sheet is not configured (missing GOOGLE_SHEET_ID).',
           components: [],
@@ -316,20 +293,13 @@ const healtroop: Command = {
           components: [],
         });
       } catch (secondaryErr) {
-        console.warn(
-          '[EVENT:HEALTROOP] Secondary update failed:',
-          secondaryErr,
-        );
+        console.warn('[EVENT:HEALTROOP] Secondary update failed:', secondaryErr);
       }
     }
   },
 };
 
-function findTroopRows(
-  rows: TroopRow[],
-  tier: number,
-  type: string,
-): TroopRow[] {
+function findTroopRows(rows: TroopRow[], tier: number, type: string): TroopRow[] {
   return rows.filter(
     (row) =>
       String(row.get('troopTier')) === String(tier) &&
@@ -338,10 +308,7 @@ function findTroopRows(
   );
 }
 
-function buildValidByNameMap(
-  rows: TroopRow[],
-  troopAmount: number,
-): Map<string, TroopRow[]> {
+function buildValidByNameMap(rows: TroopRow[], troopAmount: number): Map<string, TroopRow[]> {
   const byName = new Map<string, TroopRow[]>();
   for (const row of rows) {
     const name = String(row.get('troopName') || '').trim();
@@ -394,14 +361,8 @@ function calculateResourceCost(
   return Math.ceil(baseCost * amount * modifier);
 }
 
-function calculateHealingCosts(
-  troopData: TroopRow,
-  troopAmount: number,
-): HealingCosts | null {
-  const unitsPerTroop = parseInt(
-    String(troopData.get('troopUnits') || '0'),
-    10,
-  );
+function calculateHealingCosts(troopData: TroopRow, troopAmount: number): HealingCosts | null {
+  const unitsPerTroop = parseInt(String(troopData.get('troopUnits') || '0'), 10);
   if (!Number.isFinite(unitsPerTroop) || unitsPerTroop <= 0) {
     return null;
   }
@@ -411,9 +372,7 @@ function calculateHealingCosts(
   const optimal = getOptimalModifier(unitsPerTroop);
   const optQty = Math.max(
     1,
-    optimal.units === -1
-      ? troopAmount
-      : Math.floor(optimal.units / unitsPerTroop),
+    optimal.units === -1 ? troopAmount : Math.floor(optimal.units / unitsPerTroop),
   );
 
   const costs: HealingCosts = {
@@ -428,16 +387,8 @@ function calculateHealingCosts(
   };
 
   COST_TYPES.RESOURCES.forEach((type) => {
-    const cost = calculateResourceCost(
-      troopData.get(type),
-      troopAmount,
-      modifier,
-    );
-    const optCost = calculateResourceCost(
-      troopData.get(type),
-      troopAmount,
-      optimal.modifier,
-    );
+    const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
+    const optCost = calculateResourceCost(troopData.get(type), troopAmount, optimal.modifier);
     if (cost !== null) {
       costs.resources[type] = { current: cost, optimal: optCost ?? cost };
       costs.hasData = true;
@@ -445,16 +396,8 @@ function calculateHealingCosts(
   });
 
   COST_TYPES.SPECIAL.forEach((type) => {
-    const cost = calculateResourceCost(
-      troopData.get(type),
-      troopAmount,
-      modifier,
-    );
-    let optPerChunk = calculateResourceCost(
-      troopData.get(type),
-      1,
-      optimal.modifier,
-    );
+    const cost = calculateResourceCost(troopData.get(type), troopAmount, modifier);
+    let optPerChunk = calculateResourceCost(troopData.get(type), 1, optimal.modifier);
     if (cost !== null && optPerChunk !== null) {
       if (optPerChunk < 1) optPerChunk = 1;
       const chunks = optimal.units === -1 ? 1 : Math.ceil(troopAmount / optQty);
@@ -510,9 +453,7 @@ function createMultiHealingEmbed(
   truncatedCount: number,
   startTime: number,
 ): EmbedBuilder {
-  const embed = new EmbedBuilder()
-    .setColor(Colors.White)
-    .setTitle('Healing cost:');
+  const embed = new EmbedBuilder().setColor(Colors.White).setTitle('Healing cost:');
 
   embed.addFields({
     name: 'Selection:',
@@ -552,9 +493,7 @@ function createMultiHealingEmbed(
         `${costs.optQty}x troop${costs.optQty > 1 ? 's' : ''} ` +
         'at a time to heal at ' +
         `${(costs.optimal.modifier * 100).toFixed(0)}% of training costs:`;
-      const warning = Object.keys(costs.special).some((t) =>
-        COST_TYPES.SPECIAL.includes(t),
-      )
+      const warning = Object.keys(costs.special).some((t) => COST_TYPES.SPECIAL.includes(t))
         ? 'Save rss but may cost more sm/uc/hc\n'
         : '';
       tip =
@@ -573,8 +512,7 @@ function createMultiHealingEmbed(
     embed.addFields({
       name: 'Note:',
       value:
-        `Showing first ${perRowCalcs.length} matches. ` +
-        `+${truncatedCount} more rows omitted.`,
+        `Showing first ${perRowCalcs.length} matches. ` + `+${truncatedCount} more rows omitted.`,
     });
   }
 
@@ -588,9 +526,4 @@ function createMultiHealingEmbed(
 }
 
 export default healtroop;
-export {
-  getModifier,
-  getOptimalModifier,
-  calculateResourceCost,
-  calculateHealingCosts,
-};
+export { getModifier, getOptimalModifier, calculateResourceCost, calculateHealingCosts };

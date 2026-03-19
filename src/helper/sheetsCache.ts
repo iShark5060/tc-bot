@@ -1,9 +1,5 @@
-import {
-  cachedSheetRows,
-  googleSheetCacheHits,
-  googleSheetCacheMisses,
-} from './metrics.js';
 import { CacheEntry, GoogleSheetsClient, TroopRow } from '../types/index.js';
+import { cachedSheetRows, googleSheetCacheHits, googleSheetCacheMisses } from './metrics.js';
 
 const FALLBACK_TTL_MS = 300000;
 const MAX_TTL_MS = 24 * 60 * 60 * 1000;
@@ -101,10 +97,7 @@ async function getSheetRowsCached(
   }
 }
 
-function invalidateSheetCache(
-  sheetId: string,
-  client?: GoogleSheetsClient,
-): void {
+function invalidateSheetCache(sheetId: string, client?: GoogleSheetsClient): void {
   if (client) {
     cache.delete(keyFor(client, sheetId));
     return;
@@ -136,9 +129,4 @@ function getCacheStats(): {
   };
 }
 
-export {
-  getSheetRowsCached,
-  invalidateSheetCache,
-  clearAllSheetCache,
-  getCacheStats,
-};
+export { getSheetRowsCached, invalidateSheetCache, clearAllSheetCache, getCacheStats };

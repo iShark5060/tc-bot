@@ -1,14 +1,6 @@
-import {
-  Events,
-  ChannelType,
-  type Message,
-  type TextChannel,
-} from 'discord.js';
+import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
 
-import {
-  ENABLE_LEGACY_MESSAGE_COMMANDS,
-  MESSAGE_COMMAND_CHANNEL_ID,
-} from '../helper/constants.js';
+import { ENABLE_LEGACY_MESSAGE_COMMANDS, MESSAGE_COMMAND_CHANNEL_ID } from '../helper/constants.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
@@ -45,28 +37,20 @@ const messageCreate: Event = {
     }
 
     if (isDuplicateEventId(`message:${message.id}`)) {
-      debugLogger.warn(
-        'MESSAGE',
-        'Skipping duplicate MessageCreate event for message command',
-        {
-          messageId: message.id,
-          channelId: message.channelId,
-          userId: message.author?.id,
-        },
-      );
+      debugLogger.warn('MESSAGE', 'Skipping duplicate MessageCreate event for message command', {
+        messageId: message.id,
+        channelId: message.channelId,
+        userId: message.author?.id,
+      });
       return;
     }
 
-    debugLogger.debug(
-      'MESSAGE',
-      'Message passed filter, checking for commands',
-      {
-        contentMeta: {
-          length: message.content.length,
-          startsWithBang: message.content.startsWith('!'),
-        },
+    debugLogger.debug('MESSAGE', 'Message passed filter, checking for commands', {
+      contentMeta: {
+        length: message.content.length,
+        startsWithBang: message.content.startsWith('!'),
       },
-    );
+    });
 
     if (message.content === '!tcmu') {
       debugLogger.command('msg:!tcmu', 'Message command execution started', {
@@ -87,10 +71,7 @@ const messageCreate: Event = {
           });
           debugLogger.step('COMMAND', 'Mopup embed sent successfully');
         } else {
-          debugLogger.warn(
-            'COMMAND',
-            'Channel does not support sending messages',
-          );
+          debugLogger.warn('COMMAND', 'Channel does not support sending messages');
         }
 
         const duration = Date.now() - startTime;
@@ -132,16 +113,12 @@ const messageCreate: Event = {
         }
       }
     } else {
-      debugLogger.debug(
-        'MESSAGE',
-        'Message does not match any command pattern',
-        {
-          contentMeta: {
-            length: message.content.length,
-            startsWithBang: message.content.startsWith('!'),
-          },
+      debugLogger.debug('MESSAGE', 'Message does not match any command pattern', {
+        contentMeta: {
+          length: message.content.length,
+          startsWithBang: message.content.startsWith('!'),
         },
-      );
+      });
     }
   },
 };
@@ -150,9 +127,7 @@ function shouldProcessMessage(message: Message): boolean {
   if (!ENABLE_LEGACY_MESSAGE_COMMANDS) return false;
   if (message.channel.type !== ChannelType.GuildText) return false;
   if (!MESSAGE_COMMAND_CHANNEL_ID) return false;
-  return (
-    message.channelId === MESSAGE_COMMAND_CHANNEL_ID && !message.author.bot
-  );
+  return message.channelId === MESSAGE_COMMAND_CHANNEL_ID && !message.author.bot;
 }
 
 export default messageCreate;

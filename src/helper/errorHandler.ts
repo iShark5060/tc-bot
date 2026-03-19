@@ -1,8 +1,4 @@
-import {
-  MessageFlags,
-  type Message,
-  type RepliableInteraction,
-} from 'discord.js';
+import { MessageFlags, type Message, type RepliableInteraction } from 'discord.js';
 
 async function handleCommandError(
   interaction: RepliableInteraction,
@@ -26,10 +22,7 @@ async function handleCommandError(
   }
 }
 
-async function handleMessageError(
-  message: Message,
-  error: unknown,
-): Promise<void> {
+async function handleMessageError(message: Message, error: unknown): Promise<void> {
   console.error('[ERROR] Message command execution failed:', error);
 
   try {

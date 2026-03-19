@@ -1,4 +1,9 @@
 import './env/loadEnv.js';
+
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
 import { sheets } from '@googleapis/sheets';
 import io from '@pm2/io';
 import {
@@ -11,9 +16,6 @@ import {
   type StageChannel,
 } from 'discord.js';
 import { JWT } from 'google-auth-library';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { stopLatencyMonitoring } from './events/clientReady.js';
 import { discoverCommandFiles } from './helper/commandDiscovery.js';
@@ -24,11 +26,7 @@ import { stopIdempotencyCleanup } from './helper/idempotencyGuard.js';
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
-import type {
-  Command,
-  ExtendedClient,
-  GoogleSheetsClient,
-} from './types/index.js';
+import type { Command, ExtendedClient, GoogleSheetsClient } from './types/index.js';
 
 declare module 'discord.js' {
   interface Client {
@@ -49,10 +47,7 @@ const __dirname = path.dirname(__filename);
 
 const intents = [GatewayIntentBits.Guilds];
 if (ENABLE_LEGACY_MESSAGE_COMMANDS) {
-  intents.push(
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  );
+  intents.push(GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent);
 }
 
 const client: ExtendedClient = new Client({ intents }) as ExtendedClient;
@@ -98,9 +93,7 @@ function validateEnvironment(): void {
     debugLogger.error('BOOT', 'Missing required environment variables', {
       missing,
     });
-    throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}`,
-    );
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
   debugLogger.boot('Environment validation passed', {
     checked: required.length,
@@ -204,10 +197,7 @@ const MOPUP_LOCK_WARN_EVERY_MS = 60 * 1000;
 
 async function gracefulShutdown(): Promise<void> {
   if (isShuttingDown) {
-    debugLogger.warn(
-      'SHUTDOWN',
-      'Shutdown already in progress, ignoring duplicate signal',
-    );
+    debugLogger.warn('SHUTDOWN', 'Shutdown already in progress, ignoring duplicate signal');
     return;
   }
   isShuttingDown = true;
@@ -267,14 +257,10 @@ async function initializeGoogleSheets(): Promise<void> {
   const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
   const credentials = await loadGoogleCredentials();
 
-  debugLogger.debug(
-    'GOOGLE_SHEETS',
-    'Creating JWT service account authentication',
-    {
-      email: credentials.client_email,
-      scopes: SCOPES,
-    },
-  );
+  debugLogger.debug('GOOGLE_SHEETS', 'Creating JWT service account authentication', {
+    email: credentials.client_email,
+    scopes: SCOPES,
+  });
   const auth = new JWT({
     email: credentials.client_email,
     key: credentials.private_key,
@@ -360,10 +346,7 @@ async function loadCommands(): Promise<void> {
   });
 }
 
-async function registerCommand(
-  filePath: string,
-  fileName: string,
-): Promise<void> {
+async function registerCommand(filePath: string, fileName: string): Promise<void> {
   debugLogger.debug('COMMANDS', 'Registering command', {
     file: fileName,
     path: filePath,
@@ -411,15 +394,10 @@ async function loadEvents(): Promise<void> {
     try {
       const mod = await import(pathToFileURL(filePath).href);
       const event = mod.default ?? mod;
-      if (
-        !ENABLE_LEGACY_MESSAGE_COMMANDS &&
-        event.name === Events.MessageCreate
-      ) {
-        debugLogger.info(
-          'EVENTS',
-          'Skipping MessageCreate event: legacy commands disabled',
-          { file },
-        );
+      if (!ENABLE_LEGACY_MESSAGE_COMMANDS && event.name === Events.MessageCreate) {
+        debugLogger.info('EVENTS', 'Skipping MessageCreate event: legacy commands disabled', {
+          file,
+        });
         continue;
       }
 
@@ -489,26 +467,19 @@ function getMopupChannelStateKey(channelId: string): string {
   return `${MOPUP_CHANNEL_STATE_PREFIX}${channelId}`;
 }
 
-async function runMopupUpdateIfDue(
-  trigger: 'startup' | 'timer',
-): Promise<void> {
+async function runMopupUpdateIfDue(trigger: 'startup' | 'timer'): Promise<void> {
   if (mopupUpdateInProgress) {
     if (trigger === 'timer') {
       const now = Date.now();
-      const lockDurationMs =
-        mopupUpdateStartedAtMs > 0 ? now - mopupUpdateStartedAtMs : 0;
+      const lockDurationMs = mopupUpdateStartedAtMs > 0 ? now - mopupUpdateStartedAtMs : 0;
       const shouldWarn =
         lockDurationMs >= MOPUP_LOCK_WARN_AFTER_MS &&
         now - mopupLastLockWarnAtMs >= MOPUP_LOCK_WARN_EVERY_MS;
       if (shouldWarn) {
         mopupLastLockWarnAtMs = now;
-        debugLogger.warn(
-          'MOPUP',
-          'Skipping timer tick: previous update still running',
-          {
-            lockDurationSeconds: Math.ceil(lockDurationMs / 1000),
-          },
-        );
+        debugLogger.warn('MOPUP', 'Skipping timer tick: previous update still running', {
+          lockDurationSeconds: Math.ceil(lockDurationMs / 1000),
+        });
       }
     }
     return;
@@ -520,13 +491,9 @@ async function runMopupUpdateIfDue(
   );
   if (waitMs > 0) {
     if (trigger === 'startup') {
-      debugLogger.info(
-        'MOPUP',
-        'Skipping startup mopup update: cooldown still active',
-        {
-          remainingSeconds: Math.ceil(waitMs / 1000),
-        },
-      );
+      debugLogger.info('MOPUP', 'Skipping startup mopup update: cooldown still active', {
+        remainingSeconds: Math.ceil(waitMs / 1000),
+      });
     }
     return;
   }
@@ -617,11 +584,8 @@ async function updateMopupChannels(): Promise<string[]> {
       channel2Found: !!channel2,
     });
 
-    const isRenameable = (
-      ch: typeof channel1,
-    ): ch is VoiceChannel | StageChannel =>
-      ch?.type === ChannelType.GuildVoice ||
-      ch?.type === ChannelType.GuildStageVoice;
+    const isRenameable = (ch: typeof channel1): ch is VoiceChannel | StageChannel =>
+      ch?.type === ChannelType.GuildVoice || ch?.type === ChannelType.GuildStageVoice;
 
     const tryRenameChannel = async (
       channel: typeof channel1,
@@ -644,14 +608,10 @@ async function updateMopupChannels(): Promise<string[]> {
         TIMERS.MOPUP_INTERVAL_MS,
       );
       if (waitMs > 0) {
-        debugLogger.warn(
-          'MOPUP',
-          `Skipping ${label} rename: channel cooldown still active`,
-          {
-            channelId: channel.id,
-            remainingSeconds: Math.ceil(waitMs / 1000),
-          },
-        );
+        debugLogger.warn('MOPUP', `Skipping ${label} rename: channel cooldown still active`, {
+          channelId: channel.id,
+          remainingSeconds: Math.ceil(waitMs / 1000),
+        });
         return;
       }
 

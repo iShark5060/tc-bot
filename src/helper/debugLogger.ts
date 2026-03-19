@@ -8,8 +8,7 @@ class DebugLogger {
   private readonly debugEnabled: boolean;
 
   constructor() {
-    this.debugEnabled =
-      process.env.DEBUG === 'true' || process.env.DEBUG === '1';
+    this.debugEnabled = process.env.DEBUG === 'true' || process.env.DEBUG === '1';
     this.initializeDebug();
   }
 
@@ -52,22 +51,12 @@ class DebugLogger {
     return `[${timestamp}] [${level}] [${category}] ${message}${contextStr}`;
   }
 
-  private log(
-    level: LogLevel,
-    category: string,
-    message: string,
-    context?: LogContext,
-  ): void {
+  private log(level: LogLevel, category: string, message: string, context?: LogContext): void {
     if (!this.enabled && level !== 'ERROR' && level !== 'WARN') {
       return;
     }
 
-    const formattedMessage = this.formatMessage(
-      level,
-      category,
-      message,
-      context,
-    );
+    const formattedMessage = this.formatMessage(level, category, message, context);
 
     switch (level) {
       case 'ERROR':

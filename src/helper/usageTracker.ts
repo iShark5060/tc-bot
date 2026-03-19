@@ -1,28 +1,18 @@
-import Database, { type Statement } from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type {
-  CommandUsage,
-  MetricsTotals,
-  MetricsTopCommand,
-} from '../types/index.js';
+import Database, { type Statement } from 'better-sqlite3';
+
+import type { CommandUsage, MetricsTotals, MetricsTopCommand } from '../types/index.js';
 
 const DB_PATH = process.env.SQLITE_DB_PATH || './data/metrics.db';
-const CHECKPOINT_INTERVAL_MS = Number(
-  process.env.CHECKPOINT_INTERVAL_MS || 300000,
-);
+const CHECKPOINT_INTERVAL_MS = Number(process.env.CHECKPOINT_INTERVAL_MS || 300000);
 const FLUSH_INTERVAL_MS = Number(process.env.METRICS_FLUSH_INTERVAL_MS || 1000);
 const FLUSH_BATCH_SIZE = Number(process.env.METRICS_FLUSH_BATCH_SIZE || 50);
 const MAX_QUEUE_LENGTH = Number(process.env.METRICS_MAX_QUEUE_LENGTH || 5000);
 const MAX_RETRIES = Number(process.env.METRICS_MAX_RETRIES || 3);
 const RETENTION_DAYS = Number(process.env.METRICS_RETENTION_DAYS || 90);
-const ALLOWED_CHECKPOINT_MODES = new Set([
-  'PASSIVE',
-  'FULL',
-  'RESTART',
-  'TRUNCATE',
-]);
+const ALLOWED_CHECKPOINT_MODES = new Set(['PASSIVE', 'FULL', 'RESTART', 'TRUNCATE']);
 
 let db: Database.Database | null = null;
 let checkpointTimer: NodeJS.Timeout | null = null;
@@ -98,12 +88,8 @@ function initDb(): void {
     );
   `);
 
-  db.exec(
-    'CREATE INDEX IF NOT EXISTS idx_usage_created_at ON command_usage(created_at);',
-  );
-  db.exec(
-    'CREATE INDEX IF NOT EXISTS idx_usage_cmd ON command_usage(command_name);',
-  );
+  db.exec('CREATE INDEX IF NOT EXISTS idx_usage_created_at ON command_usage(created_at);');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_usage_cmd ON command_usage(command_name);');
 
   insertStmt = db.prepare(`
     INSERT INTO command_usage
@@ -229,18 +215,12 @@ function flushUsageQueue(): void {
 
     const availableCapacity = Math.max(0, MAX_QUEUE_LENGTH - usageQueue.length);
     if (availableCapacity <= 0) {
-      recordDroppedUsageEvents(
-        retryable.length,
-        'queue full while requeueing failed batch',
-      );
+      recordDroppedUsageEvents(retryable.length, 'queue full while requeueing failed batch');
     } else {
       const toRequeue = retryable.slice(0, availableCapacity);
       const droppedForCapacity = retryable.length - toRequeue.length;
       if (droppedForCapacity > 0) {
-        recordDroppedUsageEvents(
-          droppedForCapacity,
-          'queue capacity exceeded during requeue',
-        );
+        recordDroppedUsageEvents(droppedForCapacity, 'queue capacity exceeded during requeue');
       }
 
       if (toRequeue.length > 0) {
@@ -266,9 +246,7 @@ export function getMetricsTotals(sinceUTC: string): MetricsTotals {
       return { total_count: 0, success_count: 0, failure_count: 0 };
     }
 
-    const result = totalsStmt.get(sinceUTC) as
-      | Partial<MetricsTotals>
-      | undefined;
+    const result = totalsStmt.get(sinceUTC) as Partial<MetricsTotals> | undefined;
     return {
       total_count: Number(result?.total_count ?? 0),
       success_count: Number(result?.success_count ?? 0),
@@ -280,10 +258,7 @@ export function getMetricsTotals(sinceUTC: string): MetricsTotals {
   }
 }
 
-export function getTopCommands(
-  sinceUTC: string,
-  limit: number,
-): MetricsTopCommand[] {
+export function getTopCommands(sinceUTC: string, limit: number): MetricsTopCommand[] {
   try {
     initDb();
     if (!topCommandsStmt) return [];
@@ -305,9 +280,7 @@ export function checkpoint(mode = 'TRUNCATE'): void {
       : 'TRUNCATE';
 
     if (checkpointMode !== normalizedMode) {
-      console.warn(
-        `[USAGE:SQLite] Invalid checkpoint mode "${mode}", defaulting to TRUNCATE`,
-      );
+      console.warn(`[USAGE:SQLite] Invalid checkpoint mode "${mode}", defaulting to TRUNCATE`);
     }
 
     db.pragma(`wal_checkpoint(${checkpointMode})`);
@@ -316,10 +289,7 @@ export function checkpoint(mode = 'TRUNCATE'): void {
   }
 }
 
-export function setMopupUpdateTimestamp(
-  key: string,
-  timestampMs = Date.now(),
-): void {
+export function setMopupUpdateTimestamp(key: string, timestampMs = Date.now()): void {
   try {
     initDb();
     if (!upsertMopupStateStmt) return;
@@ -337,9 +307,7 @@ export function getMopupUpdateWaitMs(
   try {
     initDb();
     if (!getMopupStateStmt) return 0;
-    const row = getMopupStateStmt.get(String(key)) as
-      | { updated_at_ms?: number }
-      | undefined;
+    const row = getMopupStateStmt.get(String(key)) as { updated_at_ms?: number } | undefined;
     const lastUpdateMs = Number(row?.updated_at_ms ?? 0);
     if (!Number.isFinite(lastUpdateMs) || lastUpdateMs <= 0) return 0;
     return Math.max(0, Math.floor(lastUpdateMs + minIntervalMs - nowMs));
@@ -359,11 +327,7 @@ export function startWALCheckpoint(intervalMs?: number | null): void {
     purgeOldRecords();
   }, effectiveIntervalMs);
   checkpointTimer.unref?.();
-  console.log(
-    '[USAGE:SQLite] WAL checkpoint timer started:',
-    effectiveIntervalMs,
-    'ms',
-  );
+  console.log('[USAGE:SQLite] WAL checkpoint timer started:', effectiveIntervalMs, 'ms');
 }
 
 export function stopWALCheckpoint(): void {
