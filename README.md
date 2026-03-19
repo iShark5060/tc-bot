@@ -29,7 +29,7 @@ From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reaso
 ## Requirements
 
 - Node.js >= 25.0.0
-- npm >= 11.0.0
+- pnpm >= 10.0.0
 - PM2 (recommended for production)
 
 ## Configuration
@@ -37,16 +37,16 @@ From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reaso
 Use `.env.example` as your template:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.development
 ```
 
 PowerShell equivalent:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item .env.example .env.development
 ```
 
-Fill all required values in `.env`. At minimum, these are required for startup:
+Fill all required values in `.env.development`. At minimum, these are required for startup:
 
 - `TOKEN`
 - `CLIENT_ID`
@@ -58,12 +58,12 @@ Fill all required values in `.env`. At minimum, these are required for startup:
 
 This project supports encrypted env files with dotenvx.
 
-1. Keep local plaintext env in `.env` (gitignored).
+1. Keep local plaintext env in `.env.development` (gitignored).
 2. Encrypt environment files when ready:
 
    ```bash
-   npx dotenvx encrypt -f .env.production
-   npx dotenvx encrypt -f .env.development
+   pnpm exec dotenvx encrypt -f .env.production
+   pnpm exec dotenvx encrypt -f .env.development
    ```
 
 3. Keep `.env.keys` private (never commit it - ensure it's in `.gitignore`).
@@ -97,7 +97,7 @@ Unless you have a copy of the Theorycrafters Google Sheet and valid API credenti
 
 up to date instructions are available here: https://nodejs.org/en/download
 
-Installing nvm, node & npm run:
+Installing nvm, node & pnpm:
 
 ```
 # Download and install nvm:
@@ -110,48 +110,48 @@ nvm install 25
 node -v # Should print "v25.x.x".
 nvm current # Should print "v25.x.x".
 
-# Verify npm version:
-npm -v # Should print "11.x.x".
+# Verify pnpm version:
+pnpm -v # Should print "10.x.x".
 ```
 
 Installing and starting the Bot
 
 ```
 # download all the dependencies listed in the package.json
-npm install
+pnpm install
 
 # build the TypeScript code
-npm run build
+pnpm run build
 
 # actually start the bot
-npm start
+pnpm start
 
 # or start it with PM2 ecosystem file for better control
 pm2 start ecosystem.config.cjs
 
 # to deploy slash commands to Discord
-npm run deploy
+pnpm run deploy
 
-# for debug mode (verbose logging), add DEBUG=true to your .env file
-# then run: npm run dev
+# for debug mode (verbose logging), add DEBUG=true to your .env.development file
+# then run: pnpm run dev
 
 # run tests
-npm run test
+pnpm run test
 
 # run tests in watch mode
-npm run test:watch
+pnpm run test:watch
 
 # run tests with coverage
-npm run test:coverage
+pnpm run test:coverage
 
 # lint code
-npm run lint
+pnpm run lint
 
 # format code
-npm run format
+pnpm run format
 
 # check code formatting
-npm run check-format
+pnpm run check-format
 ```
 
 ## Development Workflow
@@ -159,25 +159,25 @@ npm run check-format
 ### Local Development
 
 1. Clone the repository
-2. Install dependencies: `npm install`
-3. Create `.env` file with required configuration (see Configuration section)
+2. Install dependencies: `pnpm install`
+3. Create `.env.development` file with required configuration (see Configuration section)
 4. Create `client_secret.json` if using Google Sheets features
-5. Build the project: `npm run build`
-6. Deploy commands to Discord: `npm run deploy`
-7. Start the bot: `npm start` or `npm run dev` (with watch mode)
+5. Build the project: `pnpm run build`
+6. Deploy commands to Discord: `pnpm run deploy`
+7. Start the bot: `pnpm start` or `pnpm run dev` (with watch mode)
 
 ### Testing
 
 The project uses [Vitest](https://vitest.dev/) for unit testing. Tests are located in the `tests/` directory.
 
-- Run all tests: `npm run test`
-- Run tests in watch mode: `npm run test:watch`
-- Generate coverage report: `npm run test:coverage`
+- Run all tests: `pnpm run test`
+- Run tests in watch mode: `pnpm run test:watch`
+- Generate coverage report: `pnpm run test:coverage`
 
 ### Code Quality
 
-- **ESLint**: Code linting with `npm run lint`
-- **Prettier**: Code formatting with `npm run format`
+- **OxLint**: Code linting with `pnpm run lint`
+- **OxFmt**: Code formatting with `pnpm run format`
 - **TypeScript**: Strict mode enabled for better type safety
 
 ## CI/CD & Deployment
@@ -193,7 +193,6 @@ The project uses GitHub Actions for automated deployment. When code is pushed to
 
 **Protected Files**: The deployment preserves the following on the server:
 
-- `.env` - Environment variables
 - `logs/` - PM2 log files
 - `data/` - SQLite database files
 
@@ -201,7 +200,7 @@ The project uses GitHub Actions for automated deployment. When code is pushed to
 
 [Dependabot](https://docs.github.com/en/code-security/dependabot) is configured to automatically:
 
-- Check for npm dependency updates weekly
+- Check for pnpm dependency updates weekly
 - Check for GitHub Actions updates weekly
 - Create pull requests for minor and patch updates
 - Ignore major version updates for critical packages (requires manual review)
@@ -214,10 +213,10 @@ If you need to deploy manually:
 
 ```bash
 # Build the project
-npm run build
+pnpm run build
 
 # Deploy commands to Discord
-npm run deploy
+pnpm run deploy
 
 # On the server, restart PM2
 pm2 restart TC-Bot --update-env

@@ -8,11 +8,7 @@ import {
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleCommandError } from '../helper/errorHandler.js';
 import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
-import {
-  commandErrors,
-  commandsCounter,
-  commandsPerSecond,
-} from '../helper/metrics.js';
+import { commandErrors, commandsCounter, commandsPerSecond } from '../helper/metrics.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
 import type { Event, ExtendedClient } from '../types/index.js';
 
@@ -20,16 +16,12 @@ const interactionsCreate: Event = {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction): Promise<void> {
     if (isDuplicateEventId(`interaction:${interaction.id}`)) {
-      debugLogger.warn(
-        'INTERACTION',
-        'Skipping duplicate InteractionCreate event',
-        {
-          interactionId: interaction.id,
-          type: interaction.type,
-          userId: interaction.user?.id,
-          guildId: interaction.guildId,
-        },
-      );
+      debugLogger.warn('INTERACTION', 'Skipping duplicate InteractionCreate event', {
+        interactionId: interaction.id,
+        type: interaction.type,
+        userId: interaction.user?.id,
+        guildId: interaction.guildId,
+      });
       return;
     }
 
@@ -40,60 +32,38 @@ const interactionsCreate: Event = {
       guildId: interaction.guildId,
     });
 
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith('healtroop:')
-    ) {
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('healtroop:')) {
       debugLogger.step('INTERACTION', 'Processing healtroop select menu', {
         customId: interaction.customId,
       });
       try {
         const mod = await import('../commands/aow/healtroop.js');
         const healtroop = mod.default ?? mod;
-        if (
-          'handleSelect' in healtroop &&
-          typeof healtroop.handleSelect === 'function'
-        ) {
+        if ('handleSelect' in healtroop && typeof healtroop.handleSelect === 'function') {
           debugLogger.debug('INTERACTION', 'Calling healtroop.handleSelect');
-          await healtroop.handleSelect(
-            interaction as StringSelectMenuInteraction,
-          );
-          debugLogger.step(
-            'INTERACTION',
-            'Healtroop select menu handled successfully',
-          );
+          await healtroop.handleSelect(interaction as StringSelectMenuInteraction);
+          debugLogger.step('INTERACTION', 'Healtroop select menu handled successfully');
         } else {
-          debugLogger.warn(
-            'INTERACTION',
-            'Healtroop handleSelect not available',
-          );
+          debugLogger.warn('INTERACTION', 'Healtroop handleSelect not available');
           await interaction.reply({
             content: 'Selector not available.',
             flags: MessageFlags.Ephemeral,
           });
         }
       } catch (error) {
-        debugLogger.error(
-          'INTERACTION',
-          'Error handling healtroop select menu',
-          {
-            error: error as Error,
-            customId: interaction.customId,
-          },
-        );
+        debugLogger.error('INTERACTION', 'Error handling healtroop select menu', {
+          error: error as Error,
+          customId: interaction.customId,
+        });
         await handleCommandError(interaction, error);
       }
       return;
     }
 
     if (!interaction.isChatInputCommand()) {
-      debugLogger.debug(
-        'INTERACTION',
-        'Interaction is not a chat input command, skipping',
-        {
-          type: interaction.type,
-        },
-      );
+      debugLogger.debug('INTERACTION', 'Interaction is not a chat input command, skipping', {
+        type: interaction.type,
+      });
       return;
     }
 
@@ -109,17 +79,14 @@ const interactionsCreate: Event = {
       })),
     });
 
-    const command = (interaction.client as ExtendedClient).commands.get(
-      commandName,
-    );
+    const command = (interaction.client as ExtendedClient).commands.get(commandName);
     if (!command) {
       debugLogger.warn('INTERACTION', 'Command not found in registry', {
         commandName,
       });
       console.warn(`[EVENT:INTERACTION] Command not found: ${commandName}`);
       const fallback = {
-        content:
-          'That command is currently unavailable. Please try again in a moment.',
+        content: 'That command is currently unavailable. Please try again in a moment.',
         flags: MessageFlags.Ephemeral,
       } as const;
       if (interaction.replied || interaction.deferred) {

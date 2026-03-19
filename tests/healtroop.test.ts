@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMockRow } from './helpers.js';
 import {
   getModifier,
   getOptimalModifier,
   calculateResourceCost,
   calculateHealingCosts,
 } from '../src/commands/aow/healtroop.js';
+import { createMockRow } from './helpers.js';
 
 describe('getModifier', () => {
   it('returns 0.25 for units >= 3501', () => {

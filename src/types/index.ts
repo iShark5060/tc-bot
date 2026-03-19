@@ -16,12 +16,8 @@ type CommandData =
 export interface Command {
   data: CommandData;
   examples?: string[];
-  execute(
-    interaction: ChatInputCommandInteraction,
-  ): Promise<void> | Promise<unknown>;
-  handleSelect?(
-    interaction: StringSelectMenuInteraction,
-  ): Promise<void> | Promise<unknown>;
+  execute(interaction: ChatInputCommandInteraction): Promise<void> | Promise<unknown>;
+  handleSelect?(interaction: StringSelectMenuInteraction): Promise<void> | Promise<unknown>;
 }
 
 export interface Event {

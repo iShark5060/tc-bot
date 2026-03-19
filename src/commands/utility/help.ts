@@ -28,9 +28,7 @@ const help: Command = {
       return;
     }
 
-    const visible = [...commands.values()].filter((cmd) =>
-      canSeeCommand(cmd, interaction),
-    );
+    const visible = [...commands.values()].filter((cmd) => canSeeCommand(cmd, interaction));
 
     if (visible.length === 0) {
       await interaction.reply({
@@ -50,10 +48,7 @@ const help: Command = {
       })
       .join('\n\n');
     const maxDescriptionLength = 4000;
-    const safeDescription = truncateCommandList(
-      commandList,
-      maxDescriptionLength,
-    );
+    const safeDescription = truncateCommandList(commandList, maxDescriptionLength);
 
     const duration = Date.now() - startTime;
     const embed = new EmbedBuilder()
@@ -85,13 +80,9 @@ function truncateCommandList(commandList: string, limit: number): string {
   return `${trimmed}${ellipsis}`;
 }
 
-function canSeeCommand(
-  cmd: Command,
-  interaction: ChatInputCommandInteraction,
-): boolean {
+function canSeeCommand(cmd: Command, interaction: ChatInputCommandInteraction): boolean {
   const json = typeof cmd.data?.toJSON === 'function' ? cmd.data.toJSON() : {};
-  const required = (json as { default_member_permissions?: string })
-    .default_member_permissions;
+  const required = (json as { default_member_permissions?: string }).default_member_permissions;
 
   if (!required) return true;
   if (!interaction.guild) return false;
@@ -102,8 +93,7 @@ function canSeeCommand(
   } catch {
     return false;
   }
-  const memberPerms =
-    interaction.memberPermissions ?? interaction.member?.permissions;
+  const memberPerms = interaction.memberPermissions ?? interaction.member?.permissions;
   if (!memberPerms) return false;
 
   if (typeof memberPerms === 'string') return false;

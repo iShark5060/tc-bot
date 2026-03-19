@@ -1,12 +1,7 @@
 import { Colors } from 'discord.js';
 import { describe, it, expect } from 'vitest';
 
-import {
-  calculateMopupTiming,
-  getMopupWindow,
-  determineMopupStatus,
-  formatTime,
-} from '../src/helper/mopup.js';
+import { calculateMopupTiming, getMopupWindow, determineMopupStatus, formatTime } from '../src/helper/mopup.js';
 
 describe('formatTime', () => {
   it('formats milliseconds to HH:MM:SS', () => {
@@ -51,9 +46,7 @@ describe('getMopupWindow', () => {
     const window1 = getMopupWindow(1);
     const window2 = getMopupWindow(2);
 
-    expect(window2.endTime - window2.startTime).toBe(
-      window0.endTime - window0.startTime,
-    );
+    expect(window2.endTime - window2.startTime).toBe(window0.endTime - window0.startTime);
     expect(window1.endTime - window1.startTime).toBe(16 * 60 * 60 * 1000);
   });
 });
@@ -80,9 +73,7 @@ describe('determineMopupStatus', () => {
     expect(result.status).toBe('INACTIVE');
     expect(result.color).toBe(Colors.Red);
     const nextStartDelta = -3600000 + 24 * 60 * 60 * 1000;
-    expect(result.timestamp).toBe(
-      Math.floor((currentTime + nextStartDelta) / 1000),
-    );
+    expect(result.timestamp).toBe(Math.floor((currentTime + nextStartDelta) / 1000));
   });
 });
 

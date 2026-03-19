@@ -1,7 +1,7 @@
 import { EmbedBuilder, Colors } from 'discord.js';
 
-import { BOT_ICON_URL } from './constants.js';
 import type { MopupInfo } from '../types/index.js';
+import { BOT_ICON_URL } from './constants.js';
 
 interface MopupWindow {
   startTime: number;
@@ -17,11 +17,7 @@ function calculateMopupTiming(): MopupInfo {
   const { startTime, endTime } = getMopupWindow(daysSinceEpoch);
   const currentTime = Math.floor(now / 1000) * 1000;
 
-  return determineMopupStatus(
-    startTime - currentTime,
-    endTime - currentTime,
-    currentTime,
-  );
+  return determineMopupStatus(startTime - currentTime, endTime - currentTime, currentTime);
 }
 
 function getMopupWindow(day: number): MopupWindow {
@@ -88,10 +84,4 @@ function buildMopupEmbed(startTime: number): EmbedBuilder {
     .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
 }
 
-export {
-  calculateMopupTiming,
-  getMopupWindow,
-  determineMopupStatus,
-  formatTime,
-  buildMopupEmbed,
-};
+export { calculateMopupTiming, getMopupWindow, determineMopupStatus, formatTime, buildMopupEmbed };

@@ -38,9 +38,7 @@ export async function notifyDiscord({
   if (error) {
     const err = error as Error;
     const errorText =
-      typeof error === 'string'
-        ? error
-        : err?.stack || err?.message || JSON.stringify(error);
+      typeof error === 'string' ? error : err?.stack || err?.message || JSON.stringify(error);
     description += `\n\`\`\`\n${String(errorText).slice(0, 1800)}\n\`\`\``;
   }
   const content = mention ? '@here' : undefined;

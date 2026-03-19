@@ -1,7 +1,9 @@
 import './env/loadEnv.js';
-import { REST, Routes } from 'discord.js';
+
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { REST, Routes } from 'discord.js';
 
 import { discoverCommandFiles } from './helper/commandDiscovery.js';
 import type { Command } from './types/index.js';
@@ -51,9 +53,7 @@ async function loadCommands(): Promise<unknown[]> {
 
 async function deployNewCommands(commands: unknown[]): Promise<void> {
   console.log(`[DEPLOY] About to deploy ${commands.length} commands.`);
-  console.log(
-    `[DEPLOY] Commands: ${commands.map((c) => (c as { name: string }).name).join(', ')}`,
-  );
+  console.log(`[DEPLOY] Commands: ${commands.map((c) => (c as { name: string }).name).join(', ')}`);
 
   const clientId = process.env.CLIENT_ID;
   if (!clientId) {
@@ -70,22 +70,15 @@ async function deployNewCommands(commands: unknown[]): Promise<void> {
   console.log('[DEPLOY] Starting in 3 seconds... (Ctrl+C to cancel)');
   await new Promise((resolve) => setTimeout(resolve, 3000));
   if (guildId) {
-    const guildData = (await rest.put(
-      Routes.applicationGuildCommands(clientId, guildId),
-      {
-        body: commands,
-      },
-    )) as unknown[];
-    console.log(
-      `[DEPLOY] Successfully deployed ${guildData.length} guild commands.`,
-    );
+    const guildData = (await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+      body: commands,
+    })) as unknown[];
+    console.log(`[DEPLOY] Successfully deployed ${guildData.length} guild commands.`);
     return;
   }
 
   const globalData = (await rest.put(Routes.applicationCommands(clientId), {
     body: commands,
   })) as unknown[];
-  console.log(
-    `[DEPLOY] Successfully deployed ${globalData.length} global commands.`,
-  );
+  console.log(`[DEPLOY] Successfully deployed ${globalData.length} global commands.`);
 }

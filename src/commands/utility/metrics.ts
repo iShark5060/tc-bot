@@ -48,8 +48,7 @@ const metrics: Command = {
       const totalCount = totals.total_count;
       const successCount = totals.success_count;
       const failureCount = totals.failure_count;
-      const successRate =
-        totalCount > 0 ? ((successCount / totalCount) * 100).toFixed(1) : '0.0';
+      const successRate = totalCount > 0 ? ((successCount / totalCount) * 100).toFixed(1) : '0.0';
 
       const topLines =
         top.length > 0
@@ -130,9 +129,7 @@ function formatUTC(d: Date): string {
   const pad = (n: number): string => String(n).padStart(2, '0');
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(
     d.getUTCDate(),
-  )} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(
-    d.getUTCSeconds(),
-  )}`;
+  )} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
 export default metrics;

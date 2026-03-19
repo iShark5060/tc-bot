@@ -19,16 +19,10 @@ const gearcheck: Command = {
     .setName('gearcheck')
     .setDescription('Calculate stat at base and +10/13/20/30/40/50')
     .addNumberOption((option) =>
-      option
-        .setName('stat')
-        .setDescription('Current stat amount')
-        .setRequired(true),
+      option.setName('stat').setDescription('Current stat amount').setRequired(true),
     )
     .addIntegerOption((option) =>
-      option
-        .setName('level')
-        .setDescription('Current upgrade level')
-        .setRequired(true),
+      option.setName('level').setDescription('Current upgrade level').setRequired(true),
     ),
   examples: ['/gearcheck stat:120 level:20', '/gearcheck stat:85.5 level:10'],
 
@@ -61,21 +55,13 @@ const gearcheck: Command = {
     }
 
     const calculations = calculateGearStats(statValue, gearLevel);
-    const embed = createGearEmbed(
-      statValue,
-      gearLevel,
-      calculations,
-      startTime,
-    );
+    const embed = createGearEmbed(statValue, gearLevel, calculations, startTime);
 
     await interaction.editReply({ embeds: [embed] });
   },
 };
 
-function calculateGearStats(
-  currentStat: number,
-  currentLevel: number,
-): GearCalculations {
+function calculateGearStats(currentStat: number, currentLevel: number): GearCalculations {
   const currentMultiplier = 1 + currentLevel / 10;
   const baseStat = currentStat / currentMultiplier;
   const len = Math.min(GEARCHECK_LEVELS.length, GEARCHECK_MULTIPLIERS.length);
