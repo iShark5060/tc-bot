@@ -110,6 +110,9 @@ nvm install 25
 node -v # Should print "v25.x.x".
 nvm current # Should print "v25.x.x".
 
+# Enable corepack (manages pnpm automatically):
+corepack enable
+
 # Verify pnpm version:
 pnpm -v # Should print "10.x.x".
 ```
