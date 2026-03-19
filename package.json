@@ -45,14 +45,20 @@
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
   },
-  "overrides": {
-    "gaxios": "^7.1.4",
-    "minimatch@>=9": "^10.2.4",
-    "undici": "^7.24.4"
-  },
   "engines": {
     "node": ">=25.0.0",
     "pnpm": ">=10.0.0"
   },
-  "packageManager": "pnpm@10.32.1"
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild"
+    ],
+    "overrides": {
+      "gaxios": "^7.1.4",
+      "minimatch@>=9": "^10.2.4",
+      "undici": "^7.24.5"
+    }
+  }
 }
