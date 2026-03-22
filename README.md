@@ -1,6 +1,6 @@
 # Discord Bot for Ark of War
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](LICENSE)
 ![Static Badge](https://img.shields.io/badge/Node.js-25-red?style=for-the-badge)
 ![Static Badge](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge)
 ![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue)
