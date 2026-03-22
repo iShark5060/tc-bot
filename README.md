@@ -1,78 +1,93 @@
 # Discord Bot for Ark of War
 
-![Static Badge](https://img.shields.io/badge/Node.js-25-red?style=for-the-badge) ![Static Badge](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge) ![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue) ![NPM Version](https://img.shields.io/npm/v/%40dotenvx%2Fdotenvx?style=for-the-badge&label=.envx&color=green) ![NPM Version](https://img.shields.io/npm/v/google-spreadsheet?style=for-the-badge&label=google-spreadsheet&color=orange)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+![Static Badge](https://img.shields.io/badge/Node.js-25-red?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge)
+![NPM Version](https://img.shields.io/npm/v/discord.js?style=for-the-badge&label=Discord.js&color=blue)
+![NPM Version](https://img.shields.io/npm/v/%40dotenvx%2Fdotenvx?style=for-the-badge&label=.envx&color=green)
+![NPM Version](https://img.shields.io/npm/v/%40googleapis%2Fsheets?style=for-the-badge&label=%40googleapis%2Fsheets&color=orange)
 
-Discord Bot based on the `Discord.js` framework using `Node.js` and `TypeScript` to enable `/commands` for the game [Ark of War](https://www.7piratesgames.com/ark.html)
-The bot itself is pretty basic and basically just follows along the [tutorial](https://discordjs.guide/) of the Discord.js framework.
+TC-Bot is a pretty simple Discord bot based on the `Discord.js` framework and is built around the game [Ark of War](https://www.7piratesgames.com/ark.html).
+It provides the users of the [Diplomacy of War Discord Server](https://discord.gg/YMAhCNjkgp) several commands to calculate stats in the game.
 
 ## About
 
-This is the 5th iteration of this bot by now. In the beginning it was "hacked together" (his words) by [Krylar](https://github.com/Krylar) and rewritten several times by me over the years.
-Outside of the game itself, the bot is pretty useless, and even inside the game it has since outlived most of its usefulness.
-
-The Bot lives in the Diplomacy of War Discord Server - one of the largest communities around the game (https://discord.gg/YMAhCNjkgp).
-
-The TC-Bot project is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)
-
-Discord.js Frame work by [Discord.js](https://github.com/discordjs/discord.js)
+The bot is the brainchild of [Krylar](https://github.com/Krylar) and was "hacked together" (his words) by him by following early discord.js tutorials.
+In the years it was rewritten several times by both him and me after I have taken over the project.
+Outside of the game itself, the bot is pretty useless, and even in the game it has outlived most of its usefulness.
 
 ## History
 
-Since this bot was created before I knew how to properly use GitHub, I had created several repositories for each version and simply put them on private on a new release.
-I have now changed this, without keeping the changes made over the years, simply because dealing with merge conflicts would have been a nightmare. All changes were done by me anyways, so no contribution by others was lost.
-This is why the merges done for the different branches look all so strange, just ignore. If you're interested in one of the older versions, I have marked releases for each final iteration.
+The initial bot was created before I knew how to properly use GitHub (and version control in general) and after I had taken over the project I used a new repo for each iteration. The previous one was set to private and only the current version was visible to the public.
 
-From version 5 the bot was fully rewritten using Claude 4 Sonnet and GPT-5 Reasoning as helper, since my skills in JavaScript are not the best. Version 7 was converted to TypeScript via Cursor's Composer 1 to improve code quality and maintainability.
+At some point I consolidated all repositories into one, keeping the original history intact, but scrapping all the history from the other version-specific repos.
+I mainly did this because I still wasn't exactly sure what to do in such situation and handling the hundreds of merge conflicts seemed too much of a hassle (I now know there would have been easier ways, but oh well).
 
-**Current Version: 7.4.1** - Features TypeScript strict mode, automated testing with Vitest, CI/CD with GitHub Actions, and automated dependency updates with Dependabot.
+Starting from Version 5 the bot was fully rewritten using agentic coding (Claude 4 Sonnet and GPT-5 at that point) as helpers and from Version 7 it was again fully rewritten, this time in TypeScript. Since then the functionality was kept mostly the same with added tests and validations. Some packages were swapped out for better or newer alternatives, but since the bot is doing its job perfectly fine and no further functions are needed/wanted by its users it will most likely stay this way.
+
+TypeScript is used in strict mode by now, tests are automated via Vitest and the CI/CD is realized with GitHub Actions runners. Dependencies are mostly updated automatically via Dependabot, but I also keep them up to date manually.
 
 ## Requirements
 
-- Node.js >= 25.0.0
-- pnpm >= 10.0.0
-- PM2 (recommended for production)
+- Node.js 25+
+- pnpm 10+
 
-## Configuration
+## Setup
 
-Use `.env.example` as your template:
+1. Install Node and pnpm:
 
-```bash
-cp .env.example .env.development
-```
+Use whatever installation method you prefer for your system.
 
-PowerShell equivalent:
-
-```powershell
-Copy-Item .env.example .env.development
-```
-
-Fill all required values in `.env.development`. At minimum, these are required for startup:
-
-- `TOKEN`
-- `CLIENT_ID`
-- `GUILD_ID`
-- `GOOGLE_SPREADSHEET_ID`
-- `GOOGLE_SHEET_ID`
-
-### dotenvx encrypted env files
-
-This project supports encrypted env files with dotenvx.
-
-1. Keep local plaintext env in `.env.development` (gitignored).
-2. Encrypt environment files when ready:
+2. Install dependencies:
 
    ```bash
-   pnpm exec dotenvx encrypt -f .env.production
-   pnpm exec dotenvx encrypt -f .env.development
+   pnpm install
    ```
 
-3. Keep `.env.keys` private (never commit it - ensure it's in `.gitignore`).
-4. Add GitHub secret for CI/deploy decryption:
-   - `DOTENV_PRIVATE_KEY_PRODUCTION`
+3. Copy and edit env file:
 
-> The deploy workflow now reads build/test/typecheck/deploy env from `.env.production` via dotenvx.
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
 
-### Google service account credentials
+4. Build and run:
+
+   ```bash
+   pnpm run build
+   pnpm start
+   ```
+
+or start it with PM2 ecosystem file for better control
+
+```bash
+pm2 start ecosystem.config.cjs
+```
+
+5. Deploy Slash commands
+
+```bash
+pnpm run deploy
+```
+
+## dotenvx and encrypted env files
+
+This project supports `dotenvx` for local `.env` loading now, and can optionally use encrypted env artifacts.
+
+- use `pnpm dlx dotenvx encrypt` to encrypt your local `.env` file and make it safe to commit
+- this will also create a `.env.keys` file with your private encryption key, which should NEVER be committed.
+- if you need to change env variables, use `pnpm dlx dotenvx decrypt` to use the key in `.env.keys` to restore the `.env` file
+- re-encrypt afterwards (it will reuse the same keys) and commit the changes
+- keep the private key in GitHub secrets like you would your SSH_KEY
+
+Suggested secret naming when vault is enabled:
+
+- `DOTENV_PRIVATE_KEY_DEVELOPMENT`
+- `DOTENV_PRIVATE_KEY_PRODUCTION`
+
+Use one key per environment to reduce blast radius.
+
+## Google service account credentials
 
 For Google Sheets access, provide `client_secret.json` in project root.
 
@@ -93,134 +108,46 @@ For Google Sheets access, provide `client_secret.json` in project root.
 
 Unless you have a copy of the Theorycrafters Google Sheet and valid API credentials, Healing/ITS features will not work.
 
-## Running the App
+## Environment Variables
 
-up to date instructions are available here: https://nodejs.org/en/download
+| Variable                         | Description                                       |
+| -------------------------------- | ------------------------------------------------- |
+| `TOKEN`                          | Discord Bot Token                                 |
+| `CLIENT_ID`                      | Discord Application Client ID                     |
+| `GUILD_ID`                       | Discord Server ID                                 |
+| `OCR_SPACEKEY`                   | OCR.space API Key                                 |
+| `CHANNEL_ID1`                    | Mopup Status Channel ID                           |
+| `CHANNEL_ID2`                    | Mopup Timer Channel ID                            |
+| `ENABLE_LEGACY_MESSAGE_COMMANDS` | If the bot should react to "!tcmu" commands       |
+| `MESSAGE_COMMAND_CHANNEL_ID`     | Channel ID for legacy message commands            |
+| `GOOGLE_SPREADSHEET_ID`          | Theorycrafters Google Spreadsheet ID              |
+| `GOOGLE_SHEET_ID`                | Theorycrafters Google Spreadsheet Tab ID          |
+| `GOOGLE_SHEET_CACHE`             | Time to cache the spreadsheet for                 |
+| `WEBHOOK_ID`                     | Webhook ID for Bot startup/error notifications    |
+| `WEBHOOK_TOKEN`                  | Webhook Token for Bot startup/error notifications |
+| `SQLITE_DB_PATH`                 | Path to the SQLite metrics database               |
+| `CHECKPOINT_INTERVAL_MS`         | How often to checkpoint the metrics DB            |
+| `METRICS_RETENTION_DAYS`         | How long to retain metrics rows                   |
+| `METRICS_FLUSH_INTERVAL_MS`      | Flush interval for the metrics queue              |
+| `METRICS_FLUSH_BATCH_SIZE`       | Batch size when flushing metrics                  |
+| `METRICS_MAX_QUEUE_LENGTH`       | Max queued metric events before dropping          |
+| `METRICS_MAX_RETRIES`            | Max retries when flushing metrics fails           |
+| `DEBUG`                          | Enable verbose debug logging (`true` / `false`)   |
+| `DEPLOY_REASON`                  | Optional; set by CI deploy workflows              |
 
-Installing nvm, node & pnpm:
+## Scripts
 
-```
-# Download and install nvm:
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+| Script              | Description                            |
+| ------------------- | -------------------------------------- |
+| `pnpm run build`    | Compile TypeScript to `dist/`.         |
+| `pnpm start`        | Run production server from `dist/`.    |
+| `pnpm run deploy`   | Register slash commands with Discord.  |
+| `pnpm run lint`     | Run OxLint.                            |
+| `pnpm run format`   | Run Oxfmt formatting.                  |
+| `pnpm run validate` | Check format, lint, typesafety, tests. |
 
-# Download and install Node.js:
-nvm install 25
+## License
 
-# Verify the Node.js version:
-node -v # Should print "v25.x.x".
-nvm current # Should print "v25.x.x".
+The TC-Bot project is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html).
 
-# Enable corepack (manages pnpm automatically):
-corepack enable
-
-# Verify pnpm version:
-pnpm -v # Should print "10.x.x".
-```
-
-Installing and starting the Bot
-
-```
-# download all the dependencies listed in the package.json
-pnpm install
-
-# build the TypeScript code
-pnpm run build
-
-# actually start the bot
-pnpm start
-
-# or start it with PM2 ecosystem file for better control
-pm2 start ecosystem.config.cjs
-
-# to deploy slash commands to Discord
-pnpm run deploy
-
-# for debug mode (verbose logging), add DEBUG=true to your .env.development file
-# then run: pnpm run dev
-
-# run tests
-pnpm run test
-
-# run tests in watch mode
-pnpm run test:watch
-
-# run tests with coverage
-pnpm run test:coverage
-
-# lint code
-pnpm run lint
-
-# format code
-pnpm run format
-
-# check code formatting
-pnpm run check-format
-```
-
-## Development Workflow
-
-### Local Development
-
-1. Clone the repository
-2. Install dependencies: `pnpm install`
-3. Create `.env.development` file with required configuration (see Configuration section)
-4. Create `client_secret.json` if using Google Sheets features
-5. Build the project: `pnpm run build`
-6. Deploy commands to Discord: `pnpm run deploy`
-7. Start the bot: `pnpm start` or `pnpm run dev` (with watch mode)
-
-### Testing
-
-The project uses [Vitest](https://vitest.dev/) for unit testing. Tests are located in the `tests/` directory.
-
-- Run all tests: `pnpm run test`
-- Run tests in watch mode: `pnpm run test:watch`
-- Generate coverage report: `pnpm run test:coverage`
-
-### Code Quality
-
-- **OxLint**: Code linting with `pnpm run lint`
-- **OxFmt**: Code formatting with `pnpm run format`
-- **TypeScript**: Strict mode enabled for better type safety
-
-## CI/CD & Deployment
-
-### Automated Deployment
-
-The project uses GitHub Actions for automated deployment. When code is pushed to the `main` branch (or manually triggered), the workflow:
-
-1. Builds the TypeScript code
-2. Creates deployment package with all necessary files
-3. Deploys to the server via SSH/rsync
-4. Restarts the bot using PM2
-
-**Protected Files**: The deployment preserves the following on the server:
-
-- `logs/` - PM2 log files
-- `data/` - SQLite database files
-
-### Dependabot
-
-[Dependabot](https://docs.github.com/en/code-security/dependabot) is configured to automatically:
-
-- Check for pnpm dependency updates weekly
-- Check for GitHub Actions updates weekly
-- Create pull requests for minor and patch updates
-- Ignore major version updates for critical packages (requires manual review)
-
-See `.github/dependabot.yml` for configuration details.
-
-### Manual Deployment
-
-If you need to deploy manually:
-
-```bash
-# Build the project
-pnpm run build
-
-# Deploy commands to Discord
-pnpm run deploy
-
-# On the server, restart PM2
-pm2 restart TC-Bot --update-env
-```
+Discord.js framework by [Discord.js](https://github.com/discordjs/discord.js).

@@ -26,7 +26,7 @@ updates:
         update-types: ['version-update:semver-major']
       - dependency-name: 'google-auth-library'
         update-types: ['version-update:semver-major']
-      - dependency-name: 'google-spreadsheet'
+      - dependency-name: '@googleapis/sheets'
         update-types: ['version-update:semver-major']
       - dependency-name: 'better-sqlite3'
         update-types: ['version-update:semver-major']
