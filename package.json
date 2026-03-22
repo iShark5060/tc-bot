@@ -29,7 +29,7 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.56.0",
+    "@dotenvx/dotenvx": "^1.57.1",
     "@googleapis/sheets": "^13.0.1",
     "@pm2/io": "^6.1.0",
     "better-sqlite3": "^12.8.0",
