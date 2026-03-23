@@ -25,6 +25,8 @@ let topCommandsStmt: Statement | null = null;
 let cleanupStmt: Statement | null = null;
 let upsertMopupStateStmt: Statement | null = null;
 let getMopupStateStmt: Statement | null = null;
+let acquireEventLockStmt: Statement | null = null;
+let cleanupExpiredEventLocksStmt: Statement | null = null;
 let droppedUsageEvents = 0;
 
 type UsageQueueItem = {
@@ -88,6 +90,13 @@ function initDb(): void {
     );
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS event_dedupe_lock (
+      key TEXT PRIMARY KEY,
+      expires_at_ms INTEGER NOT NULL
+    );
+  `);
+
   db.exec('CREATE INDEX IF NOT EXISTS idx_usage_created_at ON command_usage(created_at);');
   db.exec('CREATE INDEX IF NOT EXISTS idx_usage_cmd ON command_usage(command_name);');
 
@@ -131,6 +140,19 @@ function initDb(): void {
     SELECT updated_at_ms
     FROM mopup_update_state
     WHERE key = ?
+  `);
+
+  acquireEventLockStmt = db.prepare(`
+    INSERT INTO event_dedupe_lock (key, expires_at_ms)
+    VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET
+      expires_at_ms = excluded.expires_at_ms
+    WHERE event_dedupe_lock.expires_at_ms <= ?
+  `);
+
+  cleanupExpiredEventLocksStmt = db.prepare(`
+    DELETE FROM event_dedupe_lock
+    WHERE expires_at_ms <= ?
   `);
 
   purgeOldRecords();
@@ -317,6 +339,26 @@ export function getMopupUpdateWaitMs(
   }
 }
 
+export function tryAcquireEventLock(key: string, ttlMs: number, nowMs = Date.now()): boolean {
+  const normalizedTtlMs = Math.max(1, Math.floor(ttlMs));
+  const expiresAtMs = nowMs + normalizedTtlMs;
+
+  try {
+    initDb();
+    if (!acquireEventLockStmt) return true;
+    const result = acquireEventLockStmt.run(String(key), expiresAtMs, nowMs);
+
+    if (cleanupExpiredEventLocksStmt && Math.random() < 0.01) {
+      cleanupExpiredEventLocksStmt.run(nowMs);
+    }
+
+    return Number(result.changes ?? 0) > 0;
+  } catch (e) {
+    console.error('[USAGE:SQLite] Failed to acquire event lock:', e);
+    return true;
+  }
+}
+
 export function startWALCheckpoint(intervalMs?: number | null): void {
   initDb();
   purgeOldRecords();
@@ -352,6 +394,8 @@ export function closeDb(): void {
       cleanupStmt = null;
       upsertMopupStateStmt = null;
       getMopupStateStmt = null;
+      acquireEventLockStmt = null;
+      cleanupExpiredEventLocksStmt = null;
       db.close();
       db = null;
       console.log('[USAGE:SQLite] Database closed');
