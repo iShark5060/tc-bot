@@ -4,7 +4,7 @@ import { ENABLE_LEGACY_MESSAGE_COMMANDS, MESSAGE_COMMAND_CHANNEL_ID } from '../h
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
-import { buildMopupEmbed } from '../helper/mopup.js';
+import { buildMopupEmbed, MOPUP_EMBED_TITLE } from '../helper/mopup.js';
 import { logCommandUsage, tryAcquireEventLock } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';
 
@@ -27,7 +27,7 @@ async function removeDuplicateMopupReplies(
     const matchingReplies = [...recentMessages.values()].filter((candidate) => {
       if (candidate.author.id !== botUserId) return false;
       if (candidate.reference?.messageId !== message.id) return false;
-      return candidate.embeds[0]?.title === 'Mopup';
+      return candidate.embeds[0]?.title === MOPUP_EMBED_TITLE;
     });
 
     if (matchingReplies.length <= 1) return;
