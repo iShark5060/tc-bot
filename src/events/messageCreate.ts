@@ -1,12 +1,60 @@
-import { Events, ChannelType, type Message, type TextChannel } from 'discord.js';
+import { Events, ChannelType, type Message } from 'discord.js';
 
 import { ENABLE_LEGACY_MESSAGE_COMMANDS, MESSAGE_COMMAND_CHANNEL_ID } from '../helper/constants.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleMessageError } from '../helper/errorHandler.js';
 import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
-import { buildMopupEmbed } from '../helper/mopup.js';
-import { logCommandUsage } from '../helper/usageTracker.js';
+import { buildMopupEmbed, MOPUP_EMBED_TITLE } from '../helper/mopup.js';
+import { logCommandUsage, tryAcquireEventLock } from '../helper/usageTracker.js';
 import type { Event } from '../types/index.js';
+
+const MOPUP_MESSAGE_LOCK_TTL_MS = 10 * 60 * 1000;
+const MOPUP_DUPLICATE_SCAN_LIMIT = 25;
+
+async function removeDuplicateMopupReplies(
+  message: Message,
+  sentMessageId: string,
+  startTime: number,
+): Promise<void> {
+  if (!message.channel.isTextBased()) return;
+  const botUserId = message.client.user?.id;
+  if (!botUserId) return;
+
+  try {
+    const recentMessages = await message.channel.messages.fetch({
+      limit: MOPUP_DUPLICATE_SCAN_LIMIT,
+    });
+    const matchingReplies = [...recentMessages.values()].filter((candidate) => {
+      if (candidate.author.id !== botUserId) return false;
+      if (candidate.reference?.messageId !== message.id) return false;
+      return candidate.embeds[0]?.title === MOPUP_EMBED_TITLE;
+    });
+
+    if (matchingReplies.length <= 1) return;
+
+    const sortedByTime = matchingReplies.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+    const keepMessage =
+      sortedByTime.find((candidate) => candidate.id === sentMessageId) ?? sortedByTime[0];
+    const duplicatesToDelete = sortedByTime.filter((candidate) => candidate.id !== keepMessage.id);
+
+    await Promise.allSettled(duplicatesToDelete.map((candidate) => candidate.delete()));
+    debugLogger.warn('COMMAND', 'Deleted duplicate !tcmu replies for source message', {
+      sourceMessageId: message.id,
+      keptReplyId: keepMessage.id,
+      deletedReplyIds: duplicatesToDelete.map((candidate) => candidate.id),
+      countDeleted: duplicatesToDelete.length,
+      processId: process.pid,
+      durationMs: Date.now() - startTime,
+    });
+  } catch (error) {
+    debugLogger.error('COMMAND', 'Failed duplicate !tcmu cleanup scan', {
+      sourceMessageId: message.id,
+      sentMessageId,
+      processId: process.pid,
+      error: error as Error,
+    });
+  }
+}
 
 function getChannelName(message: Message): string {
   if (message.channel.isDMBased()) return 'DM';
@@ -53,11 +101,24 @@ const messageCreate: Event = {
     });
 
     if (message.content === '!tcmu') {
+      const crossProcessLockKey = `message-command:!tcmu:${message.id}`;
+      const lockAcquired = tryAcquireEventLock(crossProcessLockKey, MOPUP_MESSAGE_LOCK_TTL_MS);
+      if (!lockAcquired) {
+        debugLogger.warn('MESSAGE', 'Skipping duplicate !tcmu execution (cross-process lock)', {
+          messageId: message.id,
+          channelId: message.channelId,
+          userId: message.author?.id,
+          processId: process.pid,
+        });
+        return;
+      }
+
       debugLogger.command('msg:!tcmu', 'Message command execution started', {
         userId: message.author?.id,
         username: message.author?.username,
         guildId: message.guildId,
         channelId: message.channelId,
+        processId: process.pid,
       });
 
       const startTime = Date.now();
@@ -66,9 +127,11 @@ const messageCreate: Event = {
 
         if (message.channel.isTextBased()) {
           debugLogger.step('COMMAND', 'Sending mopup embed response');
-          await (message.channel as TextChannel).send({
+          const sent = await message.reply({
             embeds: [buildMopupEmbed(startTime)],
+            allowedMentions: { repliedUser: false },
           });
+          await removeDuplicateMopupReplies(message, sent.id, startTime);
           debugLogger.step('COMMAND', 'Mopup embed sent successfully');
         } else {
           debugLogger.warn('COMMAND', 'Channel does not support sending messages');

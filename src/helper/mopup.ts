@@ -8,6 +8,8 @@ interface MopupWindow {
   endTime: number;
 }
 
+const MOPUP_EMBED_TITLE = 'Mopup';
+
 function calculateMopupTiming(): MopupInfo {
   const now = Date.now();
   const utcOffset = new Date().getTimezoneOffset() * 60 * 1000;
@@ -75,7 +77,7 @@ function buildMopupEmbed(startTime: number): EmbedBuilder {
   const duration = Date.now() - startTime;
   return new EmbedBuilder()
     .setColor(color)
-    .setTitle('Mopup')
+    .setTitle(MOPUP_EMBED_TITLE)
     .addFields(
       { name: 'Status:', value: `\`\`\`asciidoc\n${status}\`\`\`` },
       { name: 'Time remaining:', value: `\`\`\`asciidoc\n${time}\`\`\`` },
@@ -84,4 +86,11 @@ function buildMopupEmbed(startTime: number): EmbedBuilder {
     .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
 }
 
-export { calculateMopupTiming, getMopupWindow, determineMopupStatus, formatTime, buildMopupEmbed };
+export {
+  MOPUP_EMBED_TITLE,
+  calculateMopupTiming,
+  getMopupWindow,
+  determineMopupStatus,
+  formatTime,
+  buildMopupEmbed,
+};
