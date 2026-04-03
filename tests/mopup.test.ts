@@ -95,11 +95,7 @@ describe('calculateMopupTiming', () => {
   it('returns consistent color for status', () => {
     const result = calculateMopupTiming();
 
-    if (result.status === 'ACTIVE') {
-      expect(result.color).toBe(Colors.Green);
-    } else {
-      expect(result.color).toBe(Colors.Red);
-    }
+    expect(result.color).toBe(result.status === 'ACTIVE' ? Colors.Green : Colors.Red);
   });
 
   it('returns a future timestamp', () => {
