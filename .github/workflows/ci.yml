@@ -389,6 +389,17 @@ jobs:
             /tmp/deploy/.env.keys \
             "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/.env.keys"
 
+      - name: Update permissions
+        run: |
+          if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_SSH_PORT" ]; then
+            echo "ERROR: SERVER_USER, SERVER_HOST, or SERVER_SSH_PORT secret is missing or empty."
+            exit 1
+          fi
+          ssh -p "$SERVER_SSH_PORT" -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
+            "$SERVER_USER@$SERVER_HOST" \
+            "/usr/local/bin/pm2-chown-tree $SERVER_PATH"
+
       - name: Restart PM2
         run: |
           if [ -z "$SERVER_USER" ] || [ -z "$SERVER_HOST" ] || [ -z "$SERVER_SSH_PORT" ]; then
