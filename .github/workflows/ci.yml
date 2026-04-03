@@ -377,14 +377,12 @@ jobs:
             --exclude='.env.keys' \
             --exclude='logs/' \
             --exclude='data/' \
-            --chown=pm2-user:web \
             --chmod=D2770,F640 \
             --omit-dir-times --no-perms --no-owner --no-group \
             -e "ssh -p $SERVER_SSH_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             /tmp/deploy/ \
             "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
           rsync -avp \
-            --chown=pm2-user:web \
             --chmod=F600 \
             --omit-dir-times --no-perms --no-owner --no-group \
             -e "ssh -p $SERVER_SSH_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
