@@ -372,19 +372,19 @@ jobs:
 
       - name: Deploy to server
         run: |
-          rsync -avp --delete \
+          rsync -av --no-times --delete \
             --exclude='.env' \
             --exclude='.env.keys' \
             --exclude='logs/' \
             --exclude='data/' \
             --chmod=D2770,F640 \
-            --omit-dir-times --no-perms --no-owner --no-group \
+            --omit-dir-times \
             -e "ssh -p $SERVER_SSH_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             /tmp/deploy/ \
             "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
-          rsync -avp \
+          rsync -av --no-times \
             --chmod=F600 \
-            --omit-dir-times --no-perms --no-owner --no-group \
+            --omit-dir-times \
             -e "ssh -p $SERVER_SSH_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             /tmp/deploy/.env.keys \
             "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/.env.keys"
