@@ -2,6 +2,7 @@ import { EmbedBuilder, Colors } from 'discord.js';
 
 import type { MopupInfo } from '../types/index.js';
 import { BOT_ICON_URL } from './constants.js';
+import { formatHrDuration } from './hrDuration.js';
 
 interface MopupWindow {
   startTime: number;
@@ -72,9 +73,8 @@ function formatTime(ms: number): string {
   return new Date(Math.abs(ms)).toISOString().slice(11, 19);
 }
 
-function buildMopupEmbed(startTime: number): EmbedBuilder {
+function buildMopupEmbed(startHr: bigint): EmbedBuilder {
   const { status, color, time, timestamp } = calculateMopupTiming();
-  const duration = Date.now() - startTime;
   return new EmbedBuilder()
     .setColor(color)
     .setTitle(MOPUP_EMBED_TITLE)
@@ -83,7 +83,7 @@ function buildMopupEmbed(startTime: number): EmbedBuilder {
       { name: 'Time remaining:', value: `\`\`\`asciidoc\n${time}\`\`\`` },
       { name: 'Local time:', value: `<t:${timestamp}:f>` },
     )
-    .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
+    .setFooter({ text: `via tc-bot - ${formatHrDuration(startHr)}`, iconURL: BOT_ICON_URL });
 }
 
 export {

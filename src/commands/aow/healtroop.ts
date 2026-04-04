@@ -18,6 +18,7 @@ import {
   VALIDATION,
 } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
+import { formatHrDuration } from '../../helper/hrDuration.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import {
   TroopRow,
@@ -63,7 +64,7 @@ const healtroop: Command = {
   ],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const startTime = Date.now();
+    const startHr = process.hrtime.bigint();
     const troopAmount = interaction.options.getInteger('amount');
     const troopTier = interaction.options.getInteger('tier');
     const troopType = interaction.options.getString('type');
@@ -120,7 +121,6 @@ const healtroop: Command = {
     }
 
     if (validByName.size > 1) {
-      const duration = Date.now() - startTime;
       const embed = new EmbedBuilder()
         .setColor(Colors.White)
         .setTitle('Healing cost — choose troop')
@@ -137,7 +137,7 @@ const healtroop: Command = {
             '```',
         })
         .setFooter({
-          text: `via tc-bot - ${duration}ms`,
+          text: `via tc-bot - ${formatHrDuration(startHr)}`,
           iconURL: BOT_ICON_URL,
         });
 
@@ -187,14 +187,14 @@ const healtroop: Command = {
       selectedRows.length < validByName.get(singleName)!.length
         ? validByName.get(singleName)!.length - selectedRows.length
         : 0,
-      startTime,
+      startHr,
     );
 
     await interaction.editReply({ embeds: [embed], components: [] });
   },
 
   async handleSelect(interaction: StringSelectMenuInteraction): Promise<void> {
-    const startTime = Date.now();
+    const startHr = process.hrtime.bigint();
     try {
       const meta = String(interaction.customId).slice('healtroop:'.length);
       const [tierStr, type, amountStr, originalUserId] = meta.split('|');
@@ -277,7 +277,7 @@ const healtroop: Command = {
         troopRows.length > TRUNCATION_LIMITS.MAX_ROWS
           ? troopRows.length - TRUNCATION_LIMITS.MAX_ROWS
           : 0,
-        startTime,
+        startHr,
       );
 
       await interaction.update({
@@ -451,7 +451,7 @@ function createMultiHealingEmbed(
   troopName: string,
   perRowCalcs: RowCalc[],
   truncatedCount: number,
-  startTime: number,
+  startHr: bigint,
 ): EmbedBuilder {
   const embed = new EmbedBuilder().setColor(Colors.White).setTitle('Healing cost:');
 
@@ -516,9 +516,8 @@ function createMultiHealingEmbed(
     });
   }
 
-  const duration = Date.now() - startTime;
   embed.setFooter({
-    text: `via tc-bot - ${duration}ms`,
+    text: `via tc-bot - ${formatHrDuration(startHr)}`,
     iconURL: BOT_ICON_URL,
   });
 

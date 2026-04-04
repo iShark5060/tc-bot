@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 
 import { BOT_ICON_URL } from '../../helper/constants.js';
+import { formatHrDuration } from '../../helper/hrDuration.js';
 import type { Command, ExtendedClient } from '../../types/index.js';
 
 const help: Command = {
@@ -17,7 +18,7 @@ const help: Command = {
   examples: ['/help'],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const startTime = Date.now();
+    const startHr = process.hrtime.bigint();
     const commands = (interaction.client as ExtendedClient).commands;
 
     if (!commands || commands.size === 0) {
@@ -50,13 +51,12 @@ const help: Command = {
     const maxDescriptionLength = 4000;
     const safeDescription = truncateCommandList(commandList, maxDescriptionLength);
 
-    const duration = Date.now() - startTime;
     const embed = new EmbedBuilder()
       .setColor(Colors.Green)
       .setTitle('📜 Available Commands')
       .setDescription(safeDescription)
       .setFooter({
-        text: `via tc-bot - ${duration}ms`,
+        text: `via tc-bot - ${formatHrDuration(startHr)}`,
         iconURL: BOT_ICON_URL,
       })
       .setTimestamp();

@@ -3,6 +3,7 @@ import { Events, ChannelType, type Message } from 'discord.js';
 import { ENABLE_LEGACY_MESSAGE_COMMANDS, MESSAGE_COMMAND_CHANNEL_ID } from '../helper/constants.js';
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleMessageError } from '../helper/errorHandler.js';
+import { formatHrDuration } from '../helper/hrDuration.js';
 import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
 import { buildMopupEmbed, MOPUP_EMBED_TITLE } from '../helper/mopup.js';
 import { logCommandUsage, tryAcquireEventLock } from '../helper/usageTracker.js';
@@ -14,7 +15,7 @@ const MOPUP_DUPLICATE_SCAN_LIMIT = 25;
 async function removeDuplicateMopupReplies(
   message: Message,
   sentMessageId: string,
-  startTime: number,
+  startHr: bigint,
 ): Promise<void> {
   if (!message.channel.isTextBased()) return;
   const botUserId = message.client.user?.id;
@@ -44,7 +45,7 @@ async function removeDuplicateMopupReplies(
       deletedReplyIds: duplicatesToDelete.map((candidate) => candidate.id),
       countDeleted: duplicatesToDelete.length,
       processId: process.pid,
-      durationMs: Date.now() - startTime,
+      duration: formatHrDuration(startHr),
     });
   } catch (error) {
     debugLogger.error('COMMAND', 'Failed duplicate !tcmu cleanup scan', {
@@ -121,25 +122,24 @@ const messageCreate: Event = {
         processId: process.pid,
       });
 
-      const startTime = Date.now();
+      const startHr = process.hrtime.bigint();
       try {
         debugLogger.step('COMMAND', 'Building mopup embed for !tcmu');
 
         if (message.channel.isTextBased()) {
           debugLogger.step('COMMAND', 'Sending mopup embed response');
           const sent = await message.reply({
-            embeds: [buildMopupEmbed(startTime)],
+            embeds: [buildMopupEmbed(startHr)],
             allowedMentions: { repliedUser: false },
           });
-          await removeDuplicateMopupReplies(message, sent.id, startTime);
+          await removeDuplicateMopupReplies(message, sent.id, startHr);
           debugLogger.step('COMMAND', 'Mopup embed sent successfully');
         } else {
           debugLogger.warn('COMMAND', 'Channel does not support sending messages');
         }
 
-        const duration = Date.now() - startTime;
         debugLogger.command('msg:!tcmu', 'Command executed successfully', {
-          duration: `${duration}ms`,
+          duration: formatHrDuration(startHr),
         });
 
         debugLogger.debug('COMMAND', 'Logging command usage', {
@@ -152,10 +152,9 @@ const messageCreate: Event = {
           success: true,
         });
       } catch (error) {
-        const duration = Date.now() - startTime;
         debugLogger.error('COMMAND', 'Message command execution failed', {
           commandName: 'msg:!tcmu',
-          duration: `${duration}ms`,
+          duration: formatHrDuration(startHr),
           error: error as Error,
         });
 

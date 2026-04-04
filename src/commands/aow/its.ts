@@ -8,6 +8,7 @@ import {
 
 import { BOT_ICON_URL, VALIDATION } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
+import { formatHrDuration } from '../../helper/hrDuration.js';
 import { getSheetRowsCached } from '../../helper/sheetsCache.js';
 import { TroopRow, type Command, type KillResult, type ExtendedClient } from '../../types/index.js';
 
@@ -33,7 +34,7 @@ const its: Command = {
   ],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const startTime = Date.now();
+    const startHr = process.hrtime.bigint();
     const skillLevel = interaction.options.getInteger('level');
     const leadership = interaction.options.getInteger('leadership');
     const targetTier = interaction.options.getInteger('tier');
@@ -91,7 +92,6 @@ const its: Command = {
     const kills = calculateKills(rows, targetTier, skillLevel, leadership, tdr);
 
     if (kills.length === 0) {
-      const duration = Date.now() - startTime;
       await interaction.editReply({
         embeds: [
           new EmbedBuilder()
@@ -101,7 +101,7 @@ const its: Command = {
               'No usable troop data found (rows are empty, invalid, or would result in 0 kills).',
             )
             .setFooter({
-              text: `via tc-bot - ${duration}ms`,
+              text: `via tc-bot - ${formatHrDuration(startHr)}`,
               iconURL: BOT_ICON_URL,
             }),
         ],
@@ -109,7 +109,7 @@ const its: Command = {
       return;
     }
 
-    const embed = createItsEmbed(leadership, skillLevel, tdr, kills, startTime);
+    const embed = createItsEmbed(leadership, skillLevel, tdr, kills, startHr);
 
     await interaction.editReply({ embeds: [embed] });
   },
@@ -171,9 +171,8 @@ function createItsEmbed(
   skillLevel: number,
   tdr: number,
   kills: KillResult[],
-  startTime: number,
+  startHr: bigint,
 ): EmbedBuilder {
-  const duration = Date.now() - startTime;
   return new EmbedBuilder()
     .setColor(Colors.White)
     .setTitle('Ignore Tier Suppression')
@@ -183,7 +182,7 @@ function createItsEmbed(
         `iTS skill vs ${tdr}% TDR can kill:`,
       value: `\`\`\`\n${formatKillsList(kills)}\`\`\``,
     })
-    .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
+    .setFooter({ text: `via tc-bot - ${formatHrDuration(startHr)}`, iconURL: BOT_ICON_URL });
 }
 
 export default its;
