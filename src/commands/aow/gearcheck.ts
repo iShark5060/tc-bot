@@ -12,6 +12,7 @@ import {
   VALIDATION,
 } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
+import { formatHrDuration } from '../../helper/hrDuration.js';
 import type { Command, GearCalculations } from '../../types/index.js';
 
 const gearcheck: Command = {
@@ -27,7 +28,7 @@ const gearcheck: Command = {
   examples: ['/gearcheck stat:120 level:20', '/gearcheck stat:85.5 level:10'],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const startTime = Date.now();
+    const startHr = process.hrtime.bigint();
     await interaction.deferReply();
 
     const statValue = interaction.options.getNumber('stat');
@@ -55,7 +56,7 @@ const gearcheck: Command = {
     }
 
     const calculations = calculateGearStats(statValue, gearLevel);
-    const embed = createGearEmbed(statValue, gearLevel, calculations, startTime);
+    const embed = createGearEmbed(statValue, gearLevel, calculations, startHr);
 
     await interaction.editReply({ embeds: [embed] });
   },
@@ -76,13 +77,12 @@ function createGearEmbed(
   currentStat: number,
   currentLevel: number,
   calculations: GearCalculations,
-  startTime: number,
+  startHr: bigint,
 ): EmbedBuilder {
   const calculatedText = Object.entries(calculations)
     .map(([level, stat]) => `+${level}:: ${numberWithCommas(stat)}%`)
     .join('\n');
 
-  const duration = Date.now() - startTime;
   return new EmbedBuilder()
     .setColor(Colors.White)
     .setTitle('Gearcheck')
@@ -99,7 +99,7 @@ function createGearEmbed(
         value: `\`\`\`asciidoc\n${calculatedText}\`\`\``,
       },
     )
-    .setFooter({ text: `via tc-bot - ${duration}ms`, iconURL: BOT_ICON_URL });
+    .setFooter({ text: `via tc-bot - ${formatHrDuration(startHr)}`, iconURL: BOT_ICON_URL });
 }
 
 export default gearcheck;

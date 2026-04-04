@@ -8,6 +8,7 @@ import {
 
 import { BOT_ICON_URL, METRICS_TOP_LIMIT } from '../../helper/constants.js';
 import { numberWithCommas } from '../../helper/formatters.js';
+import { formatHrDuration } from '../../helper/hrDuration.js';
 import { getMetricsTotals, getTopCommands } from '../../helper/usageTracker.js';
 import type { Command } from '../../types/index.js';
 
@@ -35,7 +36,7 @@ const metrics: Command = {
   examples: ['/metrics', '/metrics period:weekly'],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const startTime = Date.now();
+    const startHr = process.hrtime.bigint();
     await interaction.deferReply();
 
     const period = interaction.options.getString('period') || 'daily';
@@ -62,7 +63,6 @@ const metrics: Command = {
               .join('\n')
           : 'No data yet.';
 
-      const duration = Date.now() - startTime;
       const embed = new EmbedBuilder()
         .setColor(Colors.Green)
         .setTitle('Command Metrics')
@@ -84,7 +84,7 @@ const metrics: Command = {
           },
         )
         .setFooter({
-          text: `via tc-bot - ${duration}ms`,
+          text: `via tc-bot - ${formatHrDuration(startHr)}`,
           iconURL: BOT_ICON_URL,
         })
         .setTimestamp();

@@ -8,8 +8,8 @@ const mopup: Command = {
   examples: ['/mopup'],
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const startTime = Date.now();
-    await interaction.reply({ embeds: [buildMopupEmbed(startTime)] });
+    const startHr = process.hrtime.bigint();
+    await interaction.reply({ embeds: [buildMopupEmbed(startHr)] });
   },
 };
 

@@ -7,6 +7,7 @@ import {
 
 import { debugLogger } from '../helper/debugLogger.js';
 import { handleCommandError } from '../helper/errorHandler.js';
+import { formatHrDuration } from '../helper/hrDuration.js';
 import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
 import { commandErrors, commandsCounter, commandsPerSecond } from '../helper/metrics.js';
 import { logCommandUsage } from '../helper/usageTracker.js';
@@ -97,13 +98,12 @@ const interactionsCreate: Event = {
       return;
     }
 
-    const startTime = Date.now();
+    const startHr = process.hrtime.bigint();
     try {
       debugLogger.step('COMMAND', 'Executing command', { commandName });
       await command.execute(interaction);
-      const duration = Date.now() - startTime;
       debugLogger.command(commandName, 'Command executed successfully', {
-        duration: `${duration}ms`,
+        duration: formatHrDuration(startHr),
       });
 
       commandsCounter.inc();
@@ -118,10 +118,9 @@ const interactionsCreate: Event = {
       });
       debugLogger.step('COMMAND', 'Command usage logged', { commandName });
     } catch (error) {
-      const duration = Date.now() - startTime;
       debugLogger.error('COMMAND', 'Command execution failed', {
         commandName,
-        duration: `${duration}ms`,
+        duration: formatHrDuration(startHr),
         error: error as Error,
       });
 
