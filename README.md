@@ -110,27 +110,27 @@ Unless you have a copy of the Theorycrafters Google Sheet and valid API credenti
 
 ## Environment Variables
 
-| Variable                         | Description                                       |
-| -------------------------------- | ------------------------------------------------- |
-| `TOKEN`                          | Discord Bot Token                                 |
-| `CLIENT_ID`                      | Discord Application Client ID                     |
-| `GUILD_ID`                       | Discord Server ID                                 |
-| `OCR_SPACEKEY`                   | OCR.space API Key                                 |
-| `CHANNEL_ID1`                    | Mopup Status Channel ID                           |
-| `CHANNEL_ID2`                    | Mopup Timer Channel ID                            |
-| `ENABLE_LEGACY_MESSAGE_COMMANDS` | If the bot should react to "!tcmu" commands       |
-| `MESSAGE_COMMAND_CHANNEL_ID`     | Channel ID for legacy message commands            |
-| `GOOGLE_SPREADSHEET_ID`          | Theorycrafters Google Spreadsheet ID              |
-| `GOOGLE_SHEET_ID`                | Theorycrafters Google Spreadsheet Tab ID          |
-| `GOOGLE_SHEET_CACHE`             | Time to cache the spreadsheet for                 |
-| `SQLITE_DB_PATH`                 | Path to the SQLite metrics database               |
-| `CHECKPOINT_INTERVAL_MS`         | How often to checkpoint the metrics DB            |
+| Variable                         | Description                                         |
+| -------------------------------- | --------------------------------------------------- |
+| `TOKEN`                          | Discord Bot Token                                   |
+| `CLIENT_ID`                      | Discord Application Client ID                       |
+| `GUILD_ID`                       | Discord Server ID                                   |
+| `OCR_SPACEKEY`                   | OCR.space API Key                                   |
+| `CHANNEL_ID1`                    | Mopup Status Channel ID                             |
+| `CHANNEL_ID2`                    | Mopup Timer Channel ID                              |
+| `ENABLE_LEGACY_MESSAGE_COMMANDS` | If the bot should react to "!tcmu" commands         |
+| `MESSAGE_COMMAND_CHANNEL_ID`     | Channel ID for legacy message commands              |
+| `GOOGLE_SPREADSHEET_ID`          | Theorycrafters Google Spreadsheet ID                |
+| `GOOGLE_SHEET_ID`                | Theorycrafters Google Spreadsheet Tab ID            |
+| `GOOGLE_SHEET_CACHE`             | Time to cache the spreadsheet for                   |
+| `SQLITE_DB_PATH`                 | Path to the SQLite metrics database                 |
+| `CHECKPOINT_INTERVAL_MS`         | How often to checkpoint the metrics DB              |
 | `METRICS_RETENTION_DAYS`         | Rolling retention in days (`0` = keep indefinitely) |
-| `METRICS_FLUSH_INTERVAL_MS`      | Flush interval for the metrics queue              |
-| `METRICS_FLUSH_BATCH_SIZE`       | Batch size when flushing metrics                  |
-| `METRICS_MAX_QUEUE_LENGTH`       | Max queued metric events before dropping          |
-| `METRICS_MAX_RETRIES`            | Max retries when flushing metrics fails           |
-| `DEBUG`                          | Enable verbose debug logging (`true` / `false`)   |
+| `METRICS_FLUSH_INTERVAL_MS`      | Flush interval for the metrics queue                |
+| `METRICS_FLUSH_BATCH_SIZE`       | Batch size when flushing metrics                    |
+| `METRICS_MAX_QUEUE_LENGTH`       | Max queued metric events before dropping            |
+| `METRICS_MAX_RETRIES`            | Max retries when flushing metrics fails             |
+| `DEBUG`                          | Enable verbose debug logging (`true` / `false`)     |
 
 ## Scripts
 
