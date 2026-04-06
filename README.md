@@ -123,17 +123,14 @@ Unless you have a copy of the Theorycrafters Google Sheet and valid API credenti
 | `GOOGLE_SPREADSHEET_ID`          | Theorycrafters Google Spreadsheet ID              |
 | `GOOGLE_SHEET_ID`                | Theorycrafters Google Spreadsheet Tab ID          |
 | `GOOGLE_SHEET_CACHE`             | Time to cache the spreadsheet for                 |
-| `WEBHOOK_ID`                     | Webhook ID for Bot startup/error notifications    |
-| `WEBHOOK_TOKEN`                  | Webhook Token for Bot startup/error notifications |
 | `SQLITE_DB_PATH`                 | Path to the SQLite metrics database               |
 | `CHECKPOINT_INTERVAL_MS`         | How often to checkpoint the metrics DB            |
-| `METRICS_RETENTION_DAYS`         | How long to retain metrics rows                   |
+| `METRICS_RETENTION_DAYS`         | Rolling retention in days (`0` = keep indefinitely) |
 | `METRICS_FLUSH_INTERVAL_MS`      | Flush interval for the metrics queue              |
 | `METRICS_FLUSH_BATCH_SIZE`       | Batch size when flushing metrics                  |
 | `METRICS_MAX_QUEUE_LENGTH`       | Max queued metric events before dropping          |
 | `METRICS_MAX_RETRIES`            | Max retries when flushing metrics fails           |
 | `DEBUG`                          | Enable verbose debug logging (`true` / `false`)   |
-| `DEPLOY_REASON`                  | Optional; set by CI deploy workflows              |
 
 ## Scripts
 

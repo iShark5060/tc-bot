@@ -11,7 +11,27 @@ const FLUSH_INTERVAL_MS = Number(process.env.METRICS_FLUSH_INTERVAL_MS || 1000);
 const FLUSH_BATCH_SIZE = Number(process.env.METRICS_FLUSH_BATCH_SIZE || 50);
 const MAX_QUEUE_LENGTH = Number(process.env.METRICS_MAX_QUEUE_LENGTH || 5000);
 const MAX_RETRIES = Number(process.env.METRICS_MAX_RETRIES || 3);
-const RETENTION_DAYS = Number(process.env.METRICS_RETENTION_DAYS || 90);
+
+/** 0 = keep metrics indefinitely (no automatic purge). Default 90. */
+function parseMetricsRetentionDays(): number {
+  const raw = process.env.METRICS_RETENTION_DAYS;
+  if (raw === undefined || raw.trim() === '') {
+    return 90;
+  }
+  const n = Number(raw);
+  if (!Number.isFinite(n)) {
+    return 90;
+  }
+  if (n === 0) {
+    return 0;
+  }
+  if (n < 0) {
+    return 90;
+  }
+  return Math.max(1, Math.floor(n));
+}
+
+const RETENTION_DAYS = parseMetricsRetentionDays();
 const ALLOWED_CHECKPOINT_MODES = new Set(['PASSIVE', 'FULL', 'RESTART', 'TRUNCATE']);
 
 let db: Database.Database | null = null;
@@ -158,13 +178,18 @@ function initDb(): void {
   purgeOldRecords();
 
   console.log('[USAGE:SQLite] Initialized at', DB_PATH);
+  if (RETENTION_DAYS === 0) {
+    console.log('[USAGE:SQLite] METRICS_RETENTION_DAYS=0: automatic retention purge disabled');
+  }
 }
 
 function purgeOldRecords(): void {
   if (!cleanupStmt) return;
-  if (!Number.isFinite(RETENTION_DAYS) || RETENTION_DAYS <= 0) return;
+  if (RETENTION_DAYS === 0) {
+    return;
+  }
 
-  const keepWindow = `-${Math.floor(RETENTION_DAYS)} days`;
+  const keepWindow = `-${RETENTION_DAYS} days`;
   cleanupStmt.run(keepWindow);
 }
 

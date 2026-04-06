@@ -94,13 +94,6 @@ export interface CommandUsage {
   errorMessage?: string;
 }
 
-export interface DiscordNotificationParams {
-  type: 'startup' | 'shutdown' | 'error' | string;
-  message?: string;
-  error?: Error | string;
-  mention?: boolean;
-}
-
 export interface MetricsTotals {
   total_count: number;
   success_count: number;
