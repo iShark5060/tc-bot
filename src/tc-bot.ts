@@ -21,7 +21,6 @@ import { stopLatencyMonitoring } from './events/clientReady.js';
 import { discoverCommandFiles } from './helper/commandDiscovery.js';
 import { ENABLE_LEGACY_MESSAGE_COMMANDS, TIMERS } from './helper/constants.js';
 import { debugLogger } from './helper/debugLogger.js';
-import { notifyDiscord } from './helper/discordNotification.js';
 import { stopIdempotencyCleanup } from './helper/idempotencyGuard.js';
 import { calculateMopupTiming } from './helper/mopup.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
@@ -55,29 +54,8 @@ const client: ExtendedClient = new Client({ intents }) as ExtendedClient;
 client.commands = new Collection<string, Command>();
 client.GoogleSheets = null;
 
-function parseCliReason(): string | undefined {
-  const envReason = process.env.DEPLOY_REASON;
-  if (envReason) {
-    delete process.env.DEPLOY_REASON;
-    return envReason;
-  }
-  const idx = process.argv.lastIndexOf('--reason');
-  if (idx !== -1 && idx + 1 < process.argv.length) {
-    return process.argv[idx + 1];
-  }
-  return undefined;
-}
-
-const startupReason = parseCliReason();
-
 function getSpreadsheetId(): string {
   return process.env.GOOGLE_SPREADSHEET_ID || '';
-}
-
-let shutdownReason = '';
-
-export function setShutdownReason(reason: string): void {
-  shutdownReason = reason;
 }
 
 function validateEnvironment(): void {
@@ -103,12 +81,10 @@ function validateEnvironment(): void {
 validateEnvironment();
 
 process.on('SIGTERM', () => {
-  if (!shutdownReason) shutdownReason = 'Received SIGTERM';
-  gracefulShutdown();
+  void gracefulShutdown();
 });
 process.on('SIGINT', () => {
-  if (!shutdownReason) shutdownReason = 'Received SIGINT';
-  gracefulShutdown();
+  void gracefulShutdown();
 });
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -124,16 +100,13 @@ process.on('uncaughtException', (error) => {
     error,
   });
   console.error('[PROCESS] Uncaught exception:', error);
-  if (!shutdownReason) {
-    shutdownReason = `Uncaught exception: ${error instanceof Error ? error.message : String(error)}`;
-  }
   const forceExitTimeout = setTimeout(() => {
     console.error('[PROCESS] Forced exit after uncaught exception');
     // eslint-disable-next-line n/no-process-exit -- Required for undefined state recovery
     process.exit(1);
   }, 10000);
   forceExitTimeout.unref();
-  gracefulShutdown();
+  void gracefulShutdown();
 });
 
 let isShuttingDown = false;
@@ -149,34 +122,28 @@ const MOPUP_LOCK_WARN_EVERY_MS = 60 * 1000;
 (async function initializeBot(): Promise<void> {
   debugLogger.boot('Starting bot initialization');
   try {
-    debugLogger.step('BOOT', 'Step 1: Notifying Discord of startup');
-    await notifyDiscord({
-      type: 'startup',
-      message: startupReason ? `Reason: ${startupReason}` : '',
-    });
-
-    debugLogger.step('BOOT', 'Step 2: Initializing Google Sheets');
+    debugLogger.step('BOOT', 'Step 1: Initializing Google Sheets');
     await initializeGoogleSheets();
 
-    debugLogger.step('BOOT', 'Step 3: Loading commands');
+    debugLogger.step('BOOT', 'Step 2: Loading commands');
     await loadCommands();
 
-    debugLogger.step('BOOT', 'Step 4: Loading events');
+    debugLogger.step('BOOT', 'Step 3: Loading events');
     await loadEvents();
 
-    debugLogger.step('BOOT', 'Step 5: Starting WAL checkpoint');
+    debugLogger.step('BOOT', 'Step 4: Starting WAL checkpoint');
     usageTracker.startWALCheckpoint(TIMERS.WAL_CHECKPOINT_INTERVAL_MS);
 
-    debugLogger.step('BOOT', 'Step 6: Logging in to Discord');
+    debugLogger.step('BOOT', 'Step 5: Logging in to Discord');
     await client.login(process.env.TOKEN);
 
-    debugLogger.step('BOOT', 'Step 7: Waiting for ready event');
+    debugLogger.step('BOOT', 'Step 6: Waiting for ready event');
     await waitForClientReady();
 
-    debugLogger.step('BOOT', 'Step 8: Starting mopup timer');
+    debugLogger.step('BOOT', 'Step 7: Starting mopup timer');
     startMopupTimer();
 
-    debugLogger.step('BOOT', 'Step 9: Running initial mopup schedule check');
+    debugLogger.step('BOOT', 'Step 8: Running initial mopup schedule check');
     await runMopupUpdateIfDue('startup');
     debugLogger.boot('Bot initialization completed successfully');
   } catch (error) {
@@ -184,13 +151,7 @@ const MOPUP_LOCK_WARN_EVERY_MS = 60 * 1000;
       error: error as Error,
     });
     console.error('[BOOT] Failed to initialize bot:', error);
-    if (!shutdownReason) {
-      shutdownReason = `Initialization failure: ${
-        error instanceof Error ? error.message : String(error)
-      }`;
-    }
     process.exitCode = 1;
-    await notifyDiscord({ type: 'error', error: error as Error });
     await gracefulShutdown();
   }
 })();
@@ -231,11 +192,6 @@ async function gracefulShutdown(): Promise<void> {
       });
       console.error('[SHUTDOWN] WAL checkpoint error:', e);
     }
-    debugLogger.step('SHUTDOWN', 'Notifying Discord of shutdown');
-    await notifyDiscord({
-      type: 'shutdown',
-      message: shutdownReason ? `Reason: ${shutdownReason}` : '',
-    });
     debugLogger.step('SHUTDOWN', 'Destroying Discord client');
     client.destroy();
     debugLogger.step('SHUTDOWN', 'Bot shut down successfully');

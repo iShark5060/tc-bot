@@ -5,7 +5,6 @@ import {
   type ChatInputCommandInteraction,
 } from 'discord.js';
 
-import { setShutdownReason } from '../../tc-bot.js';
 import type { Command } from '../../types/index.js';
 
 const reboot: Command = {
@@ -53,7 +52,6 @@ const reboot: Command = {
 
     console.log(`[REBOOT] Command issued by ${interaction.user.tag} in ${interaction.guild.name}`);
 
-    setShutdownReason(`/reboot command issued by ${interaction.user.tag}`);
     setTimeout(() => process.emit('SIGTERM'), 500);
   },
 };
