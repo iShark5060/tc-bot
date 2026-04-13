@@ -1,4 +1,4 @@
-name: TC-Bot Run Tests
+name: TC-Bot PR Checks
 
 permissions:
   contents: read
@@ -11,7 +11,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  validate:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +28,21 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+            pnpm install --no-frozen-lockfile
+          else
+            pnpm install --frozen-lockfile
+          fi
+
+      - name: Check formatting
+        run: pnpm run check-format
+
+      - name: Check linting
+        run: pnpm run lint
+
+      - name: Check types
+        run: pnpm run typecheck
 
       - name: Build project
         run: pnpm run build
