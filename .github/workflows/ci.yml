@@ -14,8 +14,10 @@ on:
       - 'src/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - 'ecosystem.config.cjs'
       - 'tsconfig*.json'
+      - 'run-quality-checks.mjs'
       - '.env.production'
       - '.github/workflows/ci.yml'
   workflow_dispatch:
@@ -27,6 +29,7 @@ concurrency:
 jobs:
   deployment-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     outputs:
       deploy: ${{ steps.decide.outputs.deploy }}
@@ -40,14 +43,15 @@ jobs:
       - name: Check if changes require deployment
         id: decide
         shell: bash
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
         run: |
           set -euo pipefail
 
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.sha }}"
-
           if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE"^{commit} 2>/dev/null; then
             echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Reason: Missing or invalid before commit"
             exit 0
           fi
 
@@ -57,32 +61,41 @@ jobs:
 
           if [ -z "$changed_files" ]; then
             echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Reason: No files changed"
             exit 0
           fi
 
-          others=$(echo "$changed_files" | grep -vE '^(package.json|pnpm-lock.yaml)$' || true)
+          others=$(echo "$changed_files" | grep -vE '(^|/)package\.json$|(^|/)pnpm-lock\.yaml$' || true)
+
           if [ -n "$others" ]; then
+            echo "Other files changed:"
+            echo "$others"
             echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Reason: Non-package files changed"
             exit 0
           fi
 
           tmp_old=$(mktemp)
           tmp_new=$(mktemp)
-          printf '%s' "$(git show "$BEFORE:package.json" 2>/dev/null || echo '{}')" > "$tmp_old"
-          printf '%s' "$(git show "$AFTER:package.json" 2>/dev/null || echo '{}')" > "$tmp_new"
+
+          git show "$BEFORE:package.json" 2>/dev/null > "$tmp_old" || echo '{}' > "$tmp_old"
+          git show "$AFTER:package.json" 2>/dev/null > "$tmp_new" || echo '{}' > "$tmp_new"
 
           if ! jq -e --slurp \
             '.[0] as $new | .[1] as $old |
              ($new | del(.devDependencies)) == ($old | del(.devDependencies))' \
             "$tmp_new" "$tmp_old" >/dev/null; then
             echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Reason: Production dependencies changed"
             exit 0
           fi
 
           echo "deploy=false" >> "$GITHUB_OUTPUT"
+          echo "Reason: Only devDependencies or lockfile changed"
 
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     needs: deployment-check
     if: needs.deployment-check.outputs.deploy == 'true'
@@ -123,21 +136,12 @@ jobs:
           fi
           pnpm exec dotenvx run --strict -f .env.production -- pnpm run test
 
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     needs: [deployment-check, validate]
     if: needs.deployment-check.outputs.deploy == 'true'
-
-    env:
-      GOOGLE_CLIENT_SECRET_BASE64: ${{ secrets.GOOGLE_CLIENT_SECRET_BASE64 }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
-      SERVER_USER: ${{ secrets.SERVER_USER }}
-      SERVER_HOST: ${{ secrets.SERVER_HOST }}
-      SERVER_PATH: ${{ secrets.SERVER_PATH }}
-      SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
-      DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
 
     steps:
       - name: Checkout Commit
@@ -159,6 +163,8 @@ jobs:
         run: pnpm rebuild better-sqlite3 esbuild
 
       - name: Create client_secret.json from secret
+        env:
+          GOOGLE_CLIENT_SECRET_BASE64: ${{ secrets.GOOGLE_CLIENT_SECRET_BASE64 }}
         run: |
           if [ -z "$GOOGLE_CLIENT_SECRET_BASE64" ]; then
             echo "ERROR: GOOGLE_CLIENT_SECRET_BASE64 secret is missing or empty."
@@ -166,18 +172,19 @@ jobs:
           fi
           printf '%s' "$GOOGLE_CLIENT_SECRET_BASE64" | base64 -d > client_secret.json
 
-      - name: Validate dotenv private key
+      - name: Build TypeScript
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
         run: |
           if [ -z "$DOTENV_PRIVATE_KEY_PRODUCTION" ]; then
             echo "ERROR: DOTENV_PRIVATE_KEY_PRODUCTION secret is missing or empty."
             exit 1
           fi
-
-      - name: Build TypeScript
-        run: pnpm exec dotenvx run --strict -f .env.production -- pnpm run build
+          pnpm exec dotenvx run --strict -f .env.production -- pnpm run build
 
       - name: Deploy slash commands
         env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
           TOKEN: ${{ secrets.TOKEN }}
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
         run: |
@@ -191,6 +198,13 @@ jobs:
         run: ls -la dist/
 
       - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
         run: |
           require_non_empty() {
             name="$1"
@@ -206,7 +220,6 @@ jobs:
           require_non_empty "SERVER_HOST" "$SERVER_HOST"
           require_non_empty "SERVER_USER" "$SERVER_USER"
           require_non_empty "SERVER_PATH" "$SERVER_PATH"
-          require_non_empty "SERVER_SSH_PORT" "$SERVER_SSH_PORT"
 
           case "$SERVER_PATH" in
             ""|"/"|"."|".."|"~"|"~/"|"/home"|"/root")
@@ -222,23 +235,36 @@ jobs:
           esac
 
           mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SERVER_KNOWN_HOST" >> ~/.ssh/known_hosts
+          if [ -z "$SERVER_SSH_PORT" ]; then
+            echo "ERROR: SERVER_SSH_PORT secret is missing or empty."
+            exit 1
+          fi
+          echo "$SERVER_KNOWN_HOST" >> ~/.ssh/known_hosts
 
       - name: Prepare deployment
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
         run: |
           mkdir -p /tmp/deploy
           cp -r dist/ /tmp/deploy/
           cp package*.json /tmp/deploy/
+          cp pnpm-workspace.yaml /tmp/deploy/
           cp -r node_modules/ /tmp/deploy/
           cp ecosystem.config.cjs /tmp/deploy/
           cp client_secret.json /tmp/deploy/
           cp .env.production /tmp/deploy/
           printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' "$DOTENV_PRIVATE_KEY_PRODUCTION" > /tmp/deploy/.env.keys
           chmod 600 /tmp/deploy/.env.keys
+          test -s /tmp/deploy/.env.keys || { echo "ERROR: Failed to create .env.keys in deployment bundle."; exit 1; }
 
       - name: Deploy to server
+        env:
+          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
         run: |
           rsync -av --no-times --delete \
             --exclude='.env' \
@@ -250,6 +276,7 @@ jobs:
             -e "ssh -p $SERVER_SSH_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts" \
             /tmp/deploy/ \
             "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
+
           rsync -av --no-times \
             --chmod=F600 \
             --omit-dir-times \
@@ -258,6 +285,11 @@ jobs:
             "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/.env.keys"
 
       - name: Update permissions
+        env:
+          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
         run: |
           ssh -p "$SERVER_SSH_PORT" -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
@@ -265,9 +297,12 @@ jobs:
             "/usr/local/bin/pm2-chown-tree $SERVER_PATH"
 
       - name: Restart PM2
+        env:
+          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
-          ssh -i ~/.ssh/deploy_key \
-            -p "$SERVER_SSH_PORT" \
+          ssh -p "$SERVER_SSH_PORT" -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile=~/.ssh/known_hosts \
             "$SERVER_USER@$SERVER_HOST" \
