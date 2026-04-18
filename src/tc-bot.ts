@@ -23,6 +23,7 @@ import { ENABLE_LEGACY_MESSAGE_COMMANDS, TIMERS } from './helper/constants.js';
 import { debugLogger } from './helper/debugLogger.js';
 import { stopIdempotencyCleanup } from './helper/idempotencyGuard.js';
 import { calculateMopupTiming } from './helper/mopup.js';
+import { attachRestRetryNotifier } from './helper/restRetryNotifier.js';
 import { getSheetRowsCached } from './helper/sheetsCache.js';
 import * as usageTracker from './helper/usageTracker.js';
 import type { Command, ExtendedClient, GoogleSheetsClient } from './types/index.js';
@@ -50,6 +51,7 @@ if (ENABLE_LEGACY_MESSAGE_COMMANDS) {
 }
 
 const client: ExtendedClient = new Client({ intents }) as ExtendedClient;
+attachRestRetryNotifier(client);
 
 client.commands = new Collection<string, Command>();
 client.GoogleSheets = null;
