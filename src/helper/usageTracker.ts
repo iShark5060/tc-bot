@@ -12,7 +12,6 @@ const FLUSH_BATCH_SIZE = Number(process.env.METRICS_FLUSH_BATCH_SIZE || 50);
 const MAX_QUEUE_LENGTH = Number(process.env.METRICS_MAX_QUEUE_LENGTH || 5000);
 const MAX_RETRIES = Number(process.env.METRICS_MAX_RETRIES || 3);
 
-/** 0 = keep metrics indefinitely (no automatic purge). Default 90. */
 function parseMetricsRetentionDays(): number {
   const raw = process.env.METRICS_RETENTION_DAYS;
   if (raw === undefined || raw.trim() === '') {
