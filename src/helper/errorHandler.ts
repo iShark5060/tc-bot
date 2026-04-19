@@ -1,5 +1,7 @@
 import { MessageFlags, type Message, type RepliableInteraction } from 'discord.js';
 
+import { removeDuplicateRepliesToMessage } from './replyDuplicateCleanup.js';
+
 async function handleCommandError(
   interaction: RepliableInteraction,
   error: unknown,
@@ -26,7 +28,8 @@ async function handleMessageError(message: Message, error: unknown): Promise<voi
   console.error('[ERROR] Message command execution failed:', error);
 
   try {
-    await message.reply('There was an error while executing this command!');
+    const sent = await message.reply('There was an error while executing this command!');
+    await removeDuplicateRepliesToMessage(message, sent);
   } catch (replyError) {
     console.error('[ERROR] Failed to send error message:', replyError);
   }
