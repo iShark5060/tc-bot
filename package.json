@@ -29,12 +29,12 @@
     "typecheck": "tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^2.14.0",
+    "@dotenvx/dotenvx": "^2.18.0",
     "@googleapis/sheets": "^13.0.2",
     "@pm2/io": "^6.1.0",
     "better-sqlite3": "^12.11.1",
     "discord.js": "^14.27.0",
-    "google-auth-library": "^10.9.0"
+    "google-auth-library": "^10.9.1"
   },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "^13.0.1",
