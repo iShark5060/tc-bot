@@ -64,7 +64,7 @@ const envPath = resolveEnvPath();
 
 if (fs.existsSync(envPath)) {
   try {
-    loadEnv({ path: envPath });
+    loadEnv({ path: envPath, quiet: true });
   } catch (error) {
     console.error(`[Config] Failed to load environment via loadEnv from "${envPath}".`, error);
     throw error;
