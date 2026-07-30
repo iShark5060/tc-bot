@@ -124,3 +124,4 @@ Historical entries through the current release were **backfilled from merged PR 
 - **v7.10.2** `chore` [#136](https://github.com/Dark-Avian-Labs/TC-Bot/pull/136): dependabot/github_actions/actions/setup node 7
 - **v7.10.3** `chore` [#137](https://github.com/Dark-Avian-Labs/TC-Bot/pull/137): chore/org standards alignment
 - **v7.10.4** `chore` [#141](https://github.com/Dark-Avian-Labs/TC-Bot/pull/141): fix/quiet dotenvx and deps
+- **v7.10.5** `chore` [#142](https://github.com/Dark-Avian-Labs/TC-Bot/pull/142): chore/deps oxfmt oxlint
