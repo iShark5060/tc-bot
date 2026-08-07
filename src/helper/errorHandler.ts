@@ -1,5 +1,6 @@
 import { MessageFlags, type Message, type RepliableInteraction } from 'discord.js';
 
+import { isExpiredInteractionError } from './logError.js';
 import {
   safeInteractionFollowUp,
   safeInteractionReply,
@@ -10,6 +11,12 @@ async function handleCommandError(
   interaction: RepliableInteraction,
   error: unknown,
 ): Promise<void> {
+  if (isExpiredInteractionError(error)) {
+    // Token already dead — another reply/followUp will only produce more 10062 noise.
+    console.warn('[ERROR] Command failed after interaction expired:', error);
+    return;
+  }
+
   console.error('[ERROR] Command execution failed:', error);
 
   const errorMessage = {
@@ -24,6 +31,10 @@ async function handleCommandError(
       await safeInteractionReply(interaction, errorMessage);
     }
   } catch (followUpError) {
+    if (isExpiredInteractionError(followUpError)) {
+      console.warn('[ERROR] Failed to send error message: interaction expired');
+      return;
+    }
     console.error('[ERROR] Failed to send error message:', followUpError);
   }
 }

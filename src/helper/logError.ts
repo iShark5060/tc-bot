@@ -18,17 +18,24 @@ const TRANSIENT_ERROR_NAMES = new Set([
   'AbortError',
 ]);
 
+const DISCORD_UNKNOWN_INTERACTION = 10062;
+const DISCORD_INTERACTION_ALREADY_ACKNOWLEDGED = 40060;
+
 interface SerializedLogError {
   name: string;
   message: string;
-  code?: string;
+  code?: string | number;
   transient?: true;
   stack?: string;
 }
 
-function getErrorCode(error: Error): string | undefined {
-  if ('code' in error && typeof error.code === 'string') {
-    return error.code;
+function getErrorCode(error: Error): string | number | undefined {
+  if (!('code' in error)) {
+    return undefined;
+  }
+  const { code } = error as { code: unknown };
+  if (typeof code === 'string' || typeof code === 'number') {
+    return code;
   }
   return undefined;
 }
@@ -39,11 +46,20 @@ function isTransientNetworkError(error: unknown): boolean {
   }
 
   const code = getErrorCode(error);
-  if (code && TRANSIENT_ERROR_CODES.has(code)) {
+  if (typeof code === 'string' && TRANSIENT_ERROR_CODES.has(code)) {
     return true;
   }
 
   return TRANSIENT_ERROR_NAMES.has(error.name);
+}
+
+function isExpiredInteractionError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const code = getErrorCode(error);
+  return code === DISCORD_UNKNOWN_INTERACTION || code === DISCORD_INTERACTION_ALREADY_ACKNOWLEDGED;
 }
 
 function serializeErrorForLog(error: unknown): SerializedLogError {
@@ -57,11 +73,11 @@ function serializeErrorForLog(error: unknown): SerializedLogError {
     message: error.message,
   };
 
-  if (code) {
+  if (code !== undefined) {
     serialized.code = code;
   }
 
-  if (isTransientNetworkError(error)) {
+  if (isTransientNetworkError(error) || isExpiredInteractionError(error)) {
     serialized.transient = true;
     return serialized;
   }
@@ -73,4 +89,9 @@ function serializeErrorForLog(error: unknown): SerializedLogError {
   return serialized;
 }
 
-export { isTransientNetworkError, serializeErrorForLog, type SerializedLogError };
+export {
+  isExpiredInteractionError,
+  isTransientNetworkError,
+  serializeErrorForLog,
+  type SerializedLogError,
+};
