@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isTransientNetworkError, serializeErrorForLog } from '../src/helper/logError.js';
+import { isExpiredInteractionError, isTransientNetworkError, serializeErrorForLog } from '../src/helper/logError.js';
 
 describe('isTransientNetworkError', () => {
   it('detects undici connect timeout errors by code', () => {
@@ -38,6 +38,35 @@ describe('isTransientNetworkError', () => {
   });
 });
 
+describe('isExpiredInteractionError', () => {
+  it('detects Discord unknown interaction (10062)', () => {
+    const error = Object.assign(new Error('Unknown interaction'), {
+      name: 'DiscordAPIError[10062]',
+      code: 10062,
+    });
+
+    expect(isExpiredInteractionError(error)).toBe(true);
+  });
+
+  it('detects Discord already-acknowledged interaction (40060)', () => {
+    const error = Object.assign(new Error('Interaction has already been acknowledged.'), {
+      name: 'DiscordAPIError[40060]',
+      code: 40060,
+    });
+
+    expect(isExpiredInteractionError(error)).toBe(true);
+  });
+
+  it('ignores other Discord API errors', () => {
+    const error = Object.assign(new Error('Missing Access'), {
+      name: 'DiscordAPIError[50013]',
+      code: 50013,
+    });
+
+    expect(isExpiredInteractionError(error)).toBe(false);
+  });
+});
+
 describe('serializeErrorForLog', () => {
   it('omits stack traces for transient network errors', () => {
     const error = Object.assign(new Error('Connect Timeout Error (attempted address: discord.com:443)'), {
@@ -62,6 +91,21 @@ describe('serializeErrorForLog', () => {
       name: 'Error',
       message: 'Missing Access',
       stack: error.stack,
+    });
+  });
+
+  it('omits stack traces for expired Discord interactions', () => {
+    const error = Object.assign(new Error('Unknown interaction'), {
+      name: 'DiscordAPIError[10062]',
+      code: 10062,
+    });
+    error.stack = 'DiscordAPIError[10062]: Unknown interaction\n    at handleErrors (...)';
+
+    expect(serializeErrorForLog(error)).toEqual({
+      name: 'DiscordAPIError[10062]',
+      message: 'Unknown interaction',
+      code: 10062,
+      transient: true,
     });
   });
 

@@ -9,6 +9,7 @@ import { debugLogger } from '../helper/debugLogger.js';
 import { handleCommandError } from '../helper/errorHandler.js';
 import { formatHrDuration } from '../helper/hrDuration.js';
 import { isDuplicateEventId } from '../helper/idempotencyGuard.js';
+import { isExpiredInteractionError } from '../helper/logError.js';
 import { commandErrors, commandsCounter, commandsPerSecond } from '../helper/metrics.js';
 import {
   INTERACTION_EXEC_LOCK_TTL_MS,
@@ -139,11 +140,22 @@ const interactionsCreate: Event = {
       });
       debugLogger.step('COMMAND', 'Command usage logged', { commandName });
     } catch (error) {
-      debugLogger.error('COMMAND', 'Command execution failed', {
-        commandName,
-        duration: formatHrDuration(startHr),
-        error: error as Error,
-      });
+      const interactionAgeMs = Date.now() - interaction.createdTimestamp;
+      if (isExpiredInteractionError(error)) {
+        debugLogger.warn('COMMAND', 'Command reply missed Discord interaction window', {
+          commandName,
+          duration: formatHrDuration(startHr),
+          interactionAgeMs,
+          error: error as Error,
+        });
+      } else {
+        debugLogger.error('COMMAND', 'Command execution failed', {
+          commandName,
+          duration: formatHrDuration(startHr),
+          interactionAgeMs,
+          error: error as Error,
+        });
+      }
 
       commandErrors.inc();
       await handleCommandError(interaction, error);
