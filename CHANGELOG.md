@@ -126,3 +126,4 @@ Historical entries through the current release were **backfilled from merged PR 
 - **v7.10.4** `chore` [#141](https://github.com/Dark-Avian-Labs/TC-Bot/pull/141): fix/quiet dotenvx and deps
 - **v7.10.5** `chore` [#142](https://github.com/Dark-Avian-Labs/TC-Bot/pull/142): chore/deps oxfmt oxlint
 - **v7.10.6** `chore` [#144](https://github.com/Dark-Avian-Labs/TC-Bot/pull/144): dependabot/npm_and_yarn/production dependencies 0e7c9d58f0
+- **v7.10.7** `chore` [#146](https://github.com/Dark-Avian-Labs/TC-Bot/pull/146): ci/adopt action v1.1 features
