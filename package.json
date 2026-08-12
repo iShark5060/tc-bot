@@ -34,7 +34,7 @@
     "@pm2/io": "^6.1.0",
     "better-sqlite3": "^13.0.3",
     "discord.js": "^14.27.0",
-    "google-auth-library": "^11.0.0"
+    "google-auth-library": "^11.0.1"
   },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "^13.0.1",
@@ -56,5 +56,5 @@
     "node": ">=26.0.0",
     "pnpm": ">=11.0.0"
   },
-  "packageManager": "pnpm@11.20.0"
+  "packageManager": "pnpm@11.21.0"
 }
