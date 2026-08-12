@@ -129,3 +129,4 @@ Historical entries through the current release were **backfilled from merged PR 
 - **v7.10.7** `chore` [#146](https://github.com/Dark-Avian-Labs/TC-Bot/pull/146): ci/adopt action v1.1 features
 - **v7.10.8** `chore` [#147](https://github.com/Dark-Avian-Labs/TC-Bot/pull/147): fix/expired interaction error handling
 - **v7.10.9** `chore` [#148](https://github.com/Dark-Avian-Labs/TC-Bot/pull/148): chore/deps google auth v11
+- **v7.10.10** `chore` [#152](https://github.com/Dark-Avian-Labs/TC-Bot/pull/152): chore/deps pnpm and auth
