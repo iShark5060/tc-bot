@@ -131,3 +131,4 @@ Historical entries through the current release were **backfilled from merged PR 
 - **v7.10.9** `chore` [#148](https://github.com/Dark-Avian-Labs/TC-Bot/pull/148): chore/deps google auth v11
 - **v7.10.10** `chore` [#152](https://github.com/Dark-Avian-Labs/TC-Bot/pull/152): chore/deps pnpm and auth
 - **v7.10.11** `chore` [#153](https://github.com/Dark-Avian-Labs/TC-Bot/pull/153): dependabot/npm_and_yarn/production dependencies 03fbf52c64
+- **v7.10.12** `chore` [#154](https://github.com/Dark-Avian-Labs/TC-Bot/pull/154): update dependencies
