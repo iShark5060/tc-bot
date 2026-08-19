@@ -7,8 +7,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178C6?logo=typescript&logoColor=white)
 [![Cursor](https://img.shields.io/badge/Cursor-IDE-141414?logo=cursor&logoColor=white)](https://cursor.com)
 
-TC-Bot is a Discord bot based on Discord.js for [Ark of War](https://www.7piratesgames.com/ark.html).
-It provides the [Diplomacy of War Discord Server](https://discord.gg/YMAhCNjkgp) with commands to calculate stats in the game.
+TC-Bot is a Discord bot for [Ark of War](https://www.7piratesgames.com/ark.html), built for the [Diplomacy of War](https://discord.gg/YMAhCNjkgp) server. Slash commands calculate healing, gear, and iTS. Mopup windows get channel updates. Troop numbers come from the theorycrafters' Google Sheet.
 
 ## About
 
