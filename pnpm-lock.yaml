@@ -32,7 +32,7 @@ importers:
         specifier: ^14.27.0
         version: 14.27.0
       google-auth-library:
-        specifier: ^11.0.2
+        specifier: ^11.0.0
         version: 11.0.2(supports-color@7.2.0)
     devDependencies:
       '@semantic-release/commit-analyzer':
@@ -72,7 +72,7 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
       vite:
-        specifier: ^8.2.1
+        specifier: ^8.0.16
         version: 8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12)
       vitest:
         specifier: ^4.1.11
@@ -4314,7 +4314,7 @@ snapshots:
 
   require-in-the-middle@5.2.0(supports-color@7.2.0):
     dependencies:
-      debug: 4.4.3(supports-color@7.2.0)
+      debug: 4.3.7(supports-color@7.2.0)
       module-details-from-path: 1.0.4
       resolve: 1.22.12
     transitivePeerDependencies:
