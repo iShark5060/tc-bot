@@ -12,7 +12,6 @@ async function handleCommandError(
   error: unknown,
 ): Promise<void> {
   if (isExpiredInteractionError(error)) {
-    // Token already dead — another reply/followUp will only produce more 10062 noise.
     console.warn('[ERROR] Command failed after interaction expired:', error);
     return;
   }
