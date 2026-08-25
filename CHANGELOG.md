@@ -134,3 +134,4 @@ Historical entries through the current release were **backfilled from merged PR 
 - **v7.10.12** `chore` [#154](https://github.com/Dark-Avian-Labs/TC-Bot/pull/154): update dependencies
 - **v7.10.13** `chore` [#155](https://github.com/Dark-Avian-Labs/TC-Bot/pull/155): chore/vitest and readme
 - **v7.10.14** `chore(deps)`: update oxfmt and oxlint to versions 0.64.0 and 1.79.0 respectively
+- **v7.10.15** `chore` [#157](https://github.com/Dark-Avian-Labs/TC-Bot/pull/157): docs/drop openwiki
