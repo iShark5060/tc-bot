@@ -147,7 +147,7 @@ Unless you have a copy of the Theorycrafters Google Sheet and valid API credenti
 
 ## Development
 
-Agent-oriented docs: [openwiki/quickstart.md](openwiki/quickstart.md). Org standards: AppBase `docs/org-standards/`.
+Agent notes: [AGENTS.md](AGENTS.md). Org standards: AppBase `docs/org-standards/`.
 
 ## License
 

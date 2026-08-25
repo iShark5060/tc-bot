@@ -1,15 +1,25 @@
+# TC-Bot
+
 ## Org standards
 
-Shared Dark Avian Labs engineering conventions (README shape, CI/PR runners, validate, release tracks, OpenWiki) live in AppBase `docs/org-standards/`. Prefer those docs when aligning workflows or quality gates.
+CI/README/validate conventions live in AppBase [`docs/org-standards/`](../AppBase/docs/org-standards/). This repo is **semantic-release Track A**. GitHub is `ishark5060/tc-bot` (personal), not Dark-Avian-Labs. It is a Discord bot, not a DAL web app, and does **not** follow the AppBase design system.
 
-## OpenWiki
+See `README.md` for scripts, env, and Google credential shape.
 
-This repository has documentation located in the /openwiki directory.
+## Runtime
 
-Start here:
+`loadEnv` picks `.env.production` only when `NODE_ENV=production`, else `.env.development`. `pnpm start` does **not** set `NODE_ENV=production`; PM2 does. Slash register (`pnpm run deploy`) is not part of bot boot: guild commands if `GUILD_ID` is set, else global. Runtime loads `dist/commands/**/*.js`; deploy discovers `src/**/*.ts`. Keep both paths working.
 
-- [OpenWiki quickstart](openwiki/quickstart.md)
+Prefer `safe*` reply helpers. Raw `interaction.reply` bypasses public-message fingerprint dedupe. Interaction exec lock TTL is 15 minutes (SQLite, same DB as metrics). `/reboot` needs Administrator in `GUILD_ID` plus `confirm:true`, then `SIGTERM` for PM2.
 
-OpenWiki includes repository overview, architecture notes, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+Legacy `!tcmu` only when `ENABLE_LEGACY_MESSAGE_COMMANDS` is on and `MESSAGE_COMMAND_CHANNEL_ID` matches.
 
-When working in this repository, read the OpenWiki quickstart first, then follow its links to the relevant architecture, workflow, domain, operation, and testing notes.
+## Sheets and mopup
+
+Boot **hard-requires** Sheets credentials + `GOOGLE_SPREADSHEET_ID` / `GOOGLE_SHEET_ID` even though `/gearcheck` and `/mopup` do not read the sheet. Tab identity is numeric `GOOGLE_SHEET_ID`, not the display name. Deploy rsync excludes `data/` and `logs/` so metrics and locks survive.
+
+Mopup timing uses the **host timezone**. Even day: 26h–34h offsets; odd day: 8h–24h. Boot syncs last status without announcing. Discord `/metrics` is SQLite usage; `@pm2/io` is the process dashboard.
+
+## Toolchain
+
+Node **26+**, pnpm **11.x**, exact `packageManager`. `pnpm run validate` is the quality gate. Angular commits; `chore` and `ci` also release as patch.
