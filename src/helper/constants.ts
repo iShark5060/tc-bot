@@ -41,12 +41,22 @@ export const COST_LABELS: Record<string, string> = {
   hePoints: 'Heal Points::',
 };
 
+export const TROOP_STAT_KEYS = {
+  ATK: ['troopAtk', 'baseATK', 'ATK'],
+  DEF: ['troopDef', 'baseDEF', 'DEF'],
+  HP: ['troopHp', 'baseHP', 'HP'],
+} as const;
+
 export const VALIDATION = {
   MAX_GEAR_LEVEL: 100,
   MAX_TIER: 12,
   MIN_TIER: 1,
   MAX_SKILL_LEVEL: 60,
   ITS_DAMAGE_COEFFICIENT: 0.005,
+  MAX_TROOP_AMOUNT: 1_000_000,
+  MAX_PERCENT_STAT: 10_000,
+  MAX_ABS_DEF: 1_000_000_000,
+  MAX_PENDING_DAMAGE: 200,
 } as const;
 
 export const TIMERS = {

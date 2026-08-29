@@ -55,31 +55,8 @@ const interactionsCreate: Event = {
       guildId: interaction.guildId,
     });
 
-    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('healtroop:')) {
-      debugLogger.step('INTERACTION', 'Processing healtroop select menu', {
-        customId: interaction.customId,
-      });
-      try {
-        const mod = await import('../commands/aow/healtroop.js');
-        const healtroop = mod.default ?? mod;
-        if ('handleSelect' in healtroop && typeof healtroop.handleSelect === 'function') {
-          debugLogger.debug('INTERACTION', 'Calling healtroop.handleSelect');
-          await healtroop.handleSelect(interaction as StringSelectMenuInteraction);
-          debugLogger.step('INTERACTION', 'Healtroop select menu handled successfully');
-        } else {
-          debugLogger.warn('INTERACTION', 'Healtroop handleSelect not available');
-          await safeInteractionReply(interaction, {
-            content: 'Selector not available.',
-            flags: MessageFlags.Ephemeral,
-          });
-        }
-      } catch (error) {
-        debugLogger.error('INTERACTION', 'Error handling healtroop select menu', {
-          error: error as Error,
-          customId: interaction.customId,
-        });
-        await handleCommandError(interaction, error);
-      }
+    if (interaction.isStringSelectMenu()) {
+      await handleSelectMenu(interaction);
       return;
     }
 
@@ -181,3 +158,37 @@ const interactionsCreate: Event = {
 };
 
 export default interactionsCreate;
+
+async function handleSelectMenu(interaction: StringSelectMenuInteraction): Promise<void> {
+  const commandName = interaction.customId.split(':')[0];
+  debugLogger.step('INTERACTION', 'Processing select menu', {
+    customId: interaction.customId,
+    commandName,
+  });
+
+  try {
+    const command = (interaction.client as ExtendedClient).commands.get(commandName);
+    if (command && typeof command.handleSelect === 'function') {
+      debugLogger.debug('INTERACTION', 'Calling command handleSelect', { commandName });
+      await command.handleSelect(interaction);
+      debugLogger.step('INTERACTION', 'Select menu handled successfully', { commandName });
+      return;
+    }
+
+    debugLogger.warn('INTERACTION', 'Select handler not available', {
+      commandName,
+      customId: interaction.customId,
+    });
+    await safeInteractionReply(interaction, {
+      content: 'Selector not available.',
+      flags: MessageFlags.Ephemeral,
+    });
+  } catch (error) {
+    debugLogger.error('INTERACTION', 'Error handling select menu', {
+      error: error as Error,
+      customId: interaction.customId,
+      commandName,
+    });
+    await handleCommandError(interaction, error);
+  }
+}
