@@ -17,15 +17,14 @@ export type DedupeScope =
   | { type: 'channel'; fingerprint: string };
 
 export async function dedupeBotResponse(sentMessage: Message, scope: DedupeScope): Promise<void> {
-  const channel = sentMessage.channel;
-  if (!channel.isTextBased()) return;
-
-  const botUserId = sentMessage.client.user?.id;
-  if (!botUserId) return;
-
-  const targetFingerprint = messageFingerprint(sentMessage);
-
   try {
+    const channel = await resolveTextBasedChannel(sentMessage);
+    if (!channel) return;
+
+    const botUserId = sentMessage.client.user?.id;
+    if (!botUserId) return;
+
+    const targetFingerprint = messageFingerprint(sentMessage);
     const recentMessages = await channel.messages.fetch({
       limit: REPLY_DUPLICATE_SCAN_LIMIT,
     });
@@ -42,7 +41,7 @@ export async function dedupeBotResponse(sentMessage: Message, scope: DedupeScope
     const err = error instanceof Error ? error : new Error(String(error));
     debugLogger.error('replyDuplicateCleanup', 'dedupeBotResponse failed', {
       error: err,
-      channelId: channel.id,
+      channelId: sentMessage.channelId,
       sentMessageId: sentMessage.id,
       scope,
     });
@@ -108,6 +107,25 @@ export function messageMatchesScope(message: Message, scope: DedupeScope): boole
     case 'channel':
       return !message.interaction && !message.reference?.messageId;
   }
+}
+
+async function resolveTextBasedChannel(sentMessage: Message): Promise<TextBasedChannel | null> {
+  const attached = sentMessage.channel ?? null;
+  if (attached?.isTextBased()) return attached;
+
+  try {
+    const fetched = await sentMessage.client.channels.fetch(sentMessage.channelId);
+    if (fetched?.isTextBased()) return fetched;
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    debugLogger.warn('replyDuplicateCleanup', 'Failed to fetch channel for duplicate cleanup', {
+      error: err,
+      channelId: sentMessage.channelId,
+      sentMessageId: sentMessage.id,
+    });
+  }
+
+  return null;
 }
 
 async function deleteDuplicateMessages(
