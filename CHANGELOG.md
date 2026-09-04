@@ -138,3 +138,4 @@ Historical entries through the current release were **backfilled from merged PR 
 - **v7.11.0** `chore` [#159](https://github.com/Dark-Avian-Labs/TC-Bot/pull/159): feat/damage command
 - **v7.11.1** `chore` [#161](https://github.com/Dark-Avian-Labs/TC-Bot/pull/161): fix/dedupe uncached channel
 - **v7.11.2** `ci` [#163](https://github.com/Dark-Avian-Labs/TC-Bot/pull/163): use 4 vCPU runners
+- **v7.11.3** `ci` [#164](https://github.com/Dark-Avian-Labs/TC-Bot/pull/164): run Node jobs on 2 vCPU
