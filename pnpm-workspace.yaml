@@ -5,4 +5,3 @@ overrides:
   gaxios: ^7.3.1
   google-auth-library: ^11.0.2
   minimatch@>=9: ^10.2.6
-  undici: ^8.10.2
