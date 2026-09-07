@@ -22,4 +22,4 @@ Mopup timing uses the **host timezone**. Even day: 26h–34h offsets; odd day: 8
 
 ## Toolchain
 
-Node **26+**, pnpm **11.x**, exact `packageManager`. `pnpm run validate` is the quality gate. Angular commits; `chore` and `ci` also release as patch.
+Node **26+**, pnpm **12.x**, exact `packageManager`. `pnpm run validate` is the quality gate. Angular commits; `chore` and `ci` also release as patch.

@@ -29,7 +29,7 @@ TypeScript is used in strict mode by now, tests are automated via Vitest and the
 ## Requirements
 
 - Node.js 26+
-- pnpm 11+
+- pnpm 12+
 
 ## Quick start
 
