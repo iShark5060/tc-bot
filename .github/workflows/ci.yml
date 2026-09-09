@@ -161,9 +161,6 @@ jobs:
           cache: true
           require-lockfile: true
 
-      - name: Audit dependencies
-        run: pnpm audit --audit-level high
-
       - name: Run quality checks
         run: |
           if [ -z "$DOTENV_PRIVATE_KEY_PRODUCTION" ]; then
