@@ -12,11 +12,14 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'ecosystem.config.cjs'
       - 'tsconfig*.json'
+      - 'vitest.config.ts'
       - 'run-quality-checks.mjs'
       - '.env.production'
       - '.github/workflows/ci.yml'
