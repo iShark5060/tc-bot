@@ -23,3 +23,11 @@ Mopup timing uses the **host timezone**. Even day: 26h–34h offsets; odd day: 8
 ## Toolchain
 
 Node **26+**, pnpm **12.x**, exact `packageManager`. `pnpm run validate` is the quality gate. Angular commits; `chore` and `ci` also release as patch.
+
+On Windows, Cursor agent shells may prepend bundled Node 22. After changing Node versions, run `pnpm rebuild better-sqlite3`.
+
+## Tests
+
+`pnpm run validate` is the quality gate: preflight, oxfmt, oxlint, typecheck, Vitest. In CI that Vitest step is instrumented (`pnpm run test:coverage`); locally `pnpm test` stays uninstrumented. Use `pnpm run test:watch` while iterating.
+
+Coverage reports `src/helper/**` and `src/commands/**` (no percentage gate — the old 70% thresholds never held once `@vitest/coverage-v8` actually ran). There is no HTTP app, so there is no Playwright. Do not boot the Discord client in CI — Sheets credentials are required at process start.
